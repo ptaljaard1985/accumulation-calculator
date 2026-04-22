@@ -130,6 +130,21 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 2 — 2026-04-22
+
+**Shipped (PR #2):**
+- Chart in the PDF now fills the card width at 320 px height. The earlier 200 px print override combined with an explicit canvas `height !important` was pushing Chart.js into awkward aspect ratios; dropping the canvas-side override and letting the wrap alone dictate height resolved it.
+- Narrative restructured into three headed sections: `PLANNED` (always), `BASELINE POSITION` + `PLANNED SCENARIO` (only when a baseline is locked). Sign-aware copy, annualised-impact framing on the scenario paragraph.
+- Baseline delta integrated into the outcome cards. New `.delta-line` inside the income and capital cards renders `Baseline <X> · ±<delta> (±<pct>%)` when a baseline is locked. The old full-width `.delta-bar` between the cards and the chart has been removed entirely (CSS, HTML, and `updateDelta` JS). Re-lock / Clear buttons now swap into the controls row next to the Lock button via a new `updateBaselineControls()`.
+
+**Decisions (and why):**
+- Lifetime contribution delta uses `p.totalContribsOverHorizon - baseline.p.totalContribsOverHorizon`, not the simpler `contribDelta × 12 × years`. Rationale: `project()` already compounds each year's escalated contributions into `cumulContribs`, so the subtraction is automatically escalation-accurate. Approximating here would have shipped a figure meaningfully lower than the real lifetime cost.
+- Years-until-retirement card does not carry a delta. Rationale: horizon depends on input toggles (anchor spouse, retirement age) rather than on the plan; a `+5 years` read would confuse more than it informs.
+- `updateBaselineControls()` is called only from the lock/clear handlers and init, not from `refresh()`. Rationale: the button state only needs to change when `baseline` flips between null and non-null, not on every slider tick.
+- Attempted a destroy-and-rebuild approach for the chart on print-media change; reverted because headless `--print-to-pdf` was rendering the rebuilt canvas as blank (Chart.js paint not flushed before snapshot). `chart.resize()` on `beforeprint` + `matchMedia('print')` change is the working path.
+
+**Tests:** 12 JS + 37 Python, all green. No calculation code changed.
+
 ### Session 1 — 2026-04-22
 
 **Shipped:**
