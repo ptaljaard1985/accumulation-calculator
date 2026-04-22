@@ -255,6 +255,69 @@ check('default scenario matches v1 baseline', () => {
   assert.ok(approx(p.monthlyIncomeReal, 97_138, 5));
 });
 
+// ============================================================
+// Narrative: no em-dashes, and the three describe functions all
+// return non-empty strings that mention the pertinent numbers.
+// ============================================================
+const narrativeBundle = [
+  'fmtR', 'fmtShort', 'fmtPct', 'totalMonthlyContribs',
+  'eventsSentence', 'describeCurrentPosition',
+  'describeBaselinePosition', 'describePlannedScenario',
+].map(n => extractFn(inline, n)).join('\n');
+const narrative = new Function(
+  narrativeBundle +
+  '; return { describeCurrentPosition, describeBaselinePosition, describePlannedScenario };'
+)();
+
+const EM_DASH = '—';
+
+check('narrative: no em-dashes in current-position output', () => {
+  const p = projectFn({
+    ageA: 40, ageB: 40,
+    retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+    contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+    rNom: 0.10, cpi: 0.05, esc: 0.06,
+    anchor: 'youngest', retirementAge: 65,
+    events: [{ age: 50, amount: 500_000, todaysMoney: true, kind: 'inflow' }],
+  });
+  const out = narrative.describeCurrentPosition(p);
+  assert.ok(out.length > 100, 'narrative too short: ' + out);
+  assert.ok(out.indexOf(EM_DASH) === -1, 'em-dash found: ' + out);
+  assert.ok(/retirement/i.test(out) && /inflation/i.test(out),
+    'missing pertinent terms: ' + out);
+});
+
+check('narrative: no em-dashes in baseline + planned-scenario output', () => {
+  const baseInputs = {
+    ageA: 40, ageB: 40,
+    retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+    contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+    rNom: 0.08, cpi: 0.05, esc: 0.06,
+    anchor: 'youngest', retirementAge: 65, events: [],
+  };
+  const planInputs = Object.assign({}, baseInputs, {
+    rNom: 0.10,
+    contribRetA: 12_000, contribRetB: 10_000,
+  });
+  const bp = projectFn(baseInputs);
+  const pp = projectFn(planInputs);
+  const bline = { p: bp, inputs: baseInputs };
+
+  const baselineOut = narrative.describeBaselinePosition(bline);
+  const scenarioOut = narrative.describePlannedScenario(pp, bline);
+
+  assert.ok(baselineOut.length > 100, 'baseline too short: ' + baselineOut);
+  assert.ok(scenarioOut.length > 150, 'scenario too short: ' + scenarioOut);
+  assert.ok(baselineOut.indexOf(EM_DASH) === -1,
+    'em-dash in baseline: ' + baselineOut);
+  assert.ok(scenarioOut.indexOf(EM_DASH) === -1,
+    'em-dash in scenario: ' + scenarioOut);
+  assert.ok(/baseline/i.test(scenarioOut),
+    'scenario should reference the baseline: ' + scenarioOut);
+  assert.ok(/(more|less)/i.test(scenarioOut),
+    'scenario should describe delta direction: ' + scenarioOut);
+});
+
 
 console.log();
 console.log('='.repeat(50));

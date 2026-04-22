@@ -130,6 +130,25 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 3 — 2026-04-22
+
+**Shipped:**
+- Chart in the PDF now renders at full card width. Root cause was the `matchMedia('print')` handler calling `chart.resize()` synchronously, before the print `@media` CSS had flowed into layout — under headless `--print-to-pdf` the resize ran against pre-print parent dimensions, leaving the bitmap undersized. Fix: new `resizeChartsToWrap()` helper that defers into `requestAnimationFrame`, reads `.chart-wrap` `clientWidth`/`clientHeight`, and calls `chart.resize(w, h)` with explicit dimensions. Used by both the `beforeprint` and the `matchMedia` handlers (and `afterprint` for restore).
+- Narrative rewritten to two sections when a baseline is locked — BASELINE POSITION + PLANNED SCENARIO — and a single CURRENT POSITION section when no baseline is locked. Plain English prose, sign-aware (`more`/`less`, `rises`/`falls`). Per-spouse contribution split dropped from the narrative; events still mentioned in both sections when present. New non-negotiable rule: **no em-dashes** (U+2014) in narrative output, ever. Enforced by two JS tests.
+- Retire-when row folded into the household-position collapsible, so collapsing the panel also hides the retirement-age input. HP summary chip extended with `retiring at N`.
+- Market assumptions wrapped in its own collapsible (collapsed by default), with a summary chip `"10.00% return · 5.00% CPI · 6.00% escalation"`.
+- Planned-scenario slider row: four sliders (retirement contribs ±R10k step R500, discretionary contribs ±R10k step R500, expected return ±2 pp step 0.5 pp, retirement age ±5y step 1) that appear between the outcome cards and the controls row whenever a baseline is locked. Sliders are centred on the baseline values; readouts show the absolute value plus a green/red delta pill when off centre. Moving a slider writes back into the underlying household-panel or market-assumption inputs (contribution deltas split proportionally between spouses A and B based on baseline share). Hidden in print.
+
+**Decisions (and why):**
+- No em-dashes in narrative. Rationale: they read as dashboard shorthand, don't parse well when read aloud in a client meeting, and make the prose feel clipped. The rule is codified in `docs/DESIGN.md` and a comment at the top of the narrative helpers; two tests assert the U+2014 character does not appear in any describe-function output.
+- Narrative restructured with explicit no-baseline vs baseline-locked layouts. Rationale: the previous PLANNED section always showed the current plan as a standalone description, which then duplicated with PLANNED SCENARIO once a baseline was locked. Collapsing to "one section without a baseline, two sections with one" removes the redundancy and matches how the adviser actually talks through a meeting.
+- Chart resize passes explicit `(w, h)` rather than letting Chart.js read the parent. Rationale: Session 2 spent time on destroy-and-rebuild and other approaches; the clean fix is to separate the layout flush (rAF) from the measurement (explicit dims), which is both the simplest reliable path and avoids the "rebuilt canvas renders blank under headless" regression noted in Session 2.
+- Scenario slider row shown only when a baseline is locked. Rationale: the sliders are intrinsically "adjustments around a reference", so an unanchored version would show thumbs perpetually at centre (every refresh re-reads the current inputs as the anchor → thumb always at zero delta). Gating on baseline-locked also aligns with the meeting flow: enter the client's numbers, lock, then explore.
+- Contribution sliders split deltas proportionally between spouses by baseline share. Rationale: couples typically adjust retirement contributions in proportion to current effort, and the projection is insensitive to which spouse the money lands in (same `rNom`, same CPI). Zero-zero baseline falls back to 50/50 on any positive delta.
+- Scenario slider values sync from the underlying inputs on every `refresh()`, not just on slider input. Rationale: the household panel can still be edited directly, and we want the slider thumbs to reflect current state regardless of which surface changed it. One source of truth (the underlying inputs), two views on it.
+
+**Tests:** 14 JS + 37 Python, all green. Added two new JS tests for no-em-dash + pertinent-terms-present in the narrative describe functions.
+
 ### Session 2 — 2026-04-22
 
 **Shipped (PR #2):**

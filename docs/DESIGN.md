@@ -92,17 +92,34 @@ When a baseline is locked, the income and capital cards grow a fourth row — a 
 
 ### Narrative "In plain terms" card
 
-Below the chart, above the compliance appendix. Card styling matches the summary cards. Title `IN PLAIN TERMS` in uppercase small-caps (11–12px, letter-spaced). Body is structured as up to three headed `.narrative-section` blocks:
+Below the chart, above the compliance appendix. Card styling matches the summary cards. Title `IN PLAIN TERMS` in uppercase small-caps (11–12px, letter-spaced). Body is structured as `.narrative-section` blocks, and which ones are shown depends on whether a baseline is locked.
 
-- **PLANNED** (always rendered) — two paragraphs combining headline numbers, contributions, composition, and events.
-- **BASELINE POSITION** (only when a baseline is locked) — one paragraph summarising what the baseline produces.
-- **PLANNED SCENARIO** (only when a baseline is locked) — one paragraph with the delta, percentage change, lifetime contribution cost, extra retirement capital, and an annualised-impact framing.
+When **no baseline is locked**, one section:
 
-Section headings follow the same 12px uppercase / letter-spaced rhythm as other `h3`s. Copy is sign-aware: for a worse-than-baseline scenario, the wording flips (improvement → reduction, additional → lower, etc.) and the qualitative closing sentence is dropped.
+- **CURRENT POSITION** — one paragraph walking through the pertinent numbers for the current plan: nominal return, inflation, combined monthly contributions and escalation, projected capital in today's money and future rands, the retirement-fund / discretionary split, and the 5%-rule monthly income. If the plan includes capital events, a short sentence mentions them.
+
+When a **baseline is locked**, two sections:
+
+- **BASELINE POSITION** — one paragraph summarising the baseline's assumptions, contributions, projected capital, and projected monthly income. Events mentioned if present.
+- **PLANNED SCENARIO** — one paragraph walking through the plan's own numbers first, then the delta versus baseline: contribution difference monthly and over the horizon, capital difference in today's money with percentage change, and monthly-plus-annual income difference. Events mentioned if present.
+
+Section headings follow the same 12px uppercase / letter-spaced rhythm as other `h3`s. Copy is sign-aware: "more" flips to "less", "rises" to "falls", "extra contributions" to "saving" when the plan is worse than the baseline.
+
+**No em-dashes** (U+2014) anywhere in the narrative copy. Em-dashes read as dashboard shorthand, don't parse well when the narrative is read aloud in a client meeting, and make the prose feel clipped. Use commas, full stops, or rephrase. The same rule applies to any future narrative surfaces (card subtitles, tooltips, print-summary prose). Write plainly, like a normal person.
 
 ### Compliance appendix — accordion group
 
 Three native `<details class="accordion">` blocks: detail tables, methodology & assumptions, disclaimer. Closed by default on screen (keeps the meeting view uncluttered). Forced open on print via a `beforeprint` handler (for interactive Cmd+P) and a `matchMedia('print')` listener (for headless `--print-to-pdf`, which does not fire `beforeprint`). Summary markers are hidden in print so the output reads as plain tables/prose.
+
+### Planned scenario sliders
+
+A compact row of four sliders that appears directly below the outcome cards when a baseline is locked, and vanishes when the baseline is cleared. Same card styling as the rest of the page (warm surface, hairline border, radius 12px). Small uppercase `PLANNED SCENARIO LEVERS` heading on the left, and a muted "Centered on the locked baseline. Nudge to explore." caption on the right.
+
+The four sliders — retirement contributions, discretionary contributions, expected return, retirement age — each use the same `.lever` layout as the market-assumptions sliders. Each readout shows the absolute value (e.g. `R18 000`, `10.00%`, `67`) followed by a small delta pill when the slider has moved away from its anchor (e.g. `+R3 000` in green, `-R2 000` in danger red). The pill is empty when the slider is at centre, keeping the readout uncluttered at rest.
+
+Moving a slider mutates the underlying household-panel / market-assumptions inputs directly — there is no secondary state. The household panel and market-assumptions can be expanded to see the actual per-spouse / per-assumption values; the scenario row is just a meeting-time convenience on top. Contribution deltas split between the two spouses proportionally to their baseline share.
+
+Ranges: contributions ±R10 000/month (step R500), return ±2 percentage points (step 0.5 pp), retirement age ±5 years (step 1). The row is suppressed in print via `.no-print`.
 
 ### Sliders
 
