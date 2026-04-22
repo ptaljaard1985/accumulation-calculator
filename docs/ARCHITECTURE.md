@@ -6,7 +6,7 @@ This document describes the internal structure of `retirement_accumulation.html`
 
 Everything lives in one HTML file. The `<head>` holds design tokens in a `:root` block and roughly 600 lines of component CSS. The `<body>` holds the page structure. A single `<script>` block at the bottom holds all the logic.
 
-There is no module system, no build, no bundler. The cost is that the file is ~1,800 lines. The benefit is that anyone can open it, edit it, and understand it without any tooling. Pierre uses it in meetings and sometimes emails it to clients. Breaking the single-file property breaks the product.
+There is no module system, no build, no bundler. The cost is that the file is ~2,100 lines. The benefit is that anyone can open it, edit it, and understand it without any tooling. Pierre uses it in meetings and sometimes emails it to clients. Breaking the single-file property breaks the product.
 
 Chart.js is the only runtime dependency, loaded from `cdnjs.cloudflare.com`.
 
@@ -16,15 +16,19 @@ Chart.js is the only runtime dependency, loaded from `cdnjs.cloudflare.com`.
 <header>              Simple Wealth brand + document title + print button
 <title-block>         H1, subtitle
 <client-bar>          Prepared for / Meeting date / Adviser
-<household-position>  Collapsible. Per-spouse ages, balances, contributions.
+<household-position>  Collapsible. Per-spouse ages, balances, contributions. Spouse headers are click-to-edit.
 <anchor-row>          Youngest/oldest toggle + retirement age input (50-75)
 <capital-events>      Collapsible. Default empty. Inflow/outflow event list.
 <market-assumptions>  Sliders: return, CPI, contribution escalation
-<summary-cards>       Projected monthly income, capital at retirement, years to go
-<delta-bar>           Appears when baseline locked; shows planned vs baseline
-<controls-row>        View toggle (Capital/Breakdown/Table) + Real/Nominal + Lock button
+<summary-cards>       Projected monthly income, capital at retirement, years to go.
+                      Income + capital cards also carry a delta-line when a baseline is locked.
+<controls-row>        View toggle (Capital/Breakdown/Table) + Real/Nominal + Lock button.
+                      The Lock button swaps with a Re-lock + Clear pair when a baseline is locked.
 <chart-card>          One of three views at a time: capital bars, breakdown bars, year table
-<print-summary>       Compliance-ready tables: inputs, outputs, methodology, disclaimer
+<narrative>           "In plain terms" card: three headed sections —
+                      PLANNED (always), BASELINE POSITION + PLANNED SCENARIO (when locked).
+<print-summary>       Compliance-ready tables wrapped in three collapsed <details> accordions:
+                      detail tables, methodology, disclaimer. Forced open at print time.
 <footer>
 ```
 
@@ -47,8 +51,10 @@ var anchor = 'youngest';     // 'youngest' | 'oldest' — which spouse anchors r
 var baseline = null;         // snapshot when user clicks "Lock as baseline"
 var chartCapital = null;
 var chartBreakdown = null;
+var lastProjection = null;   // most recent project() result, cached for out-of-cycle readers
 var eventsStore = [];        // [{ id, age, amount, todaysMoney, kind }]
 var eventSeq = 1;
+var spouseNames = { A: 'Spouse A', B: 'Spouse B' };  // editable via the panel headers
 ```
 
 ### 3. Events store
@@ -77,15 +83,17 @@ The starting-balance tracker is a separate scalar that compounds at `rMonth` wit
 Each pulls from the `project()` result and updates the DOM:
 
 - `updateAnchorRow(p)` — horizon years + retirement calendar year
-- `updateSummary(p)` — three summary cards
-- `updateDelta(p)` — the delta bar when baseline is locked (hidden otherwise)
+- `updateSummary(p)` — three summary cards, plus delta-line rendering inside the income and capital cards when `baseline` is non-null
 - `updateHeaderChips()` — summary chips on collapsible headers
 - `buildCapitalChart(p)` — stacked bar chart (retirement + disc), with optional baseline line
 - `buildBreakdownChart(p)` — stacked bar chart (starting-compounded + contribs + growth)
 - `buildYearTable(p)` — HTML table with sticky year column
-- `updatePrintSummary(p)` — all the print-only tables
+- `updatePrintSummary(p)` — all the print-summary tables
+- `updateNarrative(p)` — the "In plain terms" card; three headed sections with two conditional on baseline
+- `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`
+- `updateBaselineControls()` — swaps the Lock button for Re-lock + Clear when `baseline` is non-null
 
-All are idempotent. `refresh()` calls them in sequence.
+All are idempotent. `refresh()` calls the per-projection ones in sequence; `updateBaselineControls()` is called only from `lockBaseline` / `clearBaseline` / init.
 
 ### 6. `refresh()`
 
@@ -95,21 +103,25 @@ The main update loop. Called on any input change. Sequence:
 updateSliderLabels();
 var inputs = readInputs();
 var p = project(inputs);
+lastProjection = p;
 updateAnchorRow(p);
 updateSummary(p);
-updateDelta(p);
 updateHeaderChips();
 if (chartView === 'capital') buildCapitalChart(p);
 else if (chartView === 'breakdown') buildBreakdownChart(p);
 else if (chartView === 'table') buildYearTable(p);
 updatePrintSummary(p);
+updateNarrative(p);
+renderSpouseLabels();
 ```
 
 ### 7. Baseline lock
 
-`lockBaseline()` captures a full snapshot of the current `{ inputs, project-result, monthlyIncomeReal, finalTotalReal }`. `clearBaseline()` resets to null. When `baseline` is non-null, the delta bar renders, the chart shows a dashed baseline line, and the print summary adds a "Comparison to baseline" section.
+`lockBaseline()` captures a full snapshot of the current `{ inputs, project-result, monthlyIncomeReal, finalTotalReal }`. `clearBaseline()` resets to null. When `baseline` is non-null: the income and capital outcome cards grow delta-lines (`Baseline X · ±Y (±Z%)`), the chart shows a dashed baseline total line, the narrative adds `BASELINE POSITION` and `PLANNED SCENARIO` sections, the print summary adds a "Comparison to baseline" section, and the Lock button swaps for a Re-lock + Clear pair.
 
 **Hard freeze semantics**: the baseline includes return and CPI assumptions, so changing them after lock moves the planned line but not the baseline line. This was a deliberate decision — a "lock" that doesn't lock everything would be confusing in a meeting.
+
+**Escalation-accurate contribution delta**: the `PLANNED SCENARIO` narrative uses `p.totalContribsOverHorizon - baseline.p.totalContribsOverHorizon` for the lifetime contribution delta. Because `project()` already sums each year's escalated contributions into `cumulContribs` (see the `y = 1..years` loop), the subtraction is inherently compound-correct — no need to re-derive a geometric series.
 
 ### 8. Collapsible sections
 
