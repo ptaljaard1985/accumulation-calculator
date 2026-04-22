@@ -4,41 +4,109 @@ This document describes the internal structure of `retirement_accumulation.html`
 
 ## The one-file principle
 
-Everything lives in one HTML file. The `<head>` holds design tokens in a `:root` block and roughly 600 lines of component CSS. The `<body>` holds the page structure. A single `<script>` block at the bottom holds all the logic.
+Everything lives in one HTML file. The `<head>` holds two `<link>` tags (Google Fonts preconnect + stylesheet) and a `<style>` block with design tokens + ~1100 lines of component CSS. The `<body>` holds the page structure. A single `<script>` block at the bottom holds all the logic.
 
-There is no module system, no build, no bundler. The cost is that the file is ~2,100 lines. The benefit is that anyone can open it, edit it, and understand it without any tooling. Pierre uses it in meetings and sometimes emails it to clients. Breaking the single-file property breaks the product.
+There is no module system, no build, no bundler. The cost is that the file is ~3,300 lines. The benefit is that anyone can open it, edit it, and understand it without any tooling. Pierre uses it in meetings and sometimes emails it to clients. Breaking the single-file property breaks the product.
 
-Chart.js is the only runtime dependency, loaded from `cdnjs.cloudflare.com`.
+External runtime dependencies:
+
+- Chart.js 4.4.1 from `cdnjs.cloudflare.com` (charts).
+- Fraunces / Inter Tight / JetBrains Mono from `fonts.googleapis.com` (typography).
+
+Both fail gracefully offline — the page computes without Chart.js (you just see the canvases blank) and renders in system fallback fonts without the webfont CSS.
+
+## Three states, one tree
+
+The root `<div class="calc" data-view="empty|filled|compare" id="calc-root">` wraps every state. Nodes that belong to a specific state carry `data-view-only="empty|filled|compare"` (or `"filled+compare"` for the shared plan-bar). `updateViewVisibility()` runs on every `refresh()`: it reads `deriveViewState()`, writes `data-view` on the root, and sets `display` on every `[data-view-only]` node accordingly.
+
+`deriveViewState()` logic:
+
+```js
+if (baseline) return 'compare';
+if ((nameA || nameB) && anyBalance > 0 && isFinite(retAge)) return 'filled';
+return 'empty';
+```
+
+Note: default inputs are non-empty and defaults of `Spouse A` / `Spouse B` are treated as "not yet named". A fresh open lands on `filled` — the empty state is shown only when someone genuinely clears the form (or we add a "Start fresh" button in the future).
 
 ## Top-to-bottom page structure
 
 ```
-<header>              Simple Wealth brand + document title + print button
-<title-block>         H1, subtitle
-<client-bar>          Prepared for / Meeting date / Adviser
-<household-position>  Collapsible. Per-spouse ages, balances, contributions, plus the
-                      retire-when anchor row (youngest/oldest toggle + retirement age
-                      input). Spouse headers are click-to-edit.
-<capital-events>      Collapsible. Default empty. Inflow/outflow event list.
-<market-assumptions>  Collapsible. Sliders: return, CPI, contribution escalation.
-<summary-cards>       Projected monthly income, capital at retirement, years to go.
-                      Income + capital cards also carry a delta-line when a baseline is locked.
-<scenario-row>        Shown only when a baseline is locked. Four sliders centred on
-                      baseline values: retirement contributions, discretionary
-                      contributions, expected return, retirement age. Moving a slider
-                      mutates the underlying household/market inputs.
-<controls-row>        View toggle (Capital/Breakdown/Table) + Real/Nominal + Lock button.
-                      The Lock button swaps with a Re-lock + Clear pair when a baseline is locked.
-<chart-card>          One of three views at a time: capital bars, breakdown bars, year table
-<narrative>           "In plain terms" card. Two layouts:
-                      no baseline: CURRENT POSITION (one section).
-                      baseline locked: BASELINE POSITION + PLANNED SCENARIO.
-<print-summary>       Compliance-ready tables wrapped in three collapsed <details> accordions:
-                      detail tables, methodology, disclaimer. Forced open at print time.
-<footer>
-```
+<div class="page">
+  <div class="calc" data-view="filled" id="calc-root">
 
-The household-position, capital-events, and market-assumptions sections are each collapsible via click on their section header. Each shows a summary chip when collapsed (e.g. "40/40 · R3.5m capital · R20k/mo in · retiring at 65" on household, "2 inflows · 1 outflow" on events, "10.00% return · 5.00% CPI · 6.00% escalation" on market assumptions).
+    <!-- Hidden canonical meta fields (print summary uses these) -->
+    <input type="hidden" id="client-name">
+    <input type="hidden" id="client-date">
+    <input type="hidden" id="adviser-name">
+
+    <!-- STATE 1 · Empty title plate -->
+    <section class="canvas-empty" data-view-only="empty">
+      ... title plate, two-column spouse setup, foot band, dashed preview ...
+    </section>
+
+    <!-- STATE 2 & 3 shared · Plan-inputs bar -->
+    <div class="plan-bar" data-view-only="filled+compare" data-open="false">
+      <div class="plan-bar-row">
+        logo + client name + 5 fact cells + Edit plan toggle
+      </div>
+      <div class="plan-bar-drawer">
+        col I: household (both spouses with editable names + ages + 4 fields)
+        col II: retirement (anchor row + retire-age) + capital events
+        col III: market assumptions (3 thin sliders) + meeting (client-name + date edit fields)
+      </div>
+    </div>
+
+    <!-- STATE 2 canvas head -->
+    <div class="canvas-head" data-view-only="filled">
+      eyebrow + serif headline "At 65, R ___ a month — comfortably" + sub
+      + Real/Nominal toggle + Lock as baseline button
+    </div>
+
+    <!-- STATE 3 canvas head (compact) -->
+    <div class="canvas-head compact" data-view-only="compare">
+      eyebrow + one-line headline
+      + Real/Nominal toggle + Clear baseline + Re-lock
+    </div>
+
+    <!-- STATE 2 body -->
+    <div data-view-only="filled">
+      <div class="chart-card">
+        legend + Capital/Breakdown/Table seg + #chart-capital / #chart-breakdown / #year-table
+      </div>
+      <div class="outcome-strip">
+        primary (Monthly income) + Household capital + Years to retirement
+      </div>
+      <section class="narrative">gold rule + "In plain terms"</section>
+      <div class="canvas-foot">illustrative line + Table view + Print/PDF</div>
+    </div>
+
+    <!-- STATE 3 body -->
+    <div data-view-only="compare">
+      <div class="compare big">
+        <div class="compare-card baseline">
+          hero number (muted) + #chart-compare-baseline (faded) + meta rows
+        </div>
+        <div class="compare-card scenario">
+          hero number (navy) + delta chip + #chart-compare-scenario + meta rows
+        </div>
+      </div>
+      <div class="compare-legend">retirement fund · discretionary</div>
+      <div class="scenario-levers">4-column slider grid</div>
+      <div class="canvas-foot">illustrative line + Print/PDF</div>
+    </div>
+
+    <!-- Compliance appendix — same for all states -->
+    <div class="print-summary">
+      <details class="accordion" data-accordion="tables">Detail tables ...</details>
+      <details class="accordion" data-accordion="methodology">Methodology ...</details>
+      <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+    </div>
+
+    <div class="footer-meta">Simple Wealth · Retirement Accumulation · {date}</div>
+  </div>
+</div>
+```
 
 ## The JS, bottom to top
 
@@ -46,61 +114,50 @@ The `<script>` block contains one IIFE. Inside it, in roughly this order:
 
 ### 1. Formatting helpers
 
-`fmtR(n)` produces rand-formatted strings with spaces as thousand separators. `fmtShort(n)` produces "R4.3m" / "R450k" abbreviations for axis labels and tooltips. `fmtPct`, `parseCurrency`, `parseAge`, `set(id, value)`, `read(id)` — pure utility, no state.
+`fmtR(n)` — rand strings with space thousand separators (`R6 000 000`). `fmtShort(n)` — abbreviated (`R4.3m` / `R450k`) for axis labels, tooltips, and now the outcome-strip capital + headline sub-line. `fmtPct`, `parseCurrency`, `parseAge`, `set(id, value)`, `read(id)` — pure utilities.
 
 ### 2. State variables
 
 ```js
-var mode = 'pv';             // 'pv' | 'fv' — real vs nominal display
+var mode = 'pv';             // 'pv' | 'fv' — real vs nominal display (internal name kept for JS-test stability)
 var chartView = 'capital';   // 'capital' | 'breakdown' | 'table'
-var anchor = 'youngest';     // 'youngest' | 'oldest' — which spouse anchors retirement
-var baseline = null;         // snapshot when user clicks "Lock as baseline"
+var anchor = 'youngest';     // 'youngest' | 'oldest'
+var baseline = null;         // { inputs, p, monthlyIncomeReal, finalTotalReal } snapshot when locked
 var chartCapital = null;
 var chartBreakdown = null;
-var lastProjection = null;   // most recent project() result, cached for out-of-cycle readers
+var chartCompareBaseline = null;
+var chartCompareScenario = null;
+var lastProjection = null;   // most recent project() result
 var eventsStore = [];        // [{ id, age, amount, todaysMoney, kind }]
 var eventSeq = 1;
-var spouseNames = { A: 'Spouse A', B: 'Spouse B' };  // editable via the panel headers
-var scenarioAnchors = null;  // captured from baseline.inputs when locked; drives the scenario slider row
+var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
+var scenarioAnchors = null;  // captured from baseline.inputs on lock; drives the scenario levers
 ```
 
 ### 3. Events store
 
-`newEvent()` produces a sensible default (inflow, age = reference + 10 years, R500k PV). `renderEvents()` paints the DOM from `eventsStore`. Event delegation on `#events-list` handles input/change/delete via `onEventInput` and `onEventClick`. `readEvents()` returns a sanitised list for the projection.
-
-The events list re-renders only the year label on each input change, not the whole list — otherwise typing in the amount field would lose focus every keystroke.
+`newEvent()` produces a default (inflow, age = reference + 10, R500k PV). `renderEvents()` paints the DOM — the new markup uses a 4-column grid (kind · age · amount+basis+year · delete) rather than the old 6-column one. Event delegation on `#events-list` handles input/change/delete. `readEvents()` returns the sanitised list.
 
 ### 4. `project(inputs)` — the core function
 
-Takes an inputs dict, returns a result object with per-year series. Always called with fresh inputs on every `refresh()`.
-
-The loop iterates `y = 1` through `years` (where `years = retirement_age − reference_spouse_age`, with a minimum of 1).
-
-Each iteration:
-
-1. 12 monthly compoundings: `retA = retA × (1 + rMonth) + contribRetA`, same for retB, discA, discB.
-2. Escalate all four monthly contributions by the annual escalation rate for next year.
-3. Apply any events scheduled at this year's end (inflow → proportional add to disc; outflow → proportional remove from disc, capped at available).
-4. Push all four per-spouse balances, household totals, cumulative contributions, and the starting-balance-compounded tracker to the series.
-
-The starting-balance tracker is a separate scalar that compounds at `rMonth` with no contributions. Used for the growth-breakdown decomposition.
+**Unchanged from Session 3.** Takes an inputs dict, returns a result object with per-year series. Always called with fresh inputs on every `refresh()`. Math details live in `CALCULATIONS.md`. The shape of its return value is the stable contract consumed by every rendering function.
 
 ### 5. Rendering functions
 
 Each pulls from the `project()` result and updates the DOM:
 
-- `updateAnchorRow(p)` — horizon years + retirement calendar year
-- `updateSummary(p)` — three summary cards, plus delta-line rendering inside the income and capital cards when `baseline` is non-null
-- `updateHeaderChips()` — summary chips on collapsible headers
-- `buildCapitalChart(p)` — stacked bar chart (retirement + disc), with optional baseline line
-- `buildBreakdownChart(p)` — stacked bar chart (starting-compounded + contribs + growth)
-- `buildYearTable(p)` — HTML table with sticky year column
-- `updatePrintSummary(p)` — all the print-summary tables
-- `updateNarrative(p)` — the "In plain terms" card; three headed sections with two conditional on baseline
-- `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`
-- `updateBaselineControls()` — swaps the Lock button for Re-lock + Clear when `baseline` is non-null
-
-All are idempotent. `refresh()` calls the per-projection ones in sequence; `updateBaselineControls()` is called only from `lockBaseline` / `clearBaseline` / init.
+- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 headline numbers (`#headline-age`, `#headline-income`, `#headline-capital`). Unconditional — no baseline-delta logic here anymore.
+- `updatePlanBar(p)` — populates the 5 plan-bar fact cells (`#fact-household`, `#fact-capital`, `#fact-contrib`, `#fact-retage`, `#fact-market`), the drawer meta labels (household completion, retire-at, market-summary, events count), the events helper's ref-spouse name, and the plan-bar "Prepared for" line (with placeholder styling when the client-name field is empty).
+- `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
+- `buildCapitalChart(p)` — State 2 capital chart. Gold discretionary on bottom, navy retirement on top. No baseline-overlay line (State 3 replaces that entire idea).
+- `buildBreakdownChart(p)` — three-layer stacked bars (greys + gold).
+- `buildYearTable(p)` — HTML table inside the chart-card slot, sticky year column.
+- `buildCompareCharts(p)` → `ensureCompareChart(...)` — State 3's two independent Chart.js instances. Both share the same y-ceiling (`max(baseline.total, scenario.total) × 1.05`) so bars line up visually. Baseline chart renders at 0.35 opacity (alpha applied to the rgba fills, not via a CSS filter — filter would wreck Chart.js hover).
+- `updateCompareCards(p)` — populates the hero numbers, sub-lines, meta rows, and the delta chip on the scenario card. `setMetaDelta(id, delta, kind)` writes the inline `em` deltas beside changed meta values.
+- `updatePrintSummary(p)` — all the compliance-appendix tables. Unchanged from earlier sessions.
+- `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine.
+- `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`.
+- `updateBaselineControls()` — now a hook (kept for future use). Button visibility is driven by `data-view-only` on the two canvas-heads, so it has no work to do.
 
 ### 6. `refresh()`
 
@@ -111,66 +168,83 @@ updateSliderLabels();
 var inputs = readInputs();
 var p = project(inputs);
 lastProjection = p;
-updateAnchorRow(p);
 updateSummary(p);
-updateHeaderChips();
-if (chartView === 'capital') buildCapitalChart(p);
-else if (chartView === 'breakdown') buildBreakdownChart(p);
-else if (chartView === 'table') buildYearTable(p);
+updatePlanBar(p);
+updateViewVisibility();
+if (!baseline) {
+  if (chartView === 'capital') buildCapitalChart(p);
+  else if (chartView === 'breakdown') buildBreakdownChart(p);
+  else if (chartView === 'table') buildYearTable(p);
+} else {
+  buildCompareCharts(p);
+}
+updateCompareCards(p);
 updatePrintSummary(p);
 updateNarrative(p);
 renderSpouseLabels();
+updateScenarioReadouts();
 ```
+
+The chart branch is skipped for the view that isn't active — main charts only build in State 2, compare charts only build in State 3. This avoids Chart.js measuring a `display:none` parent and painting a blank bitmap.
 
 ### 7. Baseline lock
 
-`lockBaseline()` captures a full snapshot of the current `{ inputs, project-result, monthlyIncomeReal, finalTotalReal }` AND captures scenario anchors (see §10). `clearBaseline()` resets both to null and hides the scenario slider row. When `baseline` is non-null: the income and capital outcome cards grow delta-lines (`Baseline X · ±Y (±Z%)`), the chart shows a dashed baseline total line, the narrative switches from the single `CURRENT POSITION` section to `BASELINE POSITION` + `PLANNED SCENARIO`, the print summary adds a "Comparison to baseline" section, the scenario slider row appears below the outcome cards, and the Lock button swaps for a Re-lock + Clear pair.
+`lockBaseline()` captures `{ inputs, p, monthlyIncomeReal, finalTotalReal }` AND captures scenario anchors. `clearBaseline()` resets both. The two compare Chart.js instances persist across lock/clear cycles — re-locking just updates their data and animates.
 
-**Hard freeze semantics**: the baseline includes return and CPI assumptions, so changing them after lock moves the planned line but not the baseline line. This was a deliberate decision — a "lock" that doesn't lock everything would be confusing in a meeting.
+**Hard freeze semantics**: the baseline includes return and CPI assumptions. Changing them after lock moves the planned line but not the baseline line. Deliberate — a "lock" that doesn't lock everything would be confusing in a meeting.
 
-**Escalation-accurate contribution delta**: the `PLANNED SCENARIO` narrative uses `p.totalContribsOverHorizon - baseline.p.totalContribsOverHorizon` for the lifetime contribution delta. Because `project()` already sums each year's escalated contributions into `cumulContribs` (see the `y = 1..years` loop), the subtraction is inherently compound-correct — no need to re-derive a geometric series.
+### 8. Scenario sliders (levers panel)
 
-### 8. Collapsible sections
+Unchanged logic from Session 3. `captureScenarioAnchors()` on lock. `configureScenarioSliders()` sets each slider's range centred on the baseline value, clamped to the main-slider bounds. Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`, which write back into the underlying household / return / retirement-age inputs and kick `refresh()`. Contribution deltas split proportionally between spouses by baseline share.
 
-`toggleCollapse(headerId, bodyId)` animates max-height transitions. Opening a collapsed section is slightly tricky: you can't transition to `max-height: auto`, so the function sets `max-height: <scrollHeight>` and then clears it after the transition ends to avoid capping legitimate height growth later.
+`updateScenarioReadouts()` re-reads the current underlying inputs on every `refresh()` and syncs each slider's thumb + delta pill.
 
-### 9. Event wiring
+### 9. State 1 → canonical input sync
 
-At the end: slider listeners, text-input listeners with blur-to-format, toggle listeners, view switcher, baseline lock, add-event button, section collapse listeners. Everything ends by calling `refresh()`.
+Empty-state fields carry `data-sync-to="hp-ret-A"` etc. — on blur, their value (cleaned of non-digit chars) is written into the canonical drawer input, which fires its own `input` + `blur` events so the normal refresh pipeline kicks in. Spouse first-name inputs carry `data-sync-spouse-name="A"` and write into `spouseNames` directly.
 
-### 10. Planned-scenario sliders
+The family-name editable span (`#family-name`) is a `contenteditable` in the title plate. On focus, the placeholder class is stripped. On blur, if empty it reverts to the placeholder; otherwise it writes the trimmed text into the hidden `#client-name` (stripping a leading "the " and trailing " family" if present) and mirrors into the drawer's `#client-name-edit`.
 
-A meeting-time adjustment surface centred on the locked baseline. Visible only while a baseline is locked. Four sliders: retirement contributions (±R10 000 / month, step R500), discretionary contributions (±R10 000, step R500), expected return (±2 percentage points, step 0.5 pp), retirement age (±5 years, step 1).
+### 10. Drawer toggle
 
-`captureScenarioAnchors()` reads `baseline.inputs` on lock and stores the reference values. `configureScenarioSliders()` sets each slider's `min`/`max`/`step`/`value` based on those anchors (clamped to the existing main-slider ranges so the global 50–75 retirement-age bound and 3–15% return bound still hold).
+A small IIFE at the bottom wires `#btn-edit-plan` to toggle `data-open` on the plan-bar. The CSS rule `.plan-bar[data-open="true"] .plan-bar-drawer { display: grid; }` does the rest. No animation — the drawer appears/vanishes instantly.
 
-Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`. Contribution sliders split any household-total delta proportionally between the two spouses based on their baseline share (zero-zero baseline falls back to 50/50). The underlying household-panel / return-slider / retirement-age inputs are written back directly, then `refresh()` runs the normal projection pipeline.
+### 11. Chart resize (print)
 
-`updateScenarioReadouts()` runs from `refresh()` and re-reads the current underlying inputs to sync each slider's thumb position and update the delta pills. This means direct edits in the household panel or the market-assumptions sliders also move the scenario thumbs — the scenario row reflects the current state, it doesn't hold its own truth.
+`resizeChartsToWrap()` now iterates three chart containers: the main `.chart-wrap`, `#chart-compare-baseline`'s parent, and `#chart-compare-scenario`'s parent. For each, it reads `clientWidth`/`clientHeight` and calls `chart.resize(w, h)` with explicit dimensions — inside `requestAnimationFrame` so the browser has flushed the `@media print` layout before Chart.js measures. Null-safe on every chart variable (they can be null in the state that's not active).
+
+Called by the `beforeprint` / `afterprint` / `matchMedia('print') change` handlers. The matchMedia path is what catches headless `--print-to-pdf` flows, which do not fire `beforeprint`.
+
+### 12. Event wiring
+
+At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event. Everything ends by calling `refresh()`.
 
 ## Data flow on a user interaction
 
 1. User moves a slider or changes an input.
 2. `input` listener fires → `refresh()`.
 3. `project()` re-reads all inputs and re-runs the full year loop.
-4. Rendering functions pull from the fresh `p` object.
-5. Chart.js `update('none')` call (if chart exists) or a fresh chart is built.
+4. `updatePlanBar` + `updateViewVisibility` run before any chart build.
+5. Rendering functions pull from the fresh `p` object.
+6. Chart.js `update('none')` call (if chart exists) or a fresh chart is built.
 
-There is no caching, no debouncing, no animation. The whole projection re-runs in a few milliseconds; for a 25–35 year horizon it's imperceptible.
+No caching, no debouncing, no animation.
 
 ## Things worth knowing
 
 - `updatePrintSummary(p)` needs `p`; don't call it with a stale projection. `refresh()` always produces a fresh `p` and passes it through.
-- The `baseline.p` object is a full projection snapshot. Chart access is `baseline.p.real.total` or `baseline.p.nominal.total`.
-- Chart.js dataset visibility for the baseline line is toggled by pushing/removing the dataset entirely on each rebuild, not by `hidden: true`. Simpler and avoids colour-assignment drift.
-- The collapsible-body's `max-height` inline style is manipulated by `toggleCollapse`; don't override it from elsewhere.
-- Event IDs are prefixed `ev-N` where N is a monotonically incrementing counter. Don't rely on N — treat them as opaque.
-- Events are applied at the END of each year, AFTER growth and contributions for that year. This means a year-5 event lands on a balance that has already grown 5 times and received 5 years of contributions.
+- `baseline.p` is a full projection snapshot. Chart access is `baseline.p.real.total` or `baseline.p.nominal.total`.
+- Compare Chart.js instances persist across lock/clear cycles — `ensureCompareChart` updates in place when the chart already exists.
+- Empty-state input sync is one-way (State 1 → canonical). There's no reverse — if the user somehow lands back in State 1 after entering data, the State 1 fields won't pre-populate. Not a real flow today.
+- The hidden `#client-name`/`#client-date`/`#adviser-name` inputs are the source of truth for the print-summary appendix. The drawer's `-edit` fields and the title-plate family-name span both write into them.
+- Both the `#btn-pv`/`#btn-fv` pair (State 2) and `#btn-pv-cmp`/`#btn-fv-cmp` pair (State 3) exist in the DOM simultaneously but only one is visible via `data-view-only`. `setMode` updates class state on all four so the toggles stay in sync.
+- Internal state variable `mode` is kept at `'pv'` / `'fv'` rather than the spec's `'real'` / `'nominal'` — the JS test harness extracts and exercises this variable by name.
 
 ## What not to add
 
 - **State management libraries.** Global mutable state with `refresh()` is fine for a single-page tool.
-- **Component frameworks.** Rendering is under 200 lines total.
+- **Component frameworks.** Rendering is under 300 lines total.
 - **Async/promises.** Nothing here is async. Keep it that way.
 - **TypeScript.** Would fight the no-build rule.
 - **Persistence.** Calculator is session-only by design. Anything that needs to persist goes to the CRM.
+- **A fourth view state.** Three is the contract. If a new flow is needed, fold it into one of the existing three.

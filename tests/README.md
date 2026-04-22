@@ -29,7 +29,7 @@ Expected output: `37 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 12 tests.
+Location: `tests/js/`. 14 tests.
 
 These exercise the actual JS inside `retirement_accumulation.html` by extracting `project()` via brace-matching and running it under Node. No Jest dependency — just `node run.js` and the built-in `assert` module.
 
