@@ -362,6 +362,39 @@
   }
   .anchor-row .anchor-result strong { color: var(--ink); font-weight: 500; }
 
+  /* Planned scenario sliders (meeting-time adjustment surface, shown only
+     when a baseline is locked). Centered on the baseline values so the
+     adviser can nudge contributions / return / retirement age around a known
+     reference point and watch the outcome cards and chart respond live. */
+  .scenario-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+  }
+  .scenario-row-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  .scenario-row-head .hint {
+    text-transform: none; letter-spacing: 0.2px; font-weight: 400;
+    font-size: 12px; color: var(--ink-muted);
+  }
+  .scenario-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  }
+  .lever .val .delta {
+    margin-left: 6px;
+    font-size: 12px; font-weight: 400;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .lever .val .delta.positive { color: var(--success); }
+  .lever .val .delta.negative { color: var(--danger); }
+
   /* Summary cards */
   .summary {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
@@ -628,10 +661,8 @@
     .client-bar input { border: none !important; }
     /* Hide the input-editing surfaces from page 1. The same data lives in the
        appendix tables on pages 2+. */
-    #hp-header, #events-header,
+    #hp-header, #events-header, #ma-header,
     .collapsible-body,
-    .market-assumptions-panel,
-    .anchor-row,
     .section-header:not(.outcome-header) {
       display: none !important;
     }
@@ -665,7 +696,7 @@
   }
 
   @media (max-width: 900px) {
-    .summary, .client-bar, .hp-row, .assumptions-grid {
+    .summary, .client-bar, .hp-row, .assumptions-grid, .scenario-grid {
       grid-template-columns: 1fr;
     }
     .page { padding: 0 16px 32px; }
@@ -774,7 +805,6 @@
       </div>
     </div>
   </div>
-  </div><!-- /#hp-body -->
 
   <div class="anchor-row">
     <span class="anchor-label">Retire when</span>
@@ -790,6 +820,7 @@
       retirement year: <strong id="anchor-year">—</strong>
     </div>
   </div>
+  </div><!-- /#hp-body -->
 
   <!-- Capital events -->
   <div class="section-header collapsible collapsed" id="events-header">
@@ -806,29 +837,34 @@
     </div>
   </div>
 
-  <div class="section-header">Market assumptions</div>
-  <div class="household-panel market-assumptions-panel">
-    <div class="assumptions-grid">
-      <div class="lever">
-        <div class="lever-head">
-          <label>Expected investment return (nominal, p.a.)</label>
-          <span class="val" id="return-out">10.0%</span>
+  <div class="section-header collapsible collapsed" id="ma-header">
+    <span>Market assumptions <span class="summary-chip" id="ma-summary-chip">—</span></span>
+    <span class="chev">▾</span>
+  </div>
+  <div class="collapsible-body collapsed" id="ma-body" style="max-height: 0;">
+    <div class="household-panel market-assumptions-panel">
+      <div class="assumptions-grid">
+        <div class="lever">
+          <div class="lever-head">
+            <label>Expected investment return (nominal, p.a.)</label>
+            <span class="val" id="return-out">10.0%</span>
+          </div>
+          <input type="range" min="3" max="15" step="0.25" value="10" id="return">
         </div>
-        <input type="range" min="3" max="15" step="0.25" value="10" id="return">
-      </div>
-      <div class="lever">
-        <div class="lever-head">
-          <label>Expected inflation (CPI)</label>
-          <span class="val" id="cpi-out">5.0%</span>
+        <div class="lever">
+          <div class="lever-head">
+            <label>Expected inflation (CPI)</label>
+            <span class="val" id="cpi-out">5.0%</span>
+          </div>
+          <input type="range" min="2" max="10" step="0.25" value="5" id="cpi">
         </div>
-        <input type="range" min="2" max="10" step="0.25" value="5" id="cpi">
-      </div>
-      <div class="lever">
-        <div class="lever-head">
-          <label>Annual contribution escalation</label>
-          <span class="val" id="esc-out">6.0%</span>
+        <div class="lever">
+          <div class="lever-head">
+            <label>Annual contribution escalation</label>
+            <span class="val" id="esc-out">6.0%</span>
+          </div>
+          <input type="range" min="0" max="12" step="0.25" value="6" id="esc">
         </div>
-        <input type="range" min="0" max="12" step="0.25" value="6" id="esc">
       </div>
     </div>
   </div>
@@ -859,6 +895,43 @@
       <div class="label">Years until retirement</div>
       <div class="value" id="sum-years">—</div>
       <div class="sub-value" id="sum-years-sub">retiring in —</div>
+    </div>
+  </div>
+
+  <div class="scenario-row no-print" id="scenario-row" style="display: none;">
+    <div class="scenario-row-head">
+      <span>Planned scenario levers</span>
+      <span class="hint">Centered on the locked baseline. Nudge to explore.</span>
+    </div>
+    <div class="scenario-grid">
+      <div class="lever">
+        <div class="lever-head">
+          <label>Retirement contributions</label>
+          <span class="val"><span id="scenario-ret-out">R0</span><span class="delta" id="scenario-ret-delta"></span></span>
+        </div>
+        <input type="range" id="scenario-ret" min="0" max="0" step="500" value="0">
+      </div>
+      <div class="lever">
+        <div class="lever-head">
+          <label>Discretionary contributions</label>
+          <span class="val"><span id="scenario-disc-out">R0</span><span class="delta" id="scenario-disc-delta"></span></span>
+        </div>
+        <input type="range" id="scenario-disc" min="0" max="0" step="500" value="0">
+      </div>
+      <div class="lever">
+        <div class="lever-head">
+          <label>Expected return</label>
+          <span class="val"><span id="scenario-return-out">0.00%</span><span class="delta" id="scenario-return-delta"></span></span>
+        </div>
+        <input type="range" id="scenario-return" min="0" max="0" step="0.5" value="0">
+      </div>
+      <div class="lever">
+        <div class="lever-head">
+          <label>Retirement age</label>
+          <span class="val"><span id="scenario-retage-out">65</span><span class="delta" id="scenario-retage-delta"></span></span>
+        </div>
+        <input type="range" id="scenario-retage" min="50" max="75" step="1" value="65">
+      </div>
     </div>
   </div>
 
@@ -908,18 +981,17 @@
 
   <section class="narrative" id="narrative-summary">
     <h2 class="narrative-title">In plain terms</h2>
-    <div class="narrative-section" id="narrative-planned">
-      <h3>Planned</h3>
-      <p id="narrative-planned-p1">—</p>
-      <p id="narrative-planned-p2">—</p>
+    <div class="narrative-section" id="narrative-current-section">
+      <h3>Current position</h3>
+      <p id="narrative-current-p"></p>
     </div>
     <div class="narrative-section" id="narrative-baseline-section" style="display: none;">
       <h3>Baseline position</h3>
-      <p id="narrative-baseline-p">—</p>
+      <p id="narrative-baseline-p"></p>
     </div>
     <div class="narrative-section" id="narrative-scenario-section" style="display: none;">
       <h3>Planned scenario</h3>
-      <p id="narrative-scenario-p">—</p>
+      <p id="narrative-scenario-p"></p>
     </div>
   </section>
 
@@ -1057,6 +1129,10 @@
   var eventSeq = 1;
   var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
   var SPOUSE_NAME_MAX = 30;
+  // Captured from baseline.inputs when a baseline is locked; drives the
+  // planned-scenario slider row (centre, range, and delta readouts).
+  // null whenever no baseline is locked — the slider row is hidden in that case.
+  var scenarioAnchors = null;
 
   // Returns { younger, older } resolved to current names.
   // Ties break to A, matching Math.min/Math.max behaviour in the projection.
@@ -1772,112 +1848,163 @@
     }
   }
 
+  // Narrative copy rule: no em-dashes (U+2014) in any string below. Use
+  // commas, full stops, or rephrase. The narrative is read aloud in client
+  // meetings; em-dashes don't parse audibly and read as dashboard shorthand.
+  function eventsSentence(events){
+    var nIn = 0, nOut = 0;
+    for (var i = 0; i < events.length; i++){
+      if (events[i].kind === 'inflow') nIn++; else nOut++;
+    }
+    var parts = [];
+    if (nIn) parts.push(nIn + ' inflow' + (nIn > 1 ? 's' : ''));
+    if (nOut) parts.push(nOut + ' outflow' + (nOut > 1 ? 's' : ''));
+    return 'The projection also applies ' + parts.join(' and ') +
+           ' to the discretionary portfolio along the way.';
+  }
+
+  function describeCurrentPosition(p){
+    var inputs = p.inputs;
+    var hhMonthly = totalMonthlyContribs(inputs);
+    var last = p.real.total.length - 1;
+    var retShare = p.real.total[last] > 0
+      ? Math.round(100 * p.real.ret[last] / p.real.total[last])
+      : 0;
+    var discShare = Math.max(0, 100 - retShare);
+
+    var sentences = [];
+    sentences.push(
+      'At a <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and <strong>' +
+      fmtPct(inputs.cpi * 100) + '</strong> inflation, with combined monthly contributions of <strong>' +
+      fmtR(hhMonthly) + '</strong> escalating at ' + fmtPct(inputs.esc * 100) + ' per year, ' +
+      'the household is projected to accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> in today’s money by ' +
+      p.retirementYearCalendar + ' (about ' + fmtShort(p.finalTotalNom) + ' in future rands).'
+    );
+    if (p.real.total[last] > 0){
+      sentences.push(
+        'Roughly ' + retShare + '% of that sits in retirement-fund savings and ' +
+        discShare + '% in discretionary.'
+      );
+    }
+    sentences.push(
+      'Drawn at 5% per year, the projected capital supports about <strong>' +
+      fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement, in today’s money and before tax.'
+    );
+    if (p.events && p.events.length > 0){
+      sentences.push(eventsSentence(p.events));
+    }
+    return sentences.join(' ');
+  }
+
+  function describeBaselinePosition(bline){
+    var bp = bline.p;
+    var inputs = bline.inputs;
+    var hhMonthly = totalMonthlyContribs(inputs);
+
+    var sentences = [];
+    sentences.push(
+      'The baseline assumes a <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and <strong>' +
+      fmtPct(inputs.cpi * 100) + '</strong> inflation, with combined monthly contributions of <strong>' +
+      fmtR(hhMonthly) + '</strong> escalating at ' + fmtPct(inputs.esc * 100) + ' per year.'
+    );
+    sentences.push(
+      'On those numbers the household builds up to <strong>' + fmtR(bp.finalTotalReal) + '</strong> in today’s money by ' +
+      bp.retirementYearCalendar + ' (about ' + fmtShort(bp.finalTotalNom) + ' in future rands), ' +
+      'which supports roughly <strong>' + fmtR(bp.monthlyIncomeReal) + ' per month</strong> in retirement, ' +
+      'in today’s money and before tax.'
+    );
+    if (bp.events && bp.events.length > 0){
+      sentences.push(eventsSentence(bp.events));
+    }
+    return sentences.join(' ');
+  }
+
+  function describePlannedScenario(p, bline){
+    var bp = bline.p;
+    var inputs = p.inputs;
+    var bInputs = bline.inputs;
+
+    var hhMonthly = totalMonthlyContribs(inputs);
+    var bHhMonthly = totalMonthlyContribs(bInputs);
+    var contribMonthlyDelta = hhMonthly - bHhMonthly;
+    var totalContribDelta = p.totalContribsOverHorizon - bp.totalContribsOverHorizon;
+    var incomeDelta = p.monthlyIncomeReal - bp.monthlyIncomeReal;
+    var capitalDelta = p.finalTotalReal - bp.finalTotalReal;
+    var incomeAnnualDelta = incomeDelta * 12;
+    var pctChange = bp.monthlyIncomeReal > 0
+      ? Math.round(100 * incomeDelta / bp.monthlyIncomeReal)
+      : 0;
+
+    var sentences = [];
+
+    sentences.push(
+      'Under the current plan the assumed return is <strong>' + fmtPct(inputs.rNom * 100) + '</strong> ' +
+      'and inflation is <strong>' + fmtPct(inputs.cpi * 100) + '</strong>, with combined monthly contributions ' +
+      'of <strong>' + fmtR(hhMonthly) + '</strong> escalating at ' + fmtPct(inputs.esc * 100) + ' per year.'
+    );
+
+    sentences.push(
+      'The household is projected to accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> in today’s money by ' +
+      p.retirementYearCalendar + ', supporting <strong>' + fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement ' +
+      '(today’s money, before tax).'
+    );
+
+    if (Math.abs(contribMonthlyDelta) >= 1){
+      if (contribMonthlyDelta > 0){
+        sentences.push(
+          'That is <strong>' + fmtR(contribMonthlyDelta) + ' per month</strong> more in contributions than the baseline today, ' +
+          'which adds up to ' + fmtShort(Math.abs(totalContribDelta)) + ' in extra contributions over the ' +
+          p.years + '-year horizon (future rands).'
+        );
+      } else {
+        sentences.push(
+          'That is <strong>' + fmtR(Math.abs(contribMonthlyDelta)) + ' per month</strong> less in contributions than the baseline today, ' +
+          'saving ' + fmtShort(Math.abs(totalContribDelta)) + ' over the ' + p.years + '-year horizon (future rands).'
+        );
+      }
+    } else {
+      sentences.push('Monthly contributions match the baseline.');
+    }
+
+    if (Math.abs(capitalDelta) >= 1){
+      var capitalWord = capitalDelta > 0 ? 'more' : 'less';
+      var incomeWord = incomeDelta > 0 ? 'more' : 'less';
+      sentences.push(
+        'In today’s money, retirement capital ends up <strong>' + fmtR(Math.abs(capitalDelta)) + '</strong> ' +
+        capitalWord + ' than the baseline, about ' + Math.abs(pctChange) + '% ' + capitalWord + ' capital at retirement.'
+      );
+      if (Math.abs(incomeDelta) >= 1){
+        sentences.push(
+          'Monthly retirement income is <strong>' + fmtR(Math.abs(incomeDelta)) + '</strong> ' + incomeWord +
+          ' per month, about ' + fmtR(Math.abs(incomeAnnualDelta)) + ' ' + incomeWord + ' per year before tax.'
+        );
+      }
+    } else {
+      sentences.push('Retirement capital and monthly income match the baseline.');
+    }
+
+    if (p.events && p.events.length > 0){
+      sentences.push(eventsSentence(p.events));
+    }
+
+    return sentences.join(' ');
+  }
+
   function updateNarrative(p){
     var setHTML = function(id, html){ document.getElementById(id).innerHTML = html; };
     var show = function(id, on){ document.getElementById(id).style.display = on ? '' : 'none'; };
 
-    var inputs = p.inputs;
-    var last = p.real.total.length - 1;
-    var retShare = p.real.total[last] > 0 ? Math.round(100 * p.real.ret[last] / p.real.total[last]) : 0;
-    var discShare = Math.max(0, 100 - retShare);
-
-    var hhMonthly = totalMonthlyContribs(inputs);
-    var spouseAMonthly = inputs.contribRetA + inputs.contribDiscA;
-    var spouseBMonthly = inputs.contribRetB + inputs.contribDiscB;
-    var shareA = hhMonthly > 0 ? Math.round(100 * spouseAMonthly / hhMonthly) : 0;
-    var shareB = Math.max(0, 100 - shareA);
-    var nameA = spouseNames.A;
-    var nameB = spouseNames.B;
-
-    // Planned — paragraph 1: headline
-    setHTML('narrative-planned-p1',
-      'At an assumed <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and ' +
-      '<strong>' + fmtPct(inputs.cpi * 100) + '</strong> inflation, the household is projected to ' +
-      'accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> by ' + p.retirementYearCalendar +
-      ' — roughly ' + fmtR(p.finalTotalNom) + ' in future rands. ' +
-      'Drawn at 5% per year this supports <strong>' + fmtR(p.monthlyIncomeReal) + '/month</strong> ' +
-      'in retirement, in today’s money and before tax.'
-    );
-
-    // Planned — paragraph 2: contributions + composition (+ events sentence if any)
-    var p2 =
-      'Starting from ' + fmtR(p.nominal.total[0]) + ' today, combined contributions of ' +
-      fmtR(hhMonthly) + '/month — escalating ' + fmtPct(inputs.esc * 100) + ' per year — ' +
-      'add up to ' + fmtR(p.totalContribsOverHorizon) + ' over the ' + p.years + '-year horizon. ' +
-      'Of the projected capital, ' + retShare + '% sits in retirement-fund savings and ' +
-      discShare + '% in discretionary investments.';
-    if (hhMonthly > 0){
-      p2 += ' ' + nameA + ' contributes ' + shareA + '% of the household’s monthly savings today; ' +
-            nameB + ' contributes the remaining ' + shareB + '%.';
-    }
-    if (p.events && p.events.length > 0){
-      var nIn = p.events.filter(function(e){ return e.kind === 'inflow'; }).length;
-      var nOut = p.events.length - nIn;
-      var parts = [];
-      if (nIn) parts.push(nIn + ' inflow' + (nIn > 1 ? 's' : ''));
-      if (nOut) parts.push(nOut + ' outflow' + (nOut > 1 ? 's' : ''));
-      p2 += ' This view also includes ' + parts.join(' and ') +
-            ' — inflows added to the discretionary portfolio, outflows drawn from it.';
-    }
-    setHTML('narrative-planned-p2', p2);
-
-    // Baseline + Planned scenario sections appear only when a baseline is locked.
     if (baseline){
-      var bp = baseline.p;
-
-      setHTML('narrative-baseline-p',
-        'At the baseline assumptions, the household accumulates <strong>' +
-        fmtR(bp.finalTotalReal) + '</strong> in today’s money by ' + bp.retirementYearCalendar +
-        ', supporting <strong>' + fmtR(bp.monthlyIncomeReal) + '/month</strong> in retirement ' +
-        '(today’s money, before tax).'
-      );
+      show('narrative-current-section', false);
       show('narrative-baseline-section', true);
-
-      var incomeDelta = p.monthlyIncomeReal - bp.monthlyIncomeReal;
-      var capitalDelta = p.finalTotalReal - bp.finalTotalReal;
-      var totalContribDelta = p.totalContribsOverHorizon - bp.totalContribsOverHorizon;
-      var contribMonthlyDelta = totalMonthlyContribs(inputs) - totalMonthlyContribs(baseline.inputs);
-      var incomeAnnualDelta = incomeDelta * 12;
-      var pctChange = bp.monthlyIncomeReal > 0
-        ? Math.round(100 * incomeDelta / bp.monthlyIncomeReal)
-        : 0;
-
-      var sign = incomeDelta >= 0 ? '+' : '−';
-      var improvWord = incomeDelta >= 0 ? 'improvement' : 'reduction';
-      var capitalWord = capitalDelta >= 0 ? 'additional' : 'lower';
-      var contribsWord = totalContribDelta >= 0 ? 'extra' : 'less';
-      var capSign = capitalDelta >= 0 ? '+' : '−';
-      var annualSign = incomeAnnualDelta >= 0 ? '+' : '−';
-
-      var contribClause;
-      if (Math.abs(contribMonthlyDelta) < 1){
-        contribClause = 'at the same monthly contributions';
-      } else if (contribMonthlyDelta > 0){
-        contribClause = 'at a cost of <strong>+' + fmtR(contribMonthlyDelta) + '/month</strong> in additional contributions today';
-      } else {
-        contribClause = 'while freeing up <strong>' + fmtR(Math.abs(contribMonthlyDelta)) + '/month</strong> in contributions today';
-      }
-
-      var scenario =
-        'Compared with the locked baseline, this plan delivers <strong>' + sign + fmtR(Math.abs(incomeDelta)) + '/month</strong> ' +
-        'in retirement income — a <strong>' + Math.abs(pctChange) + '% ' + improvWord + '</strong> — ' +
-        contribClause + '. ' +
-        'Over the ' + p.years + '-year horizon that’s <strong>' + fmtR(Math.abs(totalContribDelta)) + '</strong> in ' +
-        contribsWord + ' contributions (future rands), compounding to <strong>' + capSign + fmtR(Math.abs(capitalDelta)) + '</strong> of ' +
-        capitalWord + ' retirement capital (today’s money). ' +
-        'In annual terms, the higher income adds <strong>' + annualSign + fmtR(Math.abs(incomeAnnualDelta)) + '</strong> per year in today’s money';
-
-      if (incomeDelta >= 0){
-        scenario += ' — meaningful room for discretionary spending, travel, or legacy.';
-      } else {
-        scenario += '.';
-      }
-
-      setHTML('narrative-scenario-p', scenario);
       show('narrative-scenario-section', true);
+      setHTML('narrative-baseline-p', describeBaselinePosition(baseline));
+      setHTML('narrative-scenario-p', describePlannedScenario(p, baseline));
     } else {
+      show('narrative-current-section', true);
       show('narrative-baseline-section', false);
       show('narrative-scenario-section', false);
+      setHTML('narrative-current-p', describeCurrentPosition(p));
     }
   }
 
@@ -1927,13 +2054,193 @@
       monthlyIncomeReal: p.monthlyIncomeReal,
       finalTotalReal: p.finalTotalReal
     };
+    captureScenarioAnchors();
+    configureScenarioSliders();
+    showScenarioRow(true);
     updateBaselineControls();
     refresh();
   }
   function clearBaseline(){
     baseline = null;
+    scenarioAnchors = null;
+    showScenarioRow(false);
     updateBaselineControls();
     refresh();
+  }
+
+  // ===== Planned-scenario sliders =====
+  // Anchored on the locked baseline. Moving a slider writes back into the
+  // household panel / market-assumptions inputs (with proportional per-spouse
+  // split for contributions), then refreshes. Hidden entirely when no baseline
+  // is locked — the sliders only make sense as adjustments around a reference.
+  var SCENARIO_CONTRIB_SPAN = 10000;  // rands each side of anchor
+  var SCENARIO_CONTRIB_STEP = 500;
+  var SCENARIO_RETURN_SPAN = 2;       // percentage points each side
+  var SCENARIO_RETURN_STEP = 0.5;
+  var SCENARIO_RETAGE_SPAN = 5;       // years each side
+
+  function captureScenarioAnchors(){
+    if (!baseline){ scenarioAnchors = null; return; }
+    var bi = baseline.inputs;
+    scenarioAnchors = {
+      retContrib: {
+        A: bi.contribRetA, B: bi.contribRetB,
+        total: bi.contribRetA + bi.contribRetB
+      },
+      discContrib: {
+        A: bi.contribDiscA, B: bi.contribDiscB,
+        total: bi.contribDiscA + bi.contribDiscB
+      },
+      rNomPct: bi.rNom * 100,
+      retirementAge: bi.retirementAge
+    };
+  }
+
+  function configureScenarioSliders(){
+    if (!scenarioAnchors) return;
+
+    var ret = document.getElementById('scenario-ret');
+    ret.min = Math.max(0, scenarioAnchors.retContrib.total - SCENARIO_CONTRIB_SPAN);
+    ret.max = scenarioAnchors.retContrib.total + SCENARIO_CONTRIB_SPAN;
+    ret.step = SCENARIO_CONTRIB_STEP;
+    ret.value = scenarioAnchors.retContrib.total;
+
+    var disc = document.getElementById('scenario-disc');
+    disc.min = Math.max(0, scenarioAnchors.discContrib.total - SCENARIO_CONTRIB_SPAN);
+    disc.max = scenarioAnchors.discContrib.total + SCENARIO_CONTRIB_SPAN;
+    disc.step = SCENARIO_CONTRIB_STEP;
+    disc.value = scenarioAnchors.discContrib.total;
+
+    var retSl = document.getElementById('scenario-return');
+    var mainReturn = document.getElementById('return');
+    var mainMin = parseFloat(mainReturn.min);
+    var mainMax = parseFloat(mainReturn.max);
+    retSl.min = Math.max(mainMin, scenarioAnchors.rNomPct - SCENARIO_RETURN_SPAN);
+    retSl.max = Math.min(mainMax, scenarioAnchors.rNomPct + SCENARIO_RETURN_SPAN);
+    retSl.step = SCENARIO_RETURN_STEP;
+    retSl.value = scenarioAnchors.rNomPct;
+
+    var age = document.getElementById('scenario-retage');
+    age.min = Math.max(50, scenarioAnchors.retirementAge - SCENARIO_RETAGE_SPAN);
+    age.max = Math.min(75, scenarioAnchors.retirementAge + SCENARIO_RETAGE_SPAN);
+    age.step = 1;
+    age.value = scenarioAnchors.retirementAge;
+  }
+
+  function showScenarioRow(on){
+    document.getElementById('scenario-row').style.display = on ? '' : 'none';
+  }
+
+  // Format like the hp-* blur handler: space-separated thousands, integer.
+  function setHpFormatted(id, n){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var v = Math.max(0, Math.round(n));
+    el.value = v.toLocaleString('en-ZA').replace(/,/g, ' ');
+  }
+
+  function applyScenarioContrib(kind){
+    if (!scenarioAnchors) return;
+    var anchor = kind === 'ret' ? scenarioAnchors.retContrib : scenarioAnchors.discContrib;
+    var sliderId = kind === 'ret' ? 'scenario-ret' : 'scenario-disc';
+    var newTotal = parseFloat(document.getElementById(sliderId).value);
+    if (!isFinite(newTotal)) return;
+    var delta = newTotal - anchor.total;
+    var newA, newB;
+    if (anchor.total > 0){
+      var wA = anchor.A / anchor.total;
+      newA = Math.max(0, anchor.A + delta * wA);
+      newB = Math.max(0, anchor.B + delta * (1 - wA));
+    } else {
+      // Zero-zero baseline: split any positive delta evenly; negative clamps to zero.
+      newA = Math.max(0, delta / 2);
+      newB = Math.max(0, delta / 2);
+    }
+    var ids = kind === 'ret'
+      ? { A: 'hp-ret-contrib-A', B: 'hp-ret-contrib-B' }
+      : { A: 'hp-disc-contrib-A', B: 'hp-disc-contrib-B' };
+    setHpFormatted(ids.A, newA);
+    setHpFormatted(ids.B, newB);
+    refresh();
+  }
+
+  function applyScenarioReturn(){
+    var slider = document.getElementById('scenario-return');
+    var v = parseFloat(slider.value);
+    if (!isFinite(v)) return;
+    var main = document.getElementById('return');
+    var mainMin = parseFloat(main.min), mainMax = parseFloat(main.max);
+    v = Math.max(mainMin, Math.min(mainMax, v));
+    main.value = v;
+    refresh();
+  }
+
+  function applyScenarioRetAge(){
+    var slider = document.getElementById('scenario-retage');
+    var v = parseInt(slider.value, 10);
+    if (!isFinite(v)) return;
+    v = Math.max(50, Math.min(75, v));
+    document.getElementById('retirement-age').value = v;
+    refresh();
+  }
+
+  function setScenarioSliderToCurrent(id, value){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var min = parseFloat(el.min), max = parseFloat(el.max);
+    if (!isFinite(min) || !isFinite(max)) return;
+    el.value = Math.max(min, Math.min(max, value));
+  }
+
+  function setScenarioReadout(valId, deltaId, value, anchor, kind){
+    var valEl = document.getElementById(valId);
+    var deltaEl = document.getElementById(deltaId);
+    if (!valEl || !deltaEl) return;
+    if (kind === 'currency') valEl.textContent = fmtR(value);
+    else if (kind === 'percent') valEl.textContent = value.toFixed(2) + '%';
+    else if (kind === 'years') valEl.textContent = value;
+    var d = value - anchor;
+    deltaEl.className = 'delta';
+    var nearZero = kind === 'percent' ? 0.001 : (kind === 'years' ? 0.5 : 1);
+    if (Math.abs(d) < nearZero){
+      deltaEl.textContent = '';
+      return;
+    }
+    deltaEl.classList.add(d > 0 ? 'positive' : 'negative');
+    var signPrefix = d > 0 ? '+' : '';
+    if (kind === 'currency'){
+      deltaEl.textContent = signPrefix + fmtR(d);
+    } else if (kind === 'percent'){
+      deltaEl.textContent = signPrefix + d.toFixed(2) + '%';
+    } else if (kind === 'years'){
+      deltaEl.textContent = signPrefix + d + 'y';
+    }
+  }
+
+  function updateScenarioReadouts(){
+    if (!scenarioAnchors) return;
+
+    var retTotal = parseCurrency('hp-ret-contrib-A') + parseCurrency('hp-ret-contrib-B');
+    setScenarioSliderToCurrent('scenario-ret', retTotal);
+    setScenarioReadout('scenario-ret-out', 'scenario-ret-delta',
+      retTotal, scenarioAnchors.retContrib.total, 'currency');
+
+    var discTotal = parseCurrency('hp-disc-contrib-A') + parseCurrency('hp-disc-contrib-B');
+    setScenarioSliderToCurrent('scenario-disc', discTotal);
+    setScenarioReadout('scenario-disc-out', 'scenario-disc-delta',
+      discTotal, scenarioAnchors.discContrib.total, 'currency');
+
+    var rNow = read('return');
+    setScenarioSliderToCurrent('scenario-return', rNow);
+    setScenarioReadout('scenario-return-out', 'scenario-return-delta',
+      rNow, scenarioAnchors.rNomPct, 'percent');
+
+    var ageEl = document.getElementById('retirement-age');
+    var ageNow = parseInt(ageEl.value, 10);
+    if (!isFinite(ageNow)) ageNow = scenarioAnchors.retirementAge;
+    setScenarioSliderToCurrent('scenario-retage', ageNow);
+    setScenarioReadout('scenario-retage-out', 'scenario-retage-delta',
+      ageNow, scenarioAnchors.retirementAge, 'years');
   }
 
   // ===== Refresh =====
@@ -1951,6 +2258,7 @@
     updatePrintSummary(p);
     updateNarrative(p);
     renderSpouseLabels();
+    updateScenarioReadouts();
   }
 
   // ===== Wire up =====
@@ -1986,6 +2294,15 @@
     el.value = n;
     refresh();
   });
+
+  document.getElementById('scenario-ret').addEventListener('input', function(){
+    applyScenarioContrib('ret');
+  });
+  document.getElementById('scenario-disc').addEventListener('input', function(){
+    applyScenarioContrib('disc');
+  });
+  document.getElementById('scenario-return').addEventListener('input', applyScenarioReturn);
+  document.getElementById('scenario-retage').addEventListener('input', applyScenarioRetAge);
   ['client-name', 'client-date', 'adviser-name'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){
       updatePrintSummary(project(readInputs()));
@@ -2005,6 +2322,27 @@
     commitSpouseNameEdit(el);
   });
 
+  // Resize charts using the chart-wrap's current dimensions. Deferred to the
+  // next animation frame so the browser has flushed the @media print layout
+  // before Chart.js measures the parent — otherwise under headless
+  // --print-to-pdf, Chart.js reads stale screen-size dimensions and paints the
+  // bitmap into a fraction of the now-320px print wrap.
+  function resizeChartsToWrap(){
+    if (typeof requestAnimationFrame !== 'function'){
+      if (chartCapital) chartCapital.resize();
+      if (chartBreakdown) chartBreakdown.resize();
+      return;
+    }
+    requestAnimationFrame(function(){
+      var wrap = document.querySelector('.chart-wrap');
+      if (!wrap) return;
+      var w = wrap.clientWidth;
+      var h = wrap.clientHeight;
+      if (chartCapital) chartCapital.resize(w, h);
+      if (chartBreakdown) chartBreakdown.resize(w, h);
+    });
+  }
+
   // Force accordions open for print, restore prior state after.
   var accordionStateBeforePrint = null;
   window.addEventListener('beforeprint', function(){
@@ -2014,8 +2352,7 @@
       accordionStateBeforePrint.push(acc[i].open);
       acc[i].open = true;
     }
-    if (chartCapital) chartCapital.resize();
-    if (chartBreakdown) chartBreakdown.resize();
+    resizeChartsToWrap();
   });
   window.addEventListener('afterprint', function(){
     if (accordionStateBeforePrint){
@@ -2025,8 +2362,7 @@
       }
       accordionStateBeforePrint = null;
     }
-    if (chartCapital) chartCapital.resize();
-    if (chartBreakdown) chartBreakdown.resize();
+    resizeChartsToWrap();
   });
 
   // `beforeprint` does not fire under headless --print-to-pdf; matchMedia does.
@@ -2037,8 +2373,7 @@
         var acc = document.querySelectorAll('details.accordion');
         for (var i = 0; i < acc.length; i++) acc[i].open = true;
       }
-      if (chartCapital) chartCapital.resize();
-      if (chartBreakdown) chartBreakdown.resize();
+      resizeChartsToWrap();
     };
     if (printMQ.addEventListener) printMQ.addEventListener('change', onPrintChange);
     else if (printMQ.addListener) printMQ.addListener(onPrintChange);
@@ -2097,6 +2432,9 @@
   document.getElementById('events-header').addEventListener('click', function(){
     toggleCollapse('events-header', 'events-body');
   });
+  document.getElementById('ma-header').addEventListener('click', function(){
+    toggleCollapse('ma-header', 'ma-body');
+  });
 
   // ===== Summary chips on collapsible headers =====
   function fmtShortR(n){
@@ -2110,8 +2448,17 @@
                      parseCurrency('hp-ret-B') + parseCurrency('hp-disc-B');
     var totalContrib = parseCurrency('hp-ret-contrib-A') + parseCurrency('hp-disc-contrib-A') +
                        parseCurrency('hp-ret-contrib-B') + parseCurrency('hp-disc-contrib-B');
+    var retAgeEl = document.getElementById('retirement-age');
+    var retAge = retAgeEl ? parseInt(retAgeEl.value, 10) : 65;
+    if (!isFinite(retAge)) retAge = 65;
     set('hp-summary-chip',
-      ageA + '/' + ageB + ' · ' + fmtShortR(totalStart) + ' capital · ' + fmtShortR(totalContrib) + '/mo in');
+      ageA + '/' + ageB + ' · ' + fmtShortR(totalStart) + ' capital · ' +
+      fmtShortR(totalContrib) + '/mo in · retiring at ' + retAge);
+    var maReturn = read('return');
+    var maCpi = read('cpi');
+    var maEsc = read('esc');
+    set('ma-summary-chip',
+      fmtPct(maReturn) + ' return · ' + fmtPct(maCpi) + ' CPI · ' + fmtPct(maEsc) + ' escalation');
     if (eventsStore.length === 0){
       set('events-summary-chip', 'none');
     } else {
