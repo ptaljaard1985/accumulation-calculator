@@ -132,6 +132,27 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 5 — 2026-04-22
+
+**Shipped (feat/session-5):** State 1 → State 2 transition is now gated behind an explicit "See current projection" CTA. The old heuristic (non-default spouse name + positive balance + valid retirement age) fired as soon as the adviser typed a name and tabbed out, which was too eager for meeting flow.
+
+- **New flag.** `var projectionRequested = false;` added next to `spouseNames`. One-way — once true it stays true for the session. Not reset by `clearBaseline()` (clearing a baseline returns to State 2, not State 1).
+- **`deriveViewState()` simplified** from the old name/balance/age check to: `baseline → compare`, `projectionRequested → filled`, else `empty`. Typing in State 1 no longer transitions — only the CTA click does.
+- **DOM.** The dashed `.empty-preview` placeholder ("The projection will appear here") at the bottom of `<section class="canvas-empty">` is replaced by a centred `.empty-cta` containing `<button class="btn primary" id="btn-see-projection">See current projection</button>`.
+- **CSS.** Dropped dead `.empty-preview` / `.empty-preview-label` rules. Added `.empty-cta { display: flex; justify-content: center; padding: 32px 0 8px; }` and `.empty-cta .btn.primary { padding: 12px 28px; font-size: 13px; }`. Added `.empty-cta` to the `@media print` hide list alongside `.canvas-actions` / `.canvas-foot-actions`.
+- **Wiring.** Added next to the baseline button handlers: on click, set `projectionRequested = true` and call `refresh()`.
+
+**Decisions (and why):**
+
+- **Button always enabled, no data gate.** Balance defaults are already non-zero (R1.5M / R500k / R1.2M / R300k) so clicking with no user input still produces a sensible projection. The adviser can continue editing via the plan-bar drawer in State 2. Simpler than gating on "at least one name" or "at least one balance", and keeps the button's behaviour predictable (no greyed-out-until-something state).
+- **CTA replaces the dashed preview entirely.** Once an explicit CTA exists, the "The projection will appear here" placeholder is redundant. Cleaner visually and one fewer block to style.
+- **One-way flag, not reset by baseline-clear.** If the adviser locks a baseline and then clears it, they return to State 2 rather than being bounced back to State 1. Lock/clear is a within-projection flow; State 1 is a one-time intro.
+- **Dropped the old name/balance/age check entirely rather than keeping it as a safety net.** Once the user has explicitly asked for the projection, respect that — don't re-apply heuristics that could refuse to transition. Defaults ensure the projection always renders something.
+
+**Tests:** 14 JS + 37 Python, all green. No math changes — `project()` and its return shape are untouched; `deriveViewState()` isn't exercised by either suite.
+
+**Docs updated:** `CLAUDE.md` session log (this entry), `docs/ARCHITECTURE.md` (state-derivation snippet + state-variable listing), `docs/DESIGN.md` (three-states intro + Empty-state section).
+
 ### Session 4 — 2026-04-22
 
 **Shipped (design-update-pr4):** full visual redesign of the calculator. The rail + cluttered canvas layout is gone; in its place, a single-tree three-state UI driven by `viewState`.

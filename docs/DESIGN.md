@@ -16,9 +16,9 @@ The visual system for the accumulation calculator. These choices are deliberate 
 
 The UI has three visual states driven by the user's progress through the flow. They live inside **one** component tree — the root `<div class="calc" data-view="empty|filled|compare">` — and view-specific nodes carry a `data-view-only="empty|filled|compare"` attribute that JS toggles on/off.
 
-State derivation (`deriveViewState()`): if a baseline is locked → `compare`; else if the plan looks complete (at least one balance, a retirement age, at least one non-default spouse name) → `filled`; else → `empty`. Locking a baseline sets `baseline = scenario`; clearing sets it back to `null`.
+State derivation (`deriveViewState()`): if a baseline is locked → `compare`; else if the adviser has clicked the "See current projection" CTA at the bottom of State 1 (setting the `projectionRequested` flag) → `filled`; else → `empty`. The gate is purely user-initiated — typing names and balances does NOT transition; only the CTA click does. Locking a baseline sets `baseline = scenario`; clearing sets it back to `null` (which returns to State 2, not State 1, because `projectionRequested` stays true for the session).
 
-- **Empty** — title-page setup: centred `A plan for the ___ family.` headline with the family name as an inline editable span, two-column spouse setup with dashed-border field pills, a foot band showing retirement-age + market defaults, and a dashed preview placeholder.
+- **Empty** — title-page setup: centred `A plan for the ___ family.` headline with the family name as an inline editable span, two-column spouse setup with dashed-border field pills, a foot band showing retirement-age + market defaults, and a centred "See current projection" primary CTA button at the bottom.
 - **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, editorial headline + Real/Nominal + Lock button on the canvas head, chart card with Capital / Breakdown / Table segmented control, three-cell outcome strip, narrative, canvas foot.
 - **Compare** — the hero interaction. Plan-inputs bar, compact head with "Scenario compare · baseline locked" eyebrow, two-up compare grid (muted baseline card + navy-ringed scenario card, each with their own chart), centred legend, Scenario Levers panel below.
 
@@ -181,9 +181,9 @@ Three variants of `.btn`:
 
 Unique visual vocabulary — no cards, no drawer. Centred title plate with `Simple Wealth · Retirement projection` eyebrow (10px uppercase 2.4px tracking), the serif 44px headline with an inline editable `empty-family` span (dashed underline, italic placeholder "the _______ family" that disappears on focus), and a mono 11px `Prepared {date}` line. Below: a 1fr / 1px / 1fr grid with the two spouse columns separated by a hairline divider. Each column has a step label (Roman numeral italic gold + uppercase `SPOUSE A/B`), a serif 26px first-name input sitting over a dashed hairline, a right-aligned age input, then four `empty` field pills (dashed border, `R` prefix, placeholder `—`).
 
-A border-top/bottom foot band below the setup grid shows the retirement-age input on the left and the market-assumptions default read-out (`10% · 5% · 6%`) on the right. At the bottom, a dashed preview placeholder holds the italic "The projection will appear here".
+A border-top/bottom foot band below the setup grid shows the retirement-age input on the left and the market-assumptions default read-out (`10% · 5% · 6%`) on the right. At the bottom, a centred `.empty-cta` container holds the `#btn-see-projection` primary button (navy fill, paper text, 12×28 padding). Clicking it sets `projectionRequested = true` and calls `refresh()`, which re-runs `deriveViewState()` and flips the canvas to State 2. Hidden in print via `.empty-cta` in the `@media print` hide list.
 
-Input fields in the empty state are shadow inputs — they carry `data-sync-to="hp-ret-A"` etc. attributes and write their values into the canonical drawer inputs on blur, triggering the normal refresh pipeline. Spouse-name inputs use `data-sync-spouse-name="A"` to write into `spouseNames`.
+Input fields in the empty state are shadow inputs — they carry `data-sync-to="hp-ret-A"` etc. attributes and write their values into the canonical drawer inputs on blur, triggering the normal refresh pipeline. Spouse-name inputs use `data-sync-spouse-name="A"` to write into `spouseNames`. These syncs do NOT transition State 1 → State 2 — only the CTA click does.
 
 ## Print
 

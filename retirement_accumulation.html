@@ -352,19 +352,14 @@
     font-variant-numeric: tabular-nums;
   }
   .empty-age-input:focus { outline: none; border-color: var(--navy); }
-  .empty-preview {
-    border: 1px dashed var(--line);
-    border-radius: var(--r-lg);
-    padding: 48px 32px;
-    text-align: center;
-    background: transparent;
+  .empty-cta {
+    display: flex;
+    justify-content: center;
+    padding: 32px 0 8px;
   }
-  .empty-preview-label {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 14px;
-    color: var(--mute);
-    letter-spacing: 0.3px;
+  .empty-cta .btn.primary {
+    padding: 12px 28px;
+    font-size: 13px;
   }
 
   /* ─── Plan-inputs bar (State 2 & 3) ─────────── */
@@ -1096,7 +1091,7 @@
     .page { padding: 0; max-width: 100%; }
     .calc { padding: 16px 20px 24px; }
     .no-print { display: none !important; }
-    .plan-bar-edit, .canvas-actions, .canvas-foot-actions { display: none !important; }
+    .plan-bar-edit, .canvas-actions, .canvas-foot-actions, .empty-cta { display: none !important; }
     /* Collapse drawer in print */
     .plan-bar[data-open="true"] .plan-bar-drawer { display: none; }
     .plan-bar { margin-bottom: 14px; padding: 10px 14px; }
@@ -1233,8 +1228,8 @@
       </div>
     </div>
 
-    <div class="empty-preview">
-      <span class="empty-preview-label">The projection will appear here</span>
+    <div class="empty-cta">
+      <button class="btn primary" id="btn-see-projection" type="button">See current projection</button>
     </div>
   </section>
 
@@ -1754,6 +1749,9 @@
   var eventSeq = 1;
   var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
   var SPOUSE_NAME_MAX = 30;
+  // One-way gate: State 1 → State 2 transition only happens when the adviser
+  // clicks "See current projection". Stays true for the rest of the session.
+  var projectionRequested = false;
   // Captured from baseline.inputs when a baseline is locked; drives the
   // planned-scenario slider row (centre, range, and delta readouts).
   // null whenever no baseline is locked — the slider row is hidden in that case.
@@ -2856,13 +2854,8 @@
   // ===== View state derivation =====
   function deriveViewState(){
     if (baseline) return 'compare';
-    var totalStart = parseCurrency('hp-ret-A') + parseCurrency('hp-disc-A') +
-                     parseCurrency('hp-ret-B') + parseCurrency('hp-disc-B');
-    var nameA = spouseNames.A && spouseNames.A !== 'Spouse A';
-    var nameB = spouseNames.B && spouseNames.B !== 'Spouse B';
-    var retAge = parseInt(document.getElementById('retirement-age').value, 10);
-    var complete = (nameA || nameB) && totalStart > 0 && isFinite(retAge);
-    return complete ? 'filled' : 'empty';
+    if (projectionRequested) return 'filled';
+    return 'empty';
   }
   function updateViewVisibility(){
     var v = deriveViewState();
@@ -3267,6 +3260,10 @@
   document.getElementById('btn-lock').addEventListener('click', lockBaseline);
   document.getElementById('btn-relock').addEventListener('click', lockBaseline);
   document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
+  document.getElementById('btn-see-projection').addEventListener('click', function(){
+    projectionRequested = true;
+    refresh();
+  });
   document.getElementById('add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());
     renderEvents();
