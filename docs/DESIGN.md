@@ -1,169 +1,211 @@
 # Design
 
-The visual system for the accumulation calculator. These choices are deliberate — don't drift from them without a conversation. This system is intentionally identical to the drawdown calculator's, so the two feel like a matched pair.
+The visual system for the accumulation calculator. These choices are deliberate — don't drift from them without a conversation.
 
 ## Philosophy
 
 **The calculator is a conversation tool, not a dashboard.** It gets opened during a client meeting, the adviser moves inputs while the client watches, and a PDF is printed and emailed. That context dictates every visual choice:
 
 - Legible at 2m on a shared laptop, printable to A4 without cropping.
-- Professional advisory-firm aesthetic, not fintech-startup.
+- Professional advisory-firm aesthetic, not fintech-startup. Warm paper, not cold slate.
 - No unnecessary motion, no loading states, no "oh did you see that?" animations.
-- Everything that matters fits above the fold on a 13-inch screen when the collapsible sections are closed.
+- Editorial voice: a serif headline does more than a bold sans number.
+- Everything that matters fits above the fold on a 13-inch screen.
+
+## Three states, one canvas
+
+The UI has three visual states driven by the user's progress through the flow. They live inside **one** component tree — the root `<div class="calc" data-view="empty|filled|compare">` — and view-specific nodes carry a `data-view-only="empty|filled|compare"` attribute that JS toggles on/off.
+
+State derivation (`deriveViewState()`): if a baseline is locked → `compare`; else if the plan looks complete (at least one balance, a retirement age, at least one non-default spouse name) → `filled`; else → `empty`. Locking a baseline sets `baseline = scenario`; clearing sets it back to `null`.
+
+- **Empty** — title-page setup: centred `A plan for the ___ family.` headline with the family name as an inline editable span, two-column spouse setup with dashed-border field pills, a foot band showing retirement-age + market defaults, and a dashed preview placeholder.
+- **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, editorial headline + Real/Nominal + Lock button on the canvas head, chart card with Capital / Breakdown / Table segmented control, three-cell outcome strip, narrative, canvas foot.
+- **Compare** — the hero interaction. Plan-inputs bar, compact head with "Scenario compare · baseline locked" eyebrow, two-up compare grid (muted baseline card + navy-ringed scenario card, each with their own chart), centred legend, Scenario Levers panel below.
 
 ## Design tokens
 
-All colours, spacing, and radii are CSS variables in `:root`. If you need to change the palette, change it there, not in component rules.
+All tokens live as CSS variables on `:root`. If the palette needs to change, change it there, not in component rules.
 
 ```css
 :root {
-  --ink: #1a1a1a;
-  --ink-muted: #5a5a5a;
-  --ink-faint: #8a8a8a;
-  --line: #e5e5e0;
-  --line-strong: #c8c8c0;
-  --surface: #ffffff;
-  --surface-alt: #faf9f5;      /* warm off-white page background */
-  --surface-warm: #f3f1e8;     /* toggle background, chips */
-  --brand: #2d3e50;            /* Simple Wealth navy */
-  --brand-accent: #c89a3c;     /* gold, used sparingly */
-  --success: #3b6d11;
-  --danger: #a32d2d;
-  --teal: #2a6b6b;             /* chart: retirement fund */
-  --gold: #c89a3c;             /* chart: discretionary */
-  --radius: 8px;
-  --radius-lg: 12px;
+  /* Ink / paper */
+  --ink:      #1a1f26;   /* primary text */
+  --ink-2:    #3a4250;   /* secondary text, muted hero numbers */
+  --mute:     #7a8292;   /* labels, tertiary text */
+  --faint:    #b4bac4;   /* placeholders, middot separators */
+  --hairline: #e4e1d8;   /* card borders, dividers */
+  --line:     #d4cfc2;   /* stronger borders, dashed fields */
+  --paper:    #faf7f0;   /* canvas background (warm off-white) */
+  --paper-2:  #f2ede2;   /* plan-bar, muted baseline card */
+  --paper-3:  #ebe4d3;   /* deeper warm panel */
+  --surface:  #ffffff;   /* cards, inputs */
+
+  /* Brand */
+  --navy:      #1f2d3d;   /* primary accent — scenario card, primary button */
+  --navy-2:    #2d3e50;   /* older brand navy, still used in a few places */
+  --navy-soft: #38495b;   /* navy hover */
+  --gold:      #b8893c;   /* discretionary bar, slider fill */
+  --gold-2:    #9c7226;   /* gold text, deltas, roman numerals */
+  --gold-soft: #e3c987;   /* gold-under headline accent */
+  --gold-pale: #f5ebd1;   /* delta chip background */
+
+  /* States */
+  --pos: #2f6b3a;
+  --neg: #a64236;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --sans:  'Inter Tight', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --r-sm: 4px;     /* inputs, chips */
+  --r:    6px;     /* buttons */
+  --r-lg: 10px;    /* cards, chart card, empty preview */
 }
 ```
 
-The warm off-white page background (`--surface-alt`) is the most important colour choice in the system. It makes the page read like paper rather than a web app. Do not drift toward `#f8f9fa` or any cold grey.
+The warm paper background (`--paper`) is the most important colour choice in the system. It makes the page read like paper rather than a web app. Don't drift toward `#f8f9fa` or any cold grey.
 
 ## Typography
 
-System font stack:
+Three families, loaded from Google Fonts via `<link>` tags in `<head>`:
 
-```css
--apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif
-```
+- **`--serif` — Fraunces.** Editorial headlines, hero numbers, empty title, spouse names, narrative body, compare hero values. Weights 300 / 400 / 500. Uses its italic variant for emphasised words (`em`).
+- **`--sans` — Inter Tight.** UI labels, buttons, body text. Weights 400 / 500 / 600.
+- **`--mono` — JetBrains Mono.** Any numeric value: inputs with numbers, y-axis labels, dates, the `.num` class. Always paired with `font-variant-numeric: tabular-nums` so headline and body numbers don't reflow when digits change.
 
-Base size: 15px, line-height 1.55. Two weights only: 400 (regular) and 500 (medium). Never 600 or 700 anywhere in the UI.
-
-Any number that updates live uses `font-variant-numeric: tabular-nums`. This stops the layout jittering as sliders move.
+Base body: 14px / 1.5 / Inter Tight. Never use weight 700.
 
 Scale:
 
-- H1: 26px / 500 / letter-spacing -0.3px
-- Summary card value: 28px / 500
-- Section headers: 11px uppercase, letter-spacing 1.5px, weight 600
-- Body: 15px
-- Slider label: 13px muted
-- Slider readout: 14px / 500 / tabular
-- Field label: 12px muted
+- Empty title: 44px serif 300, letter-spacing −0.6px
+- Filled headline: 44px serif 300, letter-spacing −0.6px (compact compare head: 42px / 1.08)
+- Compare hero value: 52px serif 400 (baseline muted to `--ink-2` 300; scenario in `--navy`)
+- Outcome-cell value: 28px serif 400 (primary navy cell: 34px)
+- Plan-bar fact value: 13px / 500
+- Canvas eyebrow: 10px uppercase sans, letter-spacing 2.2px
+- Field label / slider label: 11px / --mute
+- Field input value: 13px mono
+- Delta chip: 11px mono
+
+`.gold-under` gives a headline span a soft gold underscore accent — the absolute-positioned `::after` paints a 6px stripe of `--gold-soft` behind the text at 55% opacity.
 
 ## Layout
 
-- Max width 1100px, centred, 32px horizontal padding.
-- Radii: 8px for inputs and toggles, 12px for cards.
-- Hairlines: 1px solid `--line`. The 2px navy line under the header is the only thicker border.
-- Card padding: 18–22px.
-- Grid gaps: 14–20px between cards.
+- Root padding: 28px 44px 40px (`.calc`).
+- Max width: `1180px`, centred (`.page`).
+- Card radii: `var(--r-lg)` = 10px for the chart card, compare cards, outcome strip, narrative, scenario-levers panel, empty preview.
+- Button radii: `var(--r)` = 6px.
+- Card borders: 1px `--hairline`. The scenario card additionally carries a navy ring: `0 0 0 1px var(--navy), 0 4px 12px rgba(31,45,61,0.06)`.
+- Card padding: 18–22px (cards); 22–24px (chart card, compare cards).
+- Grid gap on the two-up compare: 22px. Plan-bar drawer: 28px between columns.
+- Spacing uses the 4 / 6 / 8 / 10 / 14 / 18 / 22 / 28 / 32 / 44 px values seen in the prototype. No strict scale.
 
 ## Component conventions
 
-### Collapsible sections
+### Plan-inputs bar + drawer
 
-The household-position and capital-events sections have collapsible section headers. The full section header (title + chevron) is clickable. When collapsed:
+A horizontal summary strip always present in State 2 and State 3. Left: SW logo-mark circle + `Simple Wealth` brand + the client name (or placeholder). Middle: five fact cells — `Household`, `Combined starting capital`, `Monthly contributions`, `Retire at`, `Return · CPI`. Each is a 9.5px uppercase label over a 13px value (numbers in mono). Right: a ghost `Edit plan ↓` button.
 
-- The chevron rotates −90°.
-- The body transitions max-height to 0.
-- A summary chip appears in the header (e.g. "40/40 · R3.5m capital · R20k/mo in").
+Clicking `Edit plan ↓` sets `data-open="true"` on the bar; CSS makes the drawer grid visible. Drawer has three columns: Household (both spouses with their four balance + contribution fields, age input, and editable name span), Retirement + Capital events (retire-when anchor + add-event button), Market assumptions (three thin sliders + a "Meeting" sub-section with the Prepared-for / date fields). Roman-numeral italic gold markers (`I.`, `II.`, `III.`, `IV.`) tag the columns, matching the empty-state setup labels.
 
-Opening a collapsible section: the body's max-height is set to its `scrollHeight`, then cleared after the transition ends (so it can grow if content changes later). Closing: max-height is set to current scrollHeight first, then to 0 on the next animation frame (so the transition has a defined starting point).
+The drawer is hidden in print — the collapsed one-line summary is what lands on page 1.
 
-Do not nest collapsibles. The animation logic assumes one level.
+### Outcome strip (State 2 only)
 
-### Summary cards
+A flex row of three cells separated by 1px hairlines, wrapped in a card. The first cell is `.primary` — filled navy, paper-white text — and carries the big Monthly income number (34px serif). The other two are white with muted labels. Structure per cell: `.ocap` (10px uppercase mute label), `.oval` (serif number), `.osub` (11px mute sub).
 
-Three across. The first is filled navy with white text — the "primary answer" card. The rest are white with hairline borders.
+Baseline comparison numbers no longer live on the outcome strip — State 3's compare cards handle that, so the strip stays unchanged between load and lock.
 
-Structure per card: tiny muted label (12px), big value (28px / 500), optional sub-value (12px muted). The primary card's sub-value uses `rgba(255,255,255,0.65)` not `--ink-muted`.
+### Compare grid (State 3)
 
-When a baseline is locked, the income and capital cards grow a fourth row — a thin `.delta-line` above a hairline separator, reading `Baseline <X> · ±<delta> (±<pct>%)`. Positive deltas render in `--success` on the light cards and a lightened green (`#9be7be`) on the primary card; negatives use `--danger` and `#f5a1a1`. The years-until-retirement card deliberately has no delta — the figure depends on input toggles rather than on the plan, and a `+5 years` read would confuse more than it informs.
+`grid-template-columns: 1fr 1fr; gap: 22px`. Two `.compare-card` panels.
 
-### Narrative "In plain terms" card
+- **Baseline** — `background: var(--paper-2)`. Head shows `BASELINE · CURRENT PLAN` tag and a `LOCKED` micro-label. Hero number in `--ink-2`, serif weight 300 (muted). Sub-line: "monthly income · {capital} capital". Chart below renders at 35% opacity, sharing the same y-axis ceiling as the scenario chart. Four meta rows across the bottom — Retirement contrib, Discretionary contrib, Expected return, Retire at — numbers in mono.
+- **Scenario** — white surface, 1px `--navy` border, navy ring box-shadow. Head: `PLANNED SCENARIO` tag in navy plus a gold delta chip reading `+ R 11 400 / mo` (flips to `.neg` with a red-pale background when the delta is negative, empty when there's no change). Hero in `--navy`. Full-opacity chart. Same meta-row structure, but with inline `em` deltas in `--gold-2` beside any changed value.
 
-Below the chart, above the compliance appendix. Card styling matches the summary cards. Title `IN PLAIN TERMS` in uppercase small-caps (11–12px, letter-spaced). Body is structured as `.narrative-section` blocks, and which ones are shown depends on whether a baseline is locked.
+Both charts are independent Chart.js instances (`#chart-compare-baseline`, `#chart-compare-scenario`). `buildCompareCharts(p)` computes a shared y-ceiling from `max(baseline.total, scenario.total) × 1.05` so bars are visually comparable across the two cards, regardless of which scenario sits larger.
 
-When **no baseline is locked**, one section:
+Below the two cards: a centred `Retirement fund · Discretionary` legend (one row) and then the Scenario Levers panel.
 
-- **CURRENT POSITION** — one paragraph walking through the pertinent numbers for the current plan: nominal return, inflation, combined monthly contributions and escalation, projected capital in today's money and future rands, the retirement-fund / discretionary split, and the 5%-rule monthly income. If the plan includes capital events, a short sentence mentions them.
+### Scenario levers (State 3)
 
-When a **baseline is locked**, two sections:
+Four-column grid of thin sliders inside a single card — Retirement contributions, Discretionary contributions, Expected return, Retirement age. Each slider has a label, a mono readout (with a small gold `delta` pill when the slider is off-centre), a 2px track in `--line`, and a 12px circle thumb with a 1.5px `--gold-2` border on a white surface. Ranges centre on the locked baseline: contributions ±R10 000/mo (step R500), return ±2 pp (step 0.5 pp), retirement age ±5 yr (step 1).
 
-- **BASELINE POSITION** — one paragraph summarising the baseline's assumptions, contributions, projected capital, and projected monthly income. Events mentioned if present.
-- **PLANNED SCENARIO** — one paragraph walking through the plan's own numbers first, then the delta versus baseline: contribution difference monthly and over the horizon, capital difference in today's money with percentage change, and monthly-plus-annual income difference. Events mentioned if present.
+Moving a slider writes back into the underlying `#hp-*`, `#return`, or `#retirement-age` inputs and kicks the normal projection pipeline. Contribution deltas split proportionally between spouses A and B based on their baseline share. The panel is hidden in print (`.no-print`).
 
-Section headings follow the same 12px uppercase / letter-spaced rhythm as other `h3`s. Copy is sign-aware: "more" flips to "less", "rises" to "falls", "extra contributions" to "saving" when the plan is worse than the baseline.
+### Narrative "In plain terms" card (State 2 only)
 
-**No em-dashes** (U+2014) anywhere in the narrative copy. Em-dashes read as dashboard shorthand, don't parse well when the narrative is read aloud in a client meeting, and make the prose feel clipped. Use commas, full stops, or rephrase. The same rule applies to any future narrative surfaces (card subtitles, tooltips, print-summary prose). Write plainly, like a normal person.
+Below the outcome strip. Card styling matches the others, with a 2px gold vertical rule (`.narrative::before`) down the left edge. Eyebrow `IN PLAIN TERMS` in 10px uppercase mute. Body is 15.5px serif 300 in `--ink-2`, max-width 680px, with `<strong>` set in `--ink` medium. In State 3 the narrative is hidden entirely — the compare cards ARE the narrative visually.
 
-### Compliance appendix — accordion group
+**No em-dashes** (U+2014) anywhere in the narrative copy. They read as dashboard shorthand, don't parse well when read aloud in a client meeting, and make the prose feel clipped. Use commas, full stops, or rephrase. Two JS tests enforce this by asserting the U+2014 character does not appear in any `describe*()` output.
 
-Three native `<details class="accordion">` blocks: detail tables, methodology & assumptions, disclaimer. Closed by default on screen (keeps the meeting view uncluttered). Forced open on print via a `beforeprint` handler (for interactive Cmd+P) and a `matchMedia('print')` listener (for headless `--print-to-pdf`, which does not fire `beforeprint`). Summary markers are hidden in print so the output reads as plain tables/prose.
+### Chart (State 2)
 
-### Planned scenario sliders
+Chart.js with heavy default overrides. The chart card's header carries a custom HTML legend (Retirement fund in navy, Discretionary in gold, plus three breakdown keys that swap in when `Breakdown` is selected). Chart.js's built-in legend is disabled.
 
-A compact row of four sliders that appears directly below the outcome cards when a baseline is locked, and vanishes when the baseline is cleared. Same card styling as the rest of the page (warm surface, hairline border, radius 12px). Small uppercase `PLANNED SCENARIO LEVERS` heading on the left, and a muted "Centered on the locked baseline. Nudge to explore." caption on the right.
+Three views, toggled by the `.seg.mini` control:
 
-The four sliders — retirement contributions, discretionary contributions, expected return, retirement age — each use the same `.lever` layout as the market-assumptions sliders. Each readout shows the absolute value (e.g. `R18 000`, `10.00%`, `67`) followed by a small delta pill when the slider has moved away from its anchor (e.g. `+R3 000` in green, `-R2 000` in danger red). The pill is empty when the slider is at centre, keeping the readout uncluttered at rest.
+- **Capital** — stacked bars, gold `#b8893c` discretionary on the bottom, navy `#1f2d3d` retirement fund on top. 280px tall.
+- **Breakdown** — stacked bars, grey `#9aa0a9` starting-capital-compounded at the bottom, darker grey `#5e6470` cumulative contributions in the middle, gold growth-on-contributions on top. The three layers sum to the total.
+- **Table** — HTML table (not Chart.js) rendered into the same chart-card slot. Sticky year column, one row per year, columns for age A / age B / retirement / disc / total / annual contributions. When a baseline is locked (not relevant in State 2, but left in for re-lock flows), two extra columns (baseline total, delta). `font-family: var(--mono)` on the cells, `font-family: var(--sans)` on the head.
 
-Moving a slider mutates the underlying household-panel / market-assumptions inputs directly — there is no secondary state. The household panel and market-assumptions can be expanded to see the actual per-spouse / per-assumption values; the scenario row is just a meeting-time convenience on top. Contribution deltas split between the two spouses proportionally to their baseline share.
-
-Ranges: contributions ±R10 000/month (step R500), return ±2 percentage points (step 0.5 pp), retirement age ±5 years (step 1). The row is suppressed in print via `.no-print`.
+Y-axis labels are mono 10px in `--mute`. X-axis uses 10px mono for age labels.
 
 ### Sliders
 
-Custom-styled range inputs:
+Two flavours in the codebase:
 
-- Track: 4px tall, `--line-strong`, radius 2px
-- Thumb: 18px circle, navy, 2px white border, subtle shadow
-- Both `::-webkit-slider-thumb` and `::-moz-range-thumb` defined
+- **Thin rail (used everywhere now)** — 2px track in `--line`, 12px circle thumb with a 1.5px `--gold-2` border on `--surface`, subtle 1px rgba shadow. `input[type="range"].thin`. Used by the drawer market-assumption sliders and the State 3 scenario levers.
 
-Each slider sits inside a `.lever` block: muted 13px label on the left, 14px tabular value on the right, range input full width below.
+The old 18px navy thumb / 4px track is gone.
 
 ### Capital events list
 
-One row per event, grid with six columns: kind dropdown, age input, amount input, today's-money checkbox, year label (computed), delete button. The year label reads "y+5 · 2031" — year offset from now, then the calendar year.
+Rendered inside the drawer's column 2. One row per event, 4-column grid: kind dropdown, age input, a flex cell holding `R`-prefix amount input + today's-money checkbox + year label, delete button. The year label reads `y+5 · 2031` (offset + calendar year). Head row uses 10px uppercase mute labels.
 
-Adding an event auto-expands the capital-events section if it was collapsed. The default new event is an inflow of R500k at reference-age + 10, in today's money.
+Adding an event auto-opens the drawer if it's closed. Default new event: inflow of R500k at reference-age + 10, in today's money.
 
-### Toggles
+### Delta chip
 
-The view toggle (Capital/Breakdown/Table), the real/nominal toggle, and the anchor toggle all live in a similar `.toggle-group` pattern. Active state is a white pill with brand-navy text; inactive is muted grey.
+Small mono pill. `.delta-chip` renders 11px mono on `--gold-pale` with `--gold-2` text; `.delta-chip.neg` swaps to a red-pale background with `--neg` text. Used by the scenario card in State 3, and reusable anywhere a bounded numeric delta needs visible emphasis.
 
-### Chart
+### Buttons
 
-Chart.js with heavy default overrides. Three views:
+Three variants of `.btn`:
 
-- **Capital view**: stacked bars, retirement fund in teal (`#2a6b6b`), discretionary in gold (`#c89a3c`). When baseline is locked, an additional dashed grey line overlays the baseline total.
-- **Breakdown view**: stacked bars, starting-capital-compounded in light grey, cumulative contributions in darker grey, growth on contributions in gold. The three layers always sum to the total.
-- **Table view**: HTML table (not Chart.js), sticky year column, one row per year, columns for age A / age B / retirement / disc / total / annual contributions. When baseline is locked, two extra columns (baseline total, delta).
+- Default — 1px `--hairline` border, `--surface` background, `--ink` text, radius 6px.
+- `.primary` — filled `--navy`, `--paper` text. "Lock as baseline →" and "Re-lock as new baseline" use this.
+- `.ghost` — transparent, `--mute` text, no border. Used for Clear baseline, Edit plan, Table view, and a few other low-emphasis actions.
 
-Custom HTML legend above the chart. Chart.js's built-in legend is disabled entirely.
+### Empty state (State 1)
 
-### Print
+Unique visual vocabulary — no cards, no drawer. Centred title plate with `Simple Wealth · Retirement projection` eyebrow (10px uppercase 2.4px tracking), the serif 44px headline with an inline editable `empty-family` span (dashed underline, italic placeholder "the _______ family" that disappears on focus), and a mono 11px `Prepared {date}` line. Below: a 1fr / 1px / 1fr grid with the two spouse columns separated by a hairline divider. Each column has a step label (Roman numeral italic gold + uppercase `SPOUSE A/B`), a serif 26px first-name input sitting over a dashed hairline, a right-aligned age input, then four `empty` field pills (dashed border, `R` prefix, placeholder `—`).
+
+A border-top/bottom foot band below the setup grid shows the retirement-age input on the left and the market-assumptions default read-out (`10% · 5% · 6%`) on the right. At the bottom, a dashed preview placeholder holds the italic "The projection will appear here".
+
+Input fields in the empty state are shadow inputs — they carry `data-sync-to="hp-ret-A"` etc. attributes and write their values into the canonical drawer inputs on blur, triggering the normal refresh pipeline. Spouse-name inputs use `data-sync-spouse-name="A"` to write into `spouseNames`.
+
+## Print
 
 ```css
 @media print { ... }
 ```
 
-Two-zone PDF. Page 1 is the client-facing view: header, client bar, outcome cards, chart (320 px tall, full card width), narrative. Pages 2+ are the compliance appendix: all three accordions forced open and flattened, with `page-break-before: always` on `.print-summary` to start cleanly on a fresh page.
+Two-zone PDF.
 
-Hidden in print: the input surfaces (`.collapsible-body`, `.market-assumptions-panel`, `.anchor-row`, non-outcome section headers), all toggles and view switchers, the Lock / Re-lock / Clear buttons. Everything with class `.no-print` is suppressed.
+- **Page 1** is the client-facing view: plan-bar (collapsed, drawer hidden), canvas head (headline or compact compare head), the chart card (State 2) or the compare grid (State 3), outcome strip (State 2) or centred compare legend (State 3), narrative (State 2 only). Scenario levers and canvas-foot actions are hidden.
+- **Pages 2+** are the compliance appendix: three `<details class="accordion">` blocks (detail tables, methodology, disclaimer) forced open and flattened. `page-break-before: always` on `.print-summary` starts it on a fresh page.
 
-Multi-column layouts are forced to stay three-wide in print (the page width would otherwise trigger the 900 px mobile breakpoint and stack them vertically).
+Hidden in print via `.no-print` / explicit rules: the `Edit plan ↓` button, the `.canvas-actions` cluster (Real/Nominal, Lock, Clear, Re-lock), the `.canvas-foot-actions` (Table view, Print/PDF), the scenario levers panel.
 
-Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common — a button that accidentally prints, a header that doesn't repeat on page 2, a table cut off mid-row, a chart canvas that renders at half width because Chart.js hasn't resized for the print media yet (this one bit us in an early iteration).
+Headlines and chart heights are tuned down for print (28px headline, 260px chart wrap, 220px compare-chart wrap). Two handlers keep Chart.js sized correctly:
+
+- `beforeprint` + `afterprint` — for interactive Cmd+P.
+- `window.matchMedia('print').addEventListener('change', …)` — for headless `--print-to-pdf`, which does not fire `beforeprint`.
+
+Both call `resizeChartsToWrap()`, which iterates every chart container (main + both compare canvases) and calls `chart.resize(w, h)` with explicit dimensions inside `requestAnimationFrame`. Explicit dims — rather than letting Chart.js re-read the parent — is what fixes the Session 2/3 regression where headless prints rendered the bitmap at screen-size dimensions and painted it into a fraction of the print wrap.
+
+Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common.
 
 ## Don't
 
@@ -172,4 +214,7 @@ Every calculator must be reviewed in print preview before shipping. Print-only r
 - Don't introduce a second accent colour. Gold exists but is reserved.
 - Don't use weight 700. Medium (500) is the boldest weight in this system.
 - Don't use emoji. Not in the UI, not in tooltips, not in print.
+- Don't use em-dashes (U+2014) in narrative prose. Ever.
 - Don't replace Chart.js defaults with Chart.js plugins. Stock Chart.js is capable enough.
+- Don't hard-code colours in JS (Chart.js dataset colours are the exception — they use `rgba(…)` with token-matched values).
+- Don't add a fourth state. If a new flow is needed, collapse it into one of the three or discuss before building.

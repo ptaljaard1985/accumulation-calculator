@@ -16,22 +16,24 @@ The target audience for this code is whoever (adviser or Claude) needs to refine
 
 These are not preferences. Breaking any of them is a regression:
 
-1. **Single file.** Everything — HTML, CSS, JS — lives in `retirement_accumulation.html`. No build step, no npm, no React. The only external dependency is Chart.js from `cdnjs.cloudflare.com`. The file must open with `file://` and work offline except for the chart library.
+1. **Single file.** Everything — HTML, CSS, JS — lives in `retirement_accumulation.html`. No build step, no npm, no React. External runtime deps are limited to: Chart.js from `cdnjs.cloudflare.com` and the Fraunces / Inter Tight / JetBrains Mono webfonts from `fonts.googleapis.com`. Adding any other runtime dep needs an explicit conversation. The file must open with `file://`; webfonts and Chart.js degrade gracefully when offline (system fallback fonts kick in; charts stay blank but inputs + numbers still compute).
 2. **Prints to PDF cleanly.** Browser print dialog produces a compliance-ready document with inputs, outputs, methodology, and FSP disclaimer. Never break `@media print`.
 3. **Math is auditable.** Any change to a calculation must come with a Python test in `tests/python/` that implements the same logic from scratch and agrees to within R1 with the JS. If you cannot write a closed-form or manual trace that matches, the change is unsafe.
-4. **Warm paper aesthetic, not SaaS.** Background `#faf9f5`, brand navy `#2d3e50`, hairline borders, no gradients, no shadows, no animations, no emoji. Details in `docs/DESIGN.md`.
+4. **Warm paper aesthetic, not SaaS.** Background `--paper: #faf7f0`, primary accent `--navy: #1f2d3d`, accent `--gold: #b8893c`, hairline borders, serif editorial headlines (Fraunces), no gradients, no shadows beyond the scenario card's navy ring, no animations, no emoji, no em-dashes in narrative prose. Details in `docs/DESIGN.md`.
 5. **South African context.** Rands with space separators (`R6 000 000`), no tax modelling during accumulation, FSP 50637 disclaimer in the print summary. The "5% rule" is before-tax by design — don't add tax assumptions.
+6. **Three states, one tree.** The UI is a single component tree (`<div class="calc" data-view="empty|filled|compare">`) with `[data-view-only]` flags on state-specific nodes, not three separate pages. View is derived, not manually set. Don't add a fourth state; fold new flows into the existing three.
 
 ## How the code is organised
 
-Inside the single HTML file (approximate line ranges; file is currently ~2100 lines):
+Inside the single HTML file (approximate line ranges; file is currently ~3,300 lines):
 
-- **Lines 1–670**: CSS using `:root` CSS variables as design tokens. Collapsible sections, event rows, household panel, narrative card, accordion styles, and the `@media print` block are all here.
-- **Lines 670–1000**: HTML structure — header, client bar, household position (collapsible), retirement-anchor row, capital events, market assumptions, summary cards, delta bar, chart controls, chart card, narrative section, and the print-summary accordions.
-- **Lines 1000–1220**: JS helpers, state (`spouseNames`, `baseline`, `chartView`…), `renderSpouseLabels()` (walks `[data-spouse]` nodes), events store + rendering.
-- **Lines 1220–1420**: `project()` — the core projection function. Monthly compounding, contribution escalation, growth breakdown decomposition, capital events application.
-- **Lines 1420–1910**: Rendering — summary cards, delta bar, charts (capital + breakdown), year table, `updatePrintSummary()`, `updateNarrative()`.
-- **Lines 1910–end**: Baseline lock, event wiring, inline-rename handlers, print/matchMedia handlers, init.
+- **Lines 1–10**: `<head>` meta, Google Fonts preconnect + `<link>`, `<style>` opens.
+- **Lines 10–1130**: CSS. `:root` design tokens; shared primitives (buttons, seg toggle, delta chip, headline + gold-under accent); per-state classes (`.canvas-empty`, `.plan-bar` + drawer, `.chart-card`, `.outcome-strip`, `.compare` grid + `.compare-card`, `.scenario-levers`, `.narrative`); form primitives (`.field`, thin slider); capital events row; print summary / accordion; `@media print`; and responsive breakpoint.
+- **Lines 1130–1700**: HTML structure — `.calc` root with `data-view` + hidden meta inputs; State 1 (title plate, two-column spouse setup, foot band, dashed preview); plan-bar + drawer; State 2 canvas head + chart-card + outcome-strip + narrative + canvas-foot; State 3 canvas head (compact) + compare grid + legend + scenario-levers + canvas-foot; print-summary accordions; footer meta.
+- **Lines 1700–2000**: JS helpers, state variables (`spouseNames`, `baseline`, `chartView`, `mode`, …), `renderSpouseLabels()` (walks `[data-spouse]` nodes), events store + `renderEvents()` / `buildEventRow()`.
+- **Lines 2000–2145**: `project()` — the core projection function. Monthly compounding, contribution escalation, growth breakdown decomposition, capital events application.
+- **Lines 2145–2850**: Rendering — `updateSummary` (outcome strip + headline), `updatePlanBar` (fact cells + drawer meta), `updateViewVisibility`, `buildCapitalChart`, `buildBreakdownChart`, `buildYearTable`, `buildCompareCharts` + `ensureCompareChart`, `updateCompareCards` + `setMetaDelta`, `updatePrintSummary`, `updateNarrative`.
+- **Lines 2850–end**: `refresh()`, State 1 → canonical sync wiring (`data-sync-to`, `data-sync-spouse-name`, family-name edit), drawer toggle, chart resize + print handlers, button / toggle listeners, init.
 
 See `docs/ARCHITECTURE.md` for more detail on any section.
 
@@ -111,12 +113,12 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (37 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (12 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (14 tests).
 
 ## What not to do
 
 - **Don't bundle.** No webpack, no rollup, no esbuild. The file is the file.
-- **Don't add dependencies.** Chart.js is the only runtime dependency. No plugins, no lodash, no moment.
+- **Don't add dependencies beyond Chart.js + Google Fonts.** No plugins, no lodash, no moment. If a new external dep is genuinely needed, it's a conversation, not a commit.
 - **Don't introduce a backend.** The calculator is stateless and client-side. Anything that needs persistence goes somewhere else.
 - **Don't add analytics, tracking, or telemetry.** Client financial data must stay in the browser.
 - **Don't add tax modelling.** The income calculation is 5% before tax by design. If the adviser wants tax, they use the drawdown calculator after retirement.
@@ -129,6 +131,36 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 4 — 2026-04-22
+
+**Shipped (design-update-pr4):** full visual redesign of the calculator. The rail + cluttered canvas layout is gone; in its place, a single-tree three-state UI driven by `viewState`.
+
+- **Tokens + fonts.** Palette swept to the new `--ink / --paper / --navy / --gold` system from `design/hifi-calc.css`; warm paper stays (new value `#faf7f0`), navy shifts slightly (`#1f2d3d`), teal retires. Fraunces / Inter Tight / JetBrains Mono loaded via Google Fonts `<link>` in `<head>`. All inline CSS references migrated in one sweep — no alias shim kept.
+- **Three states, one tree.** Root `<div class="calc" data-view="empty|filled|compare">` wraps everything. `deriveViewState()` reads `baseline`, balances, spouse names, retirement age; `updateViewVisibility()` toggles `display` on every `[data-view-only]` node. The derivation runs first in `refresh()` so chart builds see correct visibility.
+- **State 1 (empty).** Title-page setup: `A plan for the ___ family.` with an inline editable `#family-name` span, centred serif 44px / Fraunces 300. Two-column spouse setup separated by a 1px divider, step labels (`I.` / `II.` italic gold roman numerals). Four `field-input.empty` pills per spouse (dashed border, `R` prefix). Foot band with retirement-age input + market-assumptions readout. Dashed preview placeholder. State 1 inputs are shadow inputs — they carry `data-sync-to` attrs and write to the canonical `#hp-*` inputs on blur.
+- **State 2 (filled).** Plan-inputs bar with 5 fact cells (Household · Combined starting capital · Monthly contributions · Retire at · Return · CPI) and a three-column drawer (Household / Retirement+Events / Market+Meeting) toggled by `Edit plan ↓`. Editorial headline with `gold-under` accent on the income number. Chart card with Capital/Breakdown/Table segmented seg; three-cell outcome strip (navy-filled primary cell for Monthly income); narrative with gold vertical rule; canvas foot with Table view + Print/PDF.
+- **State 3 (compare).** Compact canvas head with Real/Nominal + Clear + Re-lock. Two-up `.compare.big` grid: baseline card (paper-2 background, muted hero in `--ink-2`) next to scenario card (white with a navy ring box-shadow, navy hero). Each card carries its own Chart.js instance (`#chart-compare-baseline` at 35% opacity, `#chart-compare-scenario` at full). Both use a shared y-ceiling so bars compare visually. Scenario card's head shows a gold `+ R N / mo` delta chip; meta rows carry inline gold deltas. Scenario levers (4 thin sliders) sit below the grid in a separate card. Narrative is suppressed in State 3 — the compare cards are the narrative visually.
+- **Chart restyle.** Gold `#b8893c` discretionary on the bottom, navy `#1f2d3d` retirement on top (reversed from the teal/gold order that shipped in Session 3). Breakdown view colours also retuned (lighter/darker greys + gold). Y-axis labels in JetBrains Mono. Baseline-overlay dashed line removed from the main capital chart — State 3 replaces that entire idea.
+- **Print.** Drawer forced closed in print. Outcome strip + chart card + compare cards each get `page-break-inside: avoid`. `.scenario-levers` and `.canvas-foot-actions` hidden. Chart heights retuned down (260px main / 220px compare). `resizeChartsToWrap()` generalised to iterate all three chart containers. Accordion-forced-open + matchMedia handlers unchanged.
+
+**Decisions (and why):**
+
+- **Google Fonts over self-hosted or system-fallback.** Asked the user between (a) Google Fonts link, (b) self-hosted WOFF2, (c) system fonts. User chose (a). Tradeoff: one extra external runtime dep, but Fraunces / Inter Tight / JetBrains Mono carry the design's voice — dropping them to system fonts would lose most of the editorial feel.
+- **Palette sweep, no alias shim.** Old token names (`--brand`, `--ink-muted`, `--surface-alt`, `--teal`, `--line-strong`, `--radius`, `--radius-lg`, `--success`, `--danger`) deleted outright. ~60 CSS references migrated in one pass. The sweep produces a larger diff but leaves a clean token vocabulary going forward.
+- **Token values from `hifi-calc.css`, not the README table.** The README's token table differed in several spots from the CSS file (`--faint`, `--line`, `--hairline`, `--navy-soft`, `--gold`, `--gold-2`). Used the CSS values because they were the rendered reference — the README table was the summary, not the source of truth.
+- **Internal `mode` var kept as `'pv'/'fv'`.** UI labels changed to "Real" / "Nominal" per spec, but the internal variable keeps its original name so the JS test harness (which extracts by symbol name) doesn't break.
+- **Single `.calc` tree with `data-view-only` instead of three separate pages.** The spec specified this explicitly: "All three share the same full-width canvas frame". Visibility is a single JS pass over `[data-view-only]` nodes — no duplicated markup, no per-state mounts.
+- **Both `#btn-pv`/`btn-fv` pairs exist as siblings in the DOM.** One pair lives in the State 2 canvas-head, the other in the State 3 compact canvas-head. Only one is visible at a time via `data-view-only`. `setMode` updates class state on all four so toggles stay in sync regardless of which is visible. Simpler than trying to relocate one button set across views.
+- **Table view folded into the chart-card slot.** Previously the year-table lived in the same `.chart-wrap` as the canvases and was toggled via `display`. Kept this pattern — State 2's chart-card now has Capital / Breakdown / Table as three visual modes of the same slot, matching the spec.
+- **Compare-card charts as two independent Chart.js instances.** Simpler than trying to render two datasets on one chart with faded/solid alphas. Shared y-ceiling (`Math.max(bSeries.total, pSeries.total) * 1.05`) preserves visual comparability.
+- **`data-sync-to` pattern for State 1 → canonical input sync.** Empty-state inputs don't share IDs with the drawer inputs (IDs must be unique). Instead, each State 1 input carries `data-sync-to="hp-ret-A"` and a blur handler writes its cleaned value into the canonical input, then fires `input` + `blur` events so the normal formatting + refresh pipeline runs. One-way sync (State 1 → canonical) is sufficient because the user never returns to State 1 after the plan is complete.
+- **Family-name editing strips "the" and "family".** The title-plate span reads "the Pillay family" after editing, but writes just "Pillay" (or whatever the bare name is) into `#client-name` so the print summary doesn't say `Prepared for: the Pillay family`. Regex: `^the\s+/i`, `\s+family$/i`.
+- **Outcome-strip baseline delta lines removed.** The State 2 cards no longer carry `Baseline X · ±delta` rows — in State 3 the compare cards handle that job visually, and in State 2 there is never a baseline (derivation routes lock → compare). Simpler code, cleaner cards.
+
+**Tests:** 14 JS + 37 Python, all green. No math changes — `project()` and its return shape are untouched.
+
+**Known caveat:** Visual verification requires a browser. Static checks (parse, ID resolution, div balance) + test suite cover correctness of the math/narrative layer; the headline numbers, chart colours, compare-card alignment, and print preview need an eyeball. Opened in Safari at the end of the session but didn't produce screenshots.
 
 ### Session 3 — 2026-04-22
 
