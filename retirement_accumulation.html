@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Accumulation — Simple Wealth</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-muted: #5a5a5a;
+    --ink-faint: #8a8a8a;
+    --line: #e5e5e0;
+    --line-strong: #c8c8c0;
+    --surface: #ffffff;
+    --surface-alt: #faf9f5;
+    --surface-warm: #f3f1e8;
+    --brand: #2d3e50;
+    --brand-accent: #c89a3c;
+    --success: #3b6d11;
+    --danger: #a32d2d;
+    --teal: #2a6b6b;
+    --gold: #c89a3c;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px; line-height: 1.55;
+    color: var(--ink);
+    background: var(--surface-alt);
+  }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 32px 48px; }
+
+  /* Header */
+  .header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 32px 0 20px;
+    border-bottom: 2px solid var(--brand);
+    margin-bottom: 28px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-logo { height: 44px; width: auto; display: block; }
+  .brand-mark {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--brand); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 18px; letter-spacing: 0.5px;
+  }
+  .doc-meta { text-align: right; font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+  .doc-meta strong { color: var(--ink); font-weight: 500; }
+  .doc-meta .print-btn {
+    margin-top: 6px; padding: 6px 12px; font-size: 12px;
+    background: var(--brand); color: white; border: none;
+    border-radius: var(--radius); font-family: inherit; cursor: pointer;
+  }
+  .doc-meta .print-btn:hover { background: #1f2c3a; }
+
+  /* Title */
+  .title-block { margin-bottom: 28px; }
+  .title-block h1 {
+    font-size: 26px; font-weight: 500; margin: 0 0 6px;
+    color: var(--ink); letter-spacing: -0.3px;
+  }
+  .title-block .sub { font-size: 14px; color: var(--ink-muted); max-width: 760px; }
+
+  /* Client bar */
+  .client-bar {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+  .client-bar .field label {
+    display: block; font-size: 11px; color: var(--ink-faint);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .client-bar .field input {
+    width: 100%; border: none; background: transparent;
+    font-size: 15px; font-weight: 500; color: var(--ink);
+    font-family: inherit; padding: 2px 0;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.15s;
+  }
+  .client-bar .field input:hover, .client-bar .field input:focus {
+    outline: none; border-bottom-color: var(--line-strong);
+  }
+
+  /* Section headers */
+  .section-header {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--ink-faint); font-weight: 600;
+    margin: 0 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-header.collapsible {
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+  }
+  .section-header.collapsible:hover { color: var(--ink-muted); }
+  .section-header .chev {
+    font-size: 14px;
+    transition: transform 0.15s;
+    color: var(--ink-faint);
+  }
+  .section-header.collapsed .chev { transform: rotate(-90deg); }
+  .collapsible-body {
+    overflow: hidden;
+    transition: max-height 0.2s ease, margin 0.2s ease, opacity 0.2s ease;
+  }
+  .collapsible-body.collapsed {
+    max-height: 0 !important;
+    margin: 0 !important;
+    opacity: 0;
+  }
+  .section-header .summary-chip {
+    font-size: 11px; text-transform: none; letter-spacing: 0.2px;
+    color: var(--ink-muted); font-weight: 400;
+    margin-left: 14px; padding: 3px 10px;
+    background: var(--surface-warm); border-radius: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Capital events */
+  .events-empty {
+    color: var(--ink-muted);
+    font-size: 13px;
+    font-style: italic;
+    padding: 8px 0 14px;
+  }
+  .event-row {
+    display: grid;
+    grid-template-columns: 120px 90px 1fr 1fr 150px 36px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .event-row:last-of-type { border-bottom: none; }
+  .event-row .event-input-wrap {
+    display: flex; align-items: center;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    transition: border-color 0.15s;
+  }
+  .event-row .event-input-wrap:focus-within {
+    border-color: var(--brand); background: var(--surface);
+  }
+  .event-row .event-input-wrap .pfx {
+    font-size: 12px; color: var(--ink-faint); margin-right: 4px;
+  }
+  .event-row .event-input-wrap input {
+    width: 100%; border: none; background: transparent;
+    font-size: 13px; color: var(--ink);
+    font-family: inherit; font-variant-numeric: tabular-nums;
+    padding: 6px 0;
+  }
+  .event-row .event-input-wrap input:focus { outline: none; }
+  .event-row select {
+    font-family: inherit; font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-alt);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .event-row select:focus {
+    outline: none; border-color: var(--brand); background: var(--surface);
+  }
+  .event-row .event-kind-wrap { display: flex; align-items: center; gap: 6px; }
+  .event-row .event-pv-toggle {
+    font-size: 11px; color: var(--ink-muted);
+    display: flex; align-items: center; gap: 4px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .event-row .event-pv-toggle input { margin: 0; }
+  .event-row .event-year-label {
+    font-size: 11px; color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .event-row .event-delete {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .event-row .event-delete:hover {
+    background: var(--danger); color: white; border-color: var(--danger);
+  }
+  .event-row .event-head {
+    font-size: 11px; color: var(--ink-faint);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    font-weight: 500;
+  }
+  .event-row.head { padding-bottom: 6px; padding-top: 4px; border-bottom: 1px solid var(--line); }
+  .event-row.head > span { white-space: nowrap; }
+  .add-event-btn {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--ink-muted);
+    font-family: inherit; font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .add-event-btn:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: var(--surface-warm);
+  }
+  @media (max-width: 720px) {
+    .event-row { grid-template-columns: 1fr 1fr; }
+    .event-row.head { display: none; }
+    .event-row .event-delete { grid-column: span 2; width: 100%; }
+  }
+
+  /* Household position panel */
+  .household-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .hp-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px 20px;
+  }
+  .hp-row + .hp-row { margin-top: 16px; }
+  .hp-col-head {
+    grid-column: 1 / -1;
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--ink-faint); font-weight: 600;
+    padding-top: 12px; margin-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .hp-col-head:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+  .hp-field label {
+    display: block; font-size: 12px; color: var(--ink-muted); margin-bottom: 4px;
+  }
+  .hp-field .input-wrap {
+    display: flex; align-items: center;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    transition: border-color 0.15s;
+  }
+  .hp-field .input-wrap:focus-within {
+    border-color: var(--brand); background: var(--surface);
+  }
+  .hp-field .input-wrap .pfx { font-size: 14px; color: var(--ink-faint); margin-right: 4px; }
+  .hp-field input[type="text"] {
+    width: 100%; border: none; background: transparent;
+    font-size: 14px; color: var(--ink);
+    font-family: inherit; font-variant-numeric: tabular-nums;
+    padding: 8px 0; text-align: right;
+  }
+  .hp-field input:focus { outline: none; }
+
+  /* Market assumptions */
+  .assumptions-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .lever { display: flex; flex-direction: column; }
+  .lever-head {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;
+  }
+  .lever-head label { font-size: 13px; color: var(--ink-muted); }
+  .lever-head .val {
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px;
+    background: var(--line-strong);
+    border-radius: 2px; outline: none; margin: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; background: var(--brand);
+    border-radius: 50%; cursor: pointer;
+    border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; background: var(--brand);
+    border-radius: 50%; cursor: pointer;
+    border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* Retirement anchor toggle */
+  .anchor-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px;
+    background: var(--surface-warm);
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .anchor-row .anchor-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  .anchor-row .toggle {
+    display: inline-flex; background: var(--surface);
+    border-radius: var(--radius); padding: 2px;
+    border: 1px solid var(--line);
+  }
+  .anchor-row .toggle button {
+    padding: 5px 12px; border: none; background: transparent;
+    font-size: 12px; color: var(--ink-muted); cursor: pointer;
+    border-radius: 4px; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .anchor-row .toggle button.active {
+    background: var(--brand); color: white; font-weight: 500;
+  }
+  .anchor-row .anchor-result {
+    margin-left: auto; font-size: 13px; color: var(--ink-muted);
+  }
+  .anchor-row .anchor-result strong { color: var(--ink); font-weight: 500; }
+
+  /* Summary cards */
+  .summary {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 18px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .summary-card.primary {
+    background: var(--brand); border-color: var(--brand); color: white;
+  }
+  .summary-card.primary .label { color: rgba(255,255,255,0.75); }
+  .summary-card .label {
+    font-size: 12px; color: var(--ink-muted);
+    margin-bottom: 6px; letter-spacing: 0.2px;
+  }
+  .summary-card .value {
+    font-size: 28px; font-weight: 500;
+    letter-spacing: -0.3px; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-card .sub-value {
+    font-size: 12px; color: var(--ink-muted); margin-top: 6px;
+  }
+  .summary-card.primary .sub-value { color: rgba(255,255,255,0.65); }
+
+  /* Delta bar */
+  .delta-bar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--success);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .delta-bar.negative { border-left-color: var(--danger); }
+  .delta-bar .delta-main {
+    font-size: 15px; color: var(--ink); font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .delta-bar .delta-main .positive { color: var(--success); }
+  .delta-bar .delta-main .negative { color: var(--danger); }
+  .delta-bar .delta-sep { color: var(--ink-faint); }
+  .delta-bar .delta-cost {
+    font-size: 13px; color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .delta-bar .delta-actions { margin-left: auto; display: flex; gap: 6px; }
+  .delta-bar .delta-actions button {
+    padding: 4px 10px; font-size: 12px;
+    background: transparent; color: var(--ink-muted);
+    border: 1px solid var(--line);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: inherit;
+  }
+  .delta-bar .delta-actions button:hover {
+    border-color: var(--ink-muted); color: var(--ink);
+  }
+
+  /* Controls row */
+  .controls-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 12px;
+  }
+  .toggle-group {
+    display: inline-flex; background: var(--surface-warm);
+    border-radius: var(--radius); padding: 3px;
+  }
+  .toggle-group button {
+    padding: 7px 14px; border: none; background: transparent;
+    font-size: 13px; font-family: inherit; color: var(--ink-muted);
+    cursor: pointer; border-radius: 6px; font-weight: 400;
+    transition: all 0.15s;
+  }
+  .toggle-group button.active {
+    background: var(--surface); color: var(--ink); font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .action-btn {
+    padding: 8px 16px; background: var(--brand); color: white;
+    border: none; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .action-btn:hover { background: #1f2c3a; }
+  .action-btn.secondary {
+    background: transparent; color: var(--brand);
+    border: 1px solid var(--brand);
+  }
+  .action-btn.secondary:hover { background: var(--surface-warm); }
+  .action-btn.locked {
+    background: var(--success); color: white; border-color: var(--success);
+  }
+
+  /* Chart card */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  .chart-legend {
+    display: flex; gap: 16px; margin-bottom: 10px;
+    font-size: 12px; color: var(--ink-muted); flex-wrap: wrap;
+  }
+  .chart-legend .key { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-legend .swatch { width: 12px; height: 12px; border-radius: 2px; }
+  .chart-legend .swatch.line {
+    width: 18px; height: 0; border-top: 2px dashed currentColor;
+    margin-right: 2px;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 360px; }
+
+  /* Table view */
+  .year-table-wrap {
+    width: 100%; height: 100%;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .year-table {
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 100%;
+  }
+  .year-table thead th {
+    position: sticky; top: 0;
+    background: var(--surface-warm);
+    color: var(--ink-muted);
+    font-weight: 500;
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--line-strong);
+    z-index: 2;
+  }
+  .year-table tbody td {
+    padding: 6px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .year-table tbody td.age,
+  .year-table thead th.age {
+    position: sticky; left: 0;
+    background: var(--surface);
+    text-align: left;
+    font-weight: 500;
+    z-index: 3;
+    border-right: 1px solid var(--line-strong);
+  }
+  .year-table thead th.age { background: var(--surface-warm); z-index: 4; }
+  .year-table tbody tr:hover td { background: var(--surface-alt); }
+  .year-table tbody tr:hover td.age { background: var(--surface-alt); }
+
+  /* Print summary */
+  .print-summary {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    margin-top: 8px;
+  }
+  .print-summary h2 {
+    font-size: 18px; font-weight: 500; margin: 0 0 16px; color: var(--brand);
+  }
+  .print-summary h3 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faint); font-weight: 600; margin: 22px 0 10px;
+  }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .summary-table td {
+    padding: 8px 0; border-bottom: 1px solid var(--line);
+  }
+  .summary-table td:first-child { color: var(--ink-muted); width: 60%; }
+  .summary-table td:last-child {
+    text-align: right; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  .assumptions {
+    background: var(--surface-warm);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-top: 18px;
+    font-size: 12px; color: var(--ink-muted); line-height: 1.65;
+  }
+  .disclaimer {
+    font-size: 11px; color: var(--ink-faint); line-height: 1.6;
+    margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .footer-meta {
+    text-align: center; font-size: 11px; color: var(--ink-faint);
+    margin-top: 32px; letter-spacing: 0.3px;
+  }
+
+  /* Print */
+  @media print {
+    body { background: white; }
+    .page { padding: 0; max-width: 100%; }
+    .no-print { display: none !important; }
+    .chart-card, .household-panel, .delta-bar, .summary, .anchor-row {
+      page-break-inside: avoid;
+    }
+    .print-summary { page-break-before: always; border: none; padding: 0; }
+    .client-bar input { border: none !important; }
+  }
+
+  @media (max-width: 900px) {
+    .summary, .client-bar, .hp-row, .assumptions-grid {
+      grid-template-columns: 1fr;
+    }
+    .page { padding: 0 16px 32px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .doc-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="brand">
+      <img src="https://www.simplewealth.co.za/logo.webp" alt="Simple Wealth" class="brand-logo"
+           onerror="this.style.display='none'; document.getElementById('brand-fallback').style.display='flex';">
+      <div id="brand-fallback" class="brand-mark" style="display:none;">SW</div>
+    </div>
+    <div class="doc-meta">
+      <div><strong>Retirement Accumulation Projection</strong></div>
+      <div id="doc-date">—</div>
+      <button class="print-btn no-print" onclick="window.print()">Print / save as PDF</button>
+    </div>
+  </header>
+
+  <div class="title-block">
+    <h1>Where is your current plan taking you?</h1>
+    <p class="sub">A view of projected household capital at retirement, and the monthly income it can support, based on current contributions and expected investment growth. Use the inputs to explore how changes in contribution or assumptions affect the outcome.</p>
+  </div>
+
+  <div class="client-bar">
+    <div class="field">
+      <label>Prepared for</label>
+      <input type="text" id="client-name" value="">
+    </div>
+    <div class="field">
+      <label>Meeting date</label>
+      <input type="text" id="client-date" placeholder="DD Month YYYY">
+    </div>
+    <div class="field">
+      <label>Adviser</label>
+      <input type="text" id="adviser-name" value="Simple Wealth (Pty) Ltd">
+    </div>
+  </div>
+
+  <div class="section-header collapsible" id="hp-header">
+    <span>Household position today <span class="summary-chip" id="hp-summary-chip">—</span></span>
+    <span class="chev">▾</span>
+  </div>
+  <div class="collapsible-body" id="hp-body" style="max-height: 1000px;">
+  <div class="household-panel">
+    <div class="hp-row">
+      <div class="hp-col-head">
+        <span>Spouse A</span>
+        <span style="text-transform:none; letter-spacing:0; color:var(--ink-muted); font-weight:400; display: inline-flex; align-items: center; gap: 8px;">
+          age
+          <input type="number" id="hp-age-A" value="40" min="18" max="64" step="1"
+                 style="width: 56px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-alt); font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink); text-align: center; font-variant-numeric: tabular-nums;">
+        </span>
+      </div>
+      <div class="hp-field">
+        <label>Retirement fund balance</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-ret-A" value="1 500 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Discretionary balance</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-disc-A" value="500 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Monthly retirement contribution</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-A" value="8 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Monthly discretionary contribution</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-A" value="3 000" inputmode="numeric"></div>
+      </div>
+    </div>
+
+    <div class="hp-row">
+      <div class="hp-col-head">
+        <span>Spouse B</span>
+        <span style="text-transform:none; letter-spacing:0; color:var(--ink-muted); font-weight:400; display: inline-flex; align-items: center; gap: 8px;">
+          age
+          <input type="number" id="hp-age-B" value="40" min="18" max="64" step="1"
+                 style="width: 56px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-alt); font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink); text-align: center; font-variant-numeric: tabular-nums;">
+        </span>
+      </div>
+      <div class="hp-field">
+        <label>Retirement fund balance</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-ret-B" value="1 200 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Discretionary balance</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-disc-B" value="300 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Monthly retirement contribution</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-B" value="7 000" inputmode="numeric"></div>
+      </div>
+      <div class="hp-field">
+        <label>Monthly discretionary contribution</label>
+        <div class="input-wrap"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-B" value="2 000" inputmode="numeric"></div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /#hp-body -->
+
+  <div class="anchor-row">
+    <span class="anchor-label">Retire when</span>
+    <div class="toggle">
+      <button id="anchor-youngest" class="active">Youngest spouse</button>
+      <button id="anchor-oldest">Oldest spouse</button>
+    </div>
+    <span style="font-size: 13px; color: var(--ink-muted);">reaches age</span>
+    <input type="number" id="retirement-age" value="65" min="50" max="75" step="1"
+           style="width: 64px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink); text-align: center; font-variant-numeric: tabular-nums;">
+    <div class="anchor-result">
+      Projection horizon: <strong id="anchor-years">25</strong> years,
+      retirement year: <strong id="anchor-year">—</strong>
+    </div>
+  </div>
+
+  <!-- Capital events -->
+  <div class="section-header collapsible collapsed" id="events-header">
+    <span>Planned capital events <span class="summary-chip" id="events-summary-chip">none</span></span>
+    <span class="chev">▾</span>
+  </div>
+  <div class="collapsible-body collapsed" id="events-body" style="max-height: 0;">
+    <div class="household-panel">
+      <div style="font-size: 12px; color: var(--ink-muted); margin-bottom: 10px; line-height: 1.5;">
+        One-off inflows (inheritances, bonuses, maturing policies) or outflows (a house purchase, a child's wedding). Inflows increase the discretionary portfolio; outflows come from the discretionary portfolio. Ages are anchored to the <span id="events-ref-spouse">youngest</span> spouse.
+      </div>
+      <div id="events-list"></div>
+      <button class="add-event-btn" id="add-event-btn">＋ Add a capital event</button>
+    </div>
+  </div>
+
+  <div class="section-header">Market assumptions</div>
+  <div class="household-panel">
+    <div class="assumptions-grid">
+      <div class="lever">
+        <div class="lever-head">
+          <label>Expected investment return (nominal, p.a.)</label>
+          <span class="val" id="return-out">10.0%</span>
+        </div>
+        <input type="range" min="3" max="15" step="0.25" value="10" id="return">
+      </div>
+      <div class="lever">
+        <div class="lever-head">
+          <label>Expected inflation (CPI)</label>
+          <span class="val" id="cpi-out">5.0%</span>
+        </div>
+        <input type="range" min="2" max="10" step="0.25" value="5" id="cpi">
+      </div>
+      <div class="lever">
+        <div class="lever-head">
+          <label>Annual contribution escalation</label>
+          <span class="val" id="esc-out">6.0%</span>
+        </div>
+        <input type="range" min="0" max="12" step="0.25" value="6" id="esc">
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">Projected outcome at retirement</div>
+  <div class="summary">
+    <div class="summary-card primary">
+      <div class="label">Projected monthly income at retirement</div>
+      <div class="value" id="sum-income">R0</div>
+      <div class="sub-value" id="sum-income-sub">today's money · 5% of combined capital, before tax</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Household capital at retirement</div>
+      <div class="value" id="sum-capital">R0</div>
+      <div class="sub-value" id="sum-capital-sub">today's money</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Years until retirement</div>
+      <div class="value" id="sum-years">—</div>
+      <div class="sub-value" id="sum-years-sub">retiring in —</div>
+    </div>
+  </div>
+
+  <div class="delta-bar" id="delta-bar" style="display: none;">
+    <div class="delta-main" id="delta-main">—</div>
+    <span class="delta-sep">·</span>
+    <div class="delta-cost" id="delta-cost">—</div>
+    <div class="delta-actions no-print">
+      <button id="btn-relock">Re-lock baseline</button>
+      <button id="btn-clear-baseline">Clear baseline</button>
+    </div>
+  </div>
+
+  <div class="controls-row no-print">
+    <div class="toggle-group">
+      <button id="btn-view-capital" class="active">Capital</button>
+      <button id="btn-view-breakdown">Growth breakdown</button>
+      <button id="btn-view-table">Table</button>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div class="toggle-group">
+        <button id="btn-pv" class="active">Real (today's money)</button>
+        <button id="btn-fv">Nominal (future rands)</button>
+      </div>
+      <button id="btn-lock" class="action-btn secondary">Lock as baseline</button>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-legend" id="legend-capital">
+      <span class="key"><span class="swatch" style="background: var(--teal);"></span>Retirement fund</span>
+      <span class="key"><span class="swatch" style="background: var(--gold);"></span>Discretionary</span>
+      <span class="key" id="legend-baseline-capital" style="display: none;">
+        <span class="swatch line" style="color: var(--ink-muted);"></span>Current (baseline)
+      </span>
+    </div>
+    <div class="chart-legend" id="legend-breakdown" style="display: none;">
+      <span class="key"><span class="swatch" style="background: #8a8a8a;"></span>Starting capital, compounded</span>
+      <span class="key"><span class="swatch" style="background: #5a5a5a;"></span>Cumulative contributions</span>
+      <span class="key"><span class="swatch" style="background: var(--gold);"></span>Growth on contributions</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart-capital" role="img" aria-label="Stacked bar chart of projected household capital by year, split between retirement fund and discretionary portfolio.">Capital accumulation chart.</canvas>
+      <canvas id="chart-breakdown" role="img" aria-label="Stacked bar chart showing how each year's capital decomposes into starting balance, cumulative contributions, and investment growth." style="display: none;">Growth breakdown chart.</canvas>
+      <div id="year-table-wrap" class="year-table-wrap" style="display: none;">
+        <table class="year-table" id="year-table">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="print-summary" id="print-summary">
+    <h2>Summary of assumptions and outcome</h2>
+
+    <h3>Client &amp; meeting</h3>
+    <table class="summary-table">
+      <tr><td>Client</td><td id="s-client">—</td></tr>
+      <tr><td>Meeting date</td><td id="s-date">—</td></tr>
+      <tr><td>Adviser</td><td id="s-adviser">—</td></tr>
+    </table>
+
+    <h3>Starting position</h3>
+    <table class="summary-table">
+      <tr><td>Spouse A (age · retirement · discretionary)</td><td id="s-pos-A">—</td></tr>
+      <tr><td>Spouse B (age · retirement · discretionary)</td><td id="s-pos-B">—</td></tr>
+      <tr><td>Household capital today</td><td id="s-cap-today">—</td></tr>
+    </table>
+
+    <h3>Contributions &amp; assumptions</h3>
+    <table class="summary-table">
+      <tr><td>Spouse A monthly contributions (retirement · discretionary)</td><td id="s-contrib-A">—</td></tr>
+      <tr><td>Spouse B monthly contributions (retirement · discretionary)</td><td id="s-contrib-B">—</td></tr>
+      <tr><td>Annual contribution escalation</td><td id="s-esc">—</td></tr>
+      <tr><td>Expected investment return (nominal, p.a.)</td><td id="s-return">—</td></tr>
+      <tr><td>Expected inflation (CPI)</td><td id="s-cpi">—</td></tr>
+      <tr><td>Retirement age anchor</td><td id="s-anchor">—</td></tr>
+      <tr><td>Horizon</td><td id="s-horizon">—</td></tr>
+    </table>
+
+    <h3>Projected outcome at retirement</h3>
+    <table class="summary-table">
+      <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
+      <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
+      <tr><td>Projected monthly income at 5% draw (today's money, before tax)</td><td id="s-income">—</td></tr>
+      <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
+    </table>
+
+    <div id="s-events-section" style="display: none;">
+      <h3>Capital events</h3>
+      <table class="summary-table">
+        <tbody id="s-events-body"></tbody>
+      </table>
+    </div>
+
+    <div id="s-baseline-section" style="display: none;">
+      <h3>Comparison to baseline</h3>
+      <table class="summary-table">
+        <tr><td>Baseline monthly income (today's money)</td><td id="s-base-income">—</td></tr>
+        <tr><td>Planned monthly income (today's money)</td><td id="s-plan-income">—</td></tr>
+        <tr><td>Change in monthly income</td><td id="s-delta-income">—</td></tr>
+        <tr><td>Change in current monthly contributions</td><td id="s-delta-contrib">—</td></tr>
+      </table>
+    </div>
+
+    <div class="assumptions">
+      <strong style="color: var(--ink);">Notes on methodology.</strong>
+      Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income is a simple approximation: 5% of the combined capital (retirement fund plus discretionary) divided by twelve, shown in today's money and before tax. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
+    </div>
+
+    <div class="disclaimer">
+      This projection is illustrative only and is based on the assumptions entered at the time of the meeting. Actual outcomes will differ, potentially materially, depending on investment performance, inflation, contribution levels, career changes, legislative changes, and individual circumstances. This document does not constitute financial advice in isolation and should be read together with a full financial plan and formal record of advice. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP no. 50637. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).
+    </div>
+  </div>
+
+  <div class="footer-meta">
+    Simple Wealth &nbsp;·&nbsp; Retirement Accumulation Projection &nbsp;·&nbsp; <span id="footer-date">—</span>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  // ===== Helpers =====
+  function fmtR(n){
+    if (!isFinite(n)) n = 0;
+    var sign = n < 0 ? '-' : '';
+    n = Math.abs(Math.round(n));
+    return sign + 'R' + n.toLocaleString('en-ZA').replace(/,/g, ' ');
+  }
+  function fmtShort(n){
+    var sign = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    if (n >= 1e6) return sign + 'R' + (n/1e6).toFixed(1) + 'm';
+    if (n >= 1e3) return sign + 'R' + Math.round(n/1e3) + 'k';
+    return sign + 'R' + Math.round(n);
+  }
+  function fmtPct(n){ return n.toFixed(2) + '%'; }
+  function set(id, val){ var el = document.getElementById(id); if (el) el.textContent = val; }
+  function read(id){ return parseFloat(document.getElementById(id).value); }
+  function parseCurrency(id){
+    var raw = document.getElementById(id).value.replace(/[^0-9.\-]/g, '');
+    var n = parseFloat(raw);
+    return isFinite(n) ? n : 0;
+  }
+  function parseAge(id, fallback){
+    var n = parseInt(document.getElementById(id).value, 10);
+    if (!isFinite(n) || n < 18) n = fallback;
+    if (n > 64) n = 64;
+    return n;
+  }
+
+  // ===== State =====
+  var mode = 'pv';            // 'pv' | 'fv'
+  var chartView = 'capital';  // 'capital' | 'breakdown' | 'table'
+  var anchor = 'youngest';    // 'youngest' | 'oldest'
+  var baseline = null;
+  var chartCapital = null;
+  var chartBreakdown = null;
+  var eventsStore = [];       // [{ id, age, amount, todaysMoney, kind }]
+  var eventSeq = 1;
+
+  // ===== Events store =====
+  function newEvent(){
+    // Sensible default: an inflow of R500k at age 55 in today's money
+    var currentAnchorSpouseAge = anchor === 'youngest'
+      ? Math.min(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40))
+      : Math.max(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40));
+    var defaultAge = currentAnchorSpouseAge + 10;
+    return {
+      id: 'ev-' + (eventSeq++),
+      age: defaultAge,
+      amount: 500000,
+      todaysMoney: true,
+      kind: 'inflow'
+    };
+  }
+  function renderEvents(){
+    var list = document.getElementById('events-list');
+    if (eventsStore.length === 0){
+      list.innerHTML = '<div class="events-empty">No capital events added. Use the button below to add an expected inheritance, bonus, large purchase or other one-off.</div>';
+      return;
+    }
+    var html = '<div class="event-row head">' +
+      '<span class="event-head">Kind</span>' +
+      '<span class="event-head">At age</span>' +
+      '<span class="event-head">Amount</span>' +
+      '<span class="event-head"></span>' +
+      '<span class="event-head">Year</span>' +
+      '<span class="event-head"></span>' +
+    '</div>';
+    for (var i = 0; i < eventsStore.length; i++){
+      var ev = eventsStore[i];
+      html += buildEventRow(ev);
+    }
+    list.innerHTML = html;
+    // Attach listeners via delegation (once)
+    if (!list.dataset.wired){
+      list.dataset.wired = '1';
+      list.addEventListener('input', onEventInput);
+      list.addEventListener('change', onEventInput);
+      list.addEventListener('click', onEventClick);
+    }
+  }
+  function buildEventRow(ev){
+    var currentYear = new Date().getFullYear();
+    var refAge = anchor === 'youngest'
+      ? Math.min(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40))
+      : Math.max(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40));
+    var yearFromNow = ev.age - refAge;
+    var calYear = currentYear + Math.max(0, yearFromNow);
+    var amountStr = Math.round(ev.amount).toLocaleString('en-ZA').replace(/,/g, ' ');
+    var kindLabel = ev.kind === 'inflow' ? 'Inflow' : 'Outflow';
+    return (
+      '<div class="event-row" data-id="' + ev.id + '">' +
+        '<select data-field="kind">' +
+          '<option value="inflow"'  + (ev.kind === 'inflow'  ? ' selected' : '') + '>Inflow (+)</option>' +
+          '<option value="outflow"' + (ev.kind === 'outflow' ? ' selected' : '') + '>Outflow (−)</option>' +
+        '</select>' +
+        '<div class="event-input-wrap"><input type="number" data-field="age" value="' + ev.age + '" min="18" max="95" step="1"></div>' +
+        '<div class="event-input-wrap"><span class="pfx">R</span><input type="text" data-field="amount" value="' + amountStr + '" inputmode="numeric"></div>' +
+        '<label class="event-pv-toggle"><input type="checkbox" data-field="todaysMoney"' + (ev.todaysMoney ? ' checked' : '') + '> today\u2019s money</label>' +
+        '<span class="event-year-label">' + (yearFromNow < 1 ? 'past / this year' : 'y+' + yearFromNow + ' · ' + calYear) + '</span>' +
+        '<button class="event-delete" data-field="delete" title="Remove">×</button>' +
+      '</div>'
+    );
+  }
+  function onEventInput(e){
+    var t = e.target;
+    if (!t || !t.dataset || !t.dataset.field) return;
+    var row = t.closest('.event-row');
+    if (!row) return;
+    var id = row.dataset.id;
+    var ev = eventsStore.find(function(x){ return x.id === id; });
+    if (!ev) return;
+    var field = t.dataset.field;
+    if (field === 'kind') ev.kind = t.value;
+    else if (field === 'age') {
+      var n = parseInt(t.value, 10);
+      if (isFinite(n)) ev.age = n;
+    }
+    else if (field === 'amount') {
+      var a = parseFloat((t.value || '').replace(/[^0-9.\-]/g, ''));
+      ev.amount = isFinite(a) ? a : 0;
+    }
+    else if (field === 'todaysMoney') ev.todaysMoney = !!t.checked;
+    // Re-render only the year label, not the whole list (keeps focus in input)
+    var refAge = anchor === 'youngest'
+      ? Math.min(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40))
+      : Math.max(parseAge('hp-age-A', 40), parseAge('hp-age-B', 40));
+    var yearFromNow = ev.age - refAge;
+    var currentYear = new Date().getFullYear();
+    var calYear = currentYear + Math.max(0, yearFromNow);
+    var label = row.querySelector('.event-year-label');
+    if (label) label.textContent = yearFromNow < 1 ? 'past / this year' : 'y+' + yearFromNow + ' · ' + calYear;
+    refresh();
+  }
+  function onEventClick(e){
+    var t = e.target;
+    if (!t || t.dataset.field !== 'delete') return;
+    var row = t.closest('.event-row');
+    if (!row) return;
+    var id = row.dataset.id;
+    eventsStore = eventsStore.filter(function(x){ return x.id !== id; });
+    renderEvents();
+    refresh();
+  }
+  function readEvents(){
+    return eventsStore.map(function(ev){
+      return {
+        age: ev.age,
+        amount: ev.amount,
+        todaysMoney: ev.todaysMoney,
+        kind: ev.kind
+      };
+    });
+  }
+
+  // ===== Projection =====
+  function project(inputs){
+    var ageA = inputs.ageA;
+    var ageB = inputs.ageB;
+    var youngest = Math.min(ageA, ageB);
+    var oldest   = Math.max(ageA, ageB);
+    var refAge = inputs.anchor === 'youngest' ? youngest : oldest;
+    var years = inputs.retirementAge - refAge;
+    if (years < 1) years = 1;
+
+    var rNom = inputs.rNom;
+    var cpi = inputs.cpi;
+    var esc = inputs.esc;
+    var rMonth = Math.pow(1 + rNom, 1/12) - 1;
+
+    var retA = inputs.retA, retB = inputs.retB;
+    var discA = inputs.discA, discB = inputs.discB;
+    var contribRetA = inputs.contribRetA;
+    var contribRetB = inputs.contribRetB;
+    var contribDiscA = inputs.contribDiscA;
+    var contribDiscB = inputs.contribDiscB;
+
+    // Separate tracker for the "starting balance" line of the breakdown.
+    // This balance compounds at the nominal return with NO contributions, so we
+    // can decompose each year's total as: starting-balance-compounded
+    //                                    + cumulative contributions (not grown)
+    //                                    + growth on contributions (the remainder).
+    var startBalanceNom = retA + retB + discA + discB;
+    var startBalanceRun = startBalanceNom;
+
+    // Events: normalise to rand at application-year in nominal terms.
+    // Event age is measured in the reference spouse's age.
+    var events = (inputs.events || []).slice();
+    // Pre-compute the year-offset each event applies at (end of that year).
+    var normalisedEvents = events.map(function(ev){
+      var yrOffset = ev.age - refAge;
+      return {
+        yrOffset: yrOffset,
+        amount: ev.amount,
+        todaysMoney: ev.todaysMoney,
+        kind: ev.kind   // 'inflow' | 'outflow'
+      };
+    }).filter(function(ev){
+      return ev.yrOffset >= 1 && ev.yrOffset <= years &&
+             isFinite(ev.amount) && ev.amount > 0;
+    });
+
+    var labels = ['Age ' + refAge];
+    var refAgeSeries = [refAge];
+    var ageASeries = [ageA];
+    var ageBSeries = [ageB];
+    var retNom = [retA + retB];
+    var discNom = [discA + discB];
+    var totalNom = [retA + retB + discA + discB];
+    var cumulContribs = [0];
+    var startBalanceSeriesNom = [startBalanceNom];
+    var eventImpactNom = [0];   // nominal rand added/removed at the year-end (for display / audit)
+
+    var cumulContribsRunning = 0;
+    for (var y = 1; y <= years; y++){
+      var yearContribTotal = 0;
+      for (var m = 0; m < 12; m++){
+        retA = retA * (1 + rMonth) + contribRetA;
+        retB = retB * (1 + rMonth) + contribRetB;
+        discA = discA * (1 + rMonth) + contribDiscA;
+        discB = discB * (1 + rMonth) + contribDiscB;
+        // starting-balance tracker grows at the same monthly rate but with NO contributions
+        startBalanceRun = startBalanceRun * (1 + rMonth);
+        yearContribTotal += contribRetA + contribRetB + contribDiscA + contribDiscB;
+      }
+      cumulContribsRunning += yearContribTotal;
+      // Escalate for next year
+      contribRetA *= (1 + esc);
+      contribRetB *= (1 + esc);
+      contribDiscA *= (1 + esc);
+      contribDiscB *= (1 + esc);
+
+      // Apply any capital events scheduled at end of this year
+      var yearEventImpact = 0;
+      for (var e = 0; e < normalisedEvents.length; e++){
+        var ev = normalisedEvents[e];
+        if (ev.yrOffset === y){
+          var nominalAmt = ev.todaysMoney
+            ? ev.amount * Math.pow(1 + cpi, y - 1)
+            : ev.amount;
+          if (ev.kind === 'inflow'){
+            // Add to discretionary. We split the inflow proportionally between
+            // the two spouses' disc balances if both are positive; otherwise
+            // add it all to A by convention.
+            var totalDisc = discA + discB;
+            if (totalDisc > 0){
+              var wA = discA / totalDisc;
+              discA += nominalAmt * wA;
+              discB += nominalAmt * (1 - wA);
+            } else {
+              discA += nominalAmt;
+            }
+            yearEventImpact += nominalAmt;
+          } else {
+            // Outflow from discretionary. Remove proportionally.
+            // Cap at available balance; if outflow exceeds discretionary we
+            // set disc to zero and carry no debt (the tool does not model
+            // retirement-fund drawdown during accumulation).
+            var available = discA + discB;
+            var remove = Math.min(available, nominalAmt);
+            if (available > 0){
+              var wAo = discA / available;
+              discA -= remove * wAo;
+              discB -= remove * (1 - wAo);
+            }
+            yearEventImpact -= remove;
+          }
+        }
+      }
+
+      labels.push('Age ' + (refAge + y));
+      refAgeSeries.push(refAge + y);
+      ageASeries.push(ageA + y);
+      ageBSeries.push(ageB + y);
+      retNom.push(retA + retB);
+      discNom.push(discA + discB);
+      totalNom.push(retA + retB + discA + discB);
+      cumulContribs.push(cumulContribsRunning);
+      startBalanceSeriesNom.push(startBalanceRun);
+      eventImpactNom.push(yearEventImpact);
+    }
+
+    function deflate(arr){
+      return arr.map(function(v, i){ return v / Math.pow(1 + cpi, i); });
+    }
+    var retReal = deflate(retNom);
+    var discReal = deflate(discNom);
+    var totalReal = deflate(totalNom);
+    var cumulContribsReal = deflate(cumulContribs);
+    var startBalanceReal = deflate(startBalanceSeriesNom);
+
+    // Growth breakdown — now with a compounded starting-balance component.
+    //
+    // Components per year i:
+    //   A. startBalanceSeries[i] — what the original capital alone would be worth
+    //   B. cumulContribs[i]      — rand contributed to date (no growth on this part)
+    //   C. remainder             — total[i] - A - B
+    //                              Represents growth attributable to contributions
+    //                              (can be negative in low-return scenarios; we clamp at 0)
+    //
+    // Events adjust the TOTAL but are not attributed to any specific component.
+    // This means a large inflow or outflow will cause C (growth-on-contribs) to
+    // absorb the event; in practice the breakdown view is most useful when no
+    // large events are present. The methodology note will flag this.
+    var brReal = { initial: [], contribs: [], growth: [] };
+    var brNom = { initial: [], contribs: [], growth: [] };
+    for (var i = 0; i < totalReal.length; i++){
+      brReal.initial.push(startBalanceReal[i]);
+      brReal.contribs.push(cumulContribsReal[i]);
+      brReal.growth.push(Math.max(0, totalReal[i] - startBalanceReal[i] - cumulContribsReal[i]));
+      brNom.initial.push(startBalanceSeriesNom[i]);
+      brNom.contribs.push(cumulContribs[i]);
+      brNom.growth.push(Math.max(0, totalNom[i] - startBalanceSeriesNom[i] - cumulContribs[i]));
+    }
+
+    var finalTotalReal = totalReal[totalReal.length - 1];
+    var finalTotalNom = totalNom[totalNom.length - 1];
+    var monthlyIncomeReal = finalTotalReal * 0.05 / 12;
+
+    return {
+      inputs: inputs,
+      years: years,
+      refAge: refAge,
+      retirementAge: inputs.retirementAge,
+      startAgeYoungest: youngest,
+      startAgeOldest: oldest,
+      retirementYearCalendar: new Date().getFullYear() + years,
+      labels: labels,
+      refAgeSeries: refAgeSeries,
+      ageA: ageASeries,
+      ageB: ageBSeries,
+      events: normalisedEvents,
+      eventImpactNom: eventImpactNom,
+      nominal: {
+        ret: retNom, disc: discNom, total: totalNom,
+        cumulContribs: cumulContribs,
+        startBalance: startBalanceSeriesNom,
+        breakdown: brNom
+      },
+      real: {
+        ret: retReal, disc: discReal, total: totalReal,
+        cumulContribs: cumulContribsReal,
+        startBalance: startBalanceReal,
+        breakdown: brReal
+      },
+      finalTotalReal: finalTotalReal,
+      finalTotalNom: finalTotalNom,
+      monthlyIncomeReal: monthlyIncomeReal,
+      totalContribsOverHorizon: cumulContribs[cumulContribs.length - 1]
+    };
+  }
+
+  function readInputs(){
+    var retAge = parseInt(document.getElementById('retirement-age').value, 10);
+    if (!isFinite(retAge) || retAge < 50) retAge = 50;
+    if (retAge > 75) retAge = 75;
+    return {
+      ageA: parseAge('hp-age-A', 40),
+      ageB: parseAge('hp-age-B', 40),
+      retA: parseCurrency('hp-ret-A'),
+      retB: parseCurrency('hp-ret-B'),
+      discA: parseCurrency('hp-disc-A'),
+      discB: parseCurrency('hp-disc-B'),
+      contribRetA: parseCurrency('hp-ret-contrib-A'),
+      contribRetB: parseCurrency('hp-ret-contrib-B'),
+      contribDiscA: parseCurrency('hp-disc-contrib-A'),
+      contribDiscB: parseCurrency('hp-disc-contrib-B'),
+      rNom: read('return') / 100,
+      cpi: read('cpi') / 100,
+      esc: read('esc') / 100,
+      anchor: anchor,
+      retirementAge: retAge,
+      events: readEvents()
+    };
+  }
+
+  // ===== Rendering =====
+  function updateAnchorRow(p){
+    set('anchor-years', p.years);
+    set('anchor-year', p.retirementYearCalendar);
+  }
+
+  function updateSummary(p){
+    set('sum-income', fmtR(p.monthlyIncomeReal));
+    set('sum-capital', fmtR(p.finalTotalReal));
+    set('sum-capital-sub', "today's money · " + fmtShort(p.finalTotalNom) + ' nominal');
+    set('sum-years', p.years);
+    set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
+  }
+
+  function updateDelta(p){
+    var bar = document.getElementById('delta-bar');
+    var mainEl = document.getElementById('delta-main');
+    var costEl = document.getElementById('delta-cost');
+    var legendBase = document.getElementById('legend-baseline-capital');
+    if (!baseline){
+      bar.style.display = 'none';
+      if (legendBase) legendBase.style.display = 'none';
+      return;
+    }
+    bar.style.display = '';
+    if (chartView === 'capital' && legendBase) legendBase.style.display = '';
+
+    var incomeDelta = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
+    var contribDelta = (
+      p.inputs.contribRetA + p.inputs.contribRetB + p.inputs.contribDiscA + p.inputs.contribDiscB
+    ) - (
+      baseline.inputs.contribRetA + baseline.inputs.contribRetB +
+      baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
+    );
+    var sign = incomeDelta >= 0 ? '+' : '−';
+    var absIncome = Math.abs(incomeDelta);
+    var cls = incomeDelta >= 0 ? 'positive' : 'negative';
+    mainEl.innerHTML = 'Planned vs baseline: <span class="' + cls + '">' +
+                       sign + fmtR(absIncome) + '/mo</span> in retirement income (today\u2019s money)';
+    bar.classList.toggle('negative', incomeDelta < 0);
+
+    if (Math.abs(contribDelta) < 1){
+      costEl.textContent = 'from the same monthly contributions (assumption change only)';
+    } else {
+      var costSign = contribDelta >= 0 ? '+' : '−';
+      costEl.textContent = 'from ' + costSign + fmtR(Math.abs(contribDelta)) + '/mo in additional contributions today';
+    }
+  }
+
+  function buildCapitalChart(p){
+    var ctx = document.getElementById('chart-capital');
+    var series = mode === 'pv' ? p.real : p.nominal;
+    var retData = series.ret;
+    var discData = series.disc;
+    var baselineData = baseline
+      ? (mode === 'pv' ? baseline.p.real.total : baseline.p.nominal.total)
+      : null;
+
+    var datasets = [
+      {
+        label: 'Retirement fund',
+        data: retData,
+        backgroundColor: 'rgba(42, 107, 107, 0.85)',
+        borderColor: 'rgba(42, 107, 107, 1)',
+        borderWidth: 0,
+        type: 'bar',
+        stack: 'capital'
+      },
+      {
+        label: 'Discretionary',
+        data: discData,
+        backgroundColor: 'rgba(200, 154, 60, 0.85)',
+        borderColor: 'rgba(200, 154, 60, 1)',
+        borderWidth: 0,
+        type: 'bar',
+        stack: 'capital'
+      }
+    ];
+    if (baselineData){
+      datasets.push({
+        label: 'Baseline total',
+        data: baselineData,
+        type: 'line',
+        borderColor: 'rgba(90, 90, 90, 0.75)',
+        backgroundColor: 'transparent',
+        borderDash: [6, 4],
+        borderWidth: 1.8,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0.1
+      });
+    }
+
+    if (chartCapital){
+      chartCapital.data.labels = p.labels;
+      chartCapital.data.datasets = datasets;
+      chartCapital.update('none');
+      return;
+    }
+
+    chartCapital = new Chart(ctx, {
+      data: { labels: p.labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){ return ctx.dataset.label + ': ' + fmtShort(ctx.parsed.y); }
+            }
+          }
+        },
+        scales: {
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { callback: function(v){ return fmtShort(v); }, font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.06)' }
+          },
+          x: {
+            stacked: true,
+            ticks: { font: { size: 11 }, maxTicksLimit: 12 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function buildBreakdownChart(p){
+    var ctx = document.getElementById('chart-breakdown');
+    var series = mode === 'pv' ? p.real : p.nominal;
+    var br = series.breakdown;
+
+    var datasets = [
+      {
+        label: 'Starting capital, compounded',
+        data: br.initial,
+        backgroundColor: 'rgba(138, 138, 138, 0.85)',
+        borderWidth: 0,
+        type: 'bar',
+        stack: 'b'
+      },
+      {
+        label: 'Cumulative contributions',
+        data: br.contribs,
+        backgroundColor: 'rgba(90, 90, 90, 0.8)',
+        borderWidth: 0,
+        type: 'bar',
+        stack: 'b'
+      },
+      {
+        label: 'Growth on contributions',
+        data: br.growth,
+        backgroundColor: 'rgba(200, 154, 60, 0.85)',
+        borderWidth: 0,
+        type: 'bar',
+        stack: 'b'
+      }
+    ];
+
+    if (chartBreakdown){
+      chartBreakdown.data.labels = p.labels;
+      chartBreakdown.data.datasets = datasets;
+      chartBreakdown.update('none');
+      return;
+    }
+
+    chartBreakdown = new Chart(ctx, {
+      data: { labels: p.labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){ return ctx.dataset.label + ': ' + fmtShort(ctx.parsed.y); }
+            }
+          }
+        },
+        scales: {
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { callback: function(v){ return fmtShort(v); }, font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.06)' }
+          },
+          x: {
+            stacked: true,
+            ticks: { font: { size: 11 }, maxTicksLimit: 12 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function buildYearTable(p){
+    var series = mode === 'pv' ? p.real : p.nominal;
+    var thead = document.querySelector('#year-table thead');
+    var tbody = document.querySelector('#year-table tbody');
+
+    var showBase = !!baseline;
+    var baseTotal = baseline
+      ? (mode === 'pv' ? baseline.p.real.total : baseline.p.nominal.total)
+      : null;
+
+    thead.innerHTML =
+      '<tr>' +
+        '<th class="age">Year</th>' +
+        '<th>Age A</th>' +
+        '<th>Age B</th>' +
+        '<th>Retirement fund</th>' +
+        '<th>Discretionary</th>' +
+        '<th>Total capital</th>' +
+        '<th>Annual contributions (nominal)</th>' +
+        (showBase ? '<th>Baseline total</th><th>Delta</th>' : '') +
+      '</tr>';
+
+    var rows = [];
+    for (var i = 0; i < p.labels.length; i++){
+      var yearContrib = i === 0 ? null
+        : (p.nominal.cumulContribs[i] - p.nominal.cumulContribs[i-1]);
+      var deltaHtml = '';
+      if (showBase){
+        var delta = series.total[i] - baseTotal[i];
+        var cls = delta >= 0 ? 'style="color: var(--success);"' : 'style="color: var(--danger);"';
+        deltaHtml =
+          '<td>' + fmtR(baseTotal[i]) + '</td>' +
+          '<td ' + cls + '>' + (delta >= 0 ? '+' : '') + fmtR(delta) + '</td>';
+      }
+      rows.push(
+        '<tr>' +
+          '<td class="age">Y' + i + '</td>' +
+          '<td>' + p.ageA[i] + '</td>' +
+          '<td>' + p.ageB[i] + '</td>' +
+          '<td>' + fmtR(series.ret[i]) + '</td>' +
+          '<td>' + fmtR(series.disc[i]) + '</td>' +
+          '<td>' + fmtR(series.total[i]) + '</td>' +
+          '<td>' + (yearContrib === null ? '—' : fmtR(yearContrib)) + '</td>' +
+          deltaHtml +
+        '</tr>'
+      );
+    }
+    tbody.innerHTML = rows.join('');
+  }
+
+  function updatePrintSummary(p){
+    set('s-client', document.getElementById('client-name').value || '—');
+    set('s-date',   document.getElementById('client-date').value || '—');
+    set('s-adviser', document.getElementById('adviser-name').value || '—');
+
+    set('s-pos-A',
+      p.inputs.ageA + ' · ' + fmtR(p.inputs.retA) + ' · ' + fmtR(p.inputs.discA));
+    set('s-pos-B',
+      p.inputs.ageB + ' · ' + fmtR(p.inputs.retB) + ' · ' + fmtR(p.inputs.discB));
+    set('s-cap-today', fmtR(p.nominal.total[0]));
+
+    set('s-contrib-A',
+      fmtR(p.inputs.contribRetA) + '/mo · ' + fmtR(p.inputs.contribDiscA) + '/mo');
+    set('s-contrib-B',
+      fmtR(p.inputs.contribRetB) + '/mo · ' + fmtR(p.inputs.contribDiscB) + '/mo');
+    set('s-esc', fmtPct(p.inputs.esc * 100));
+    set('s-return', fmtPct(p.inputs.rNom * 100));
+    set('s-cpi', fmtPct(p.inputs.cpi * 100));
+    set('s-anchor', anchor === 'youngest'
+      ? 'Youngest spouse reaches 65'
+      : 'Oldest spouse reaches 65');
+    set('s-horizon', p.years + ' years · retiring in ' + p.retirementYearCalendar);
+
+    set('s-cap-real', fmtR(p.finalTotalReal));
+    set('s-cap-nom', fmtR(p.finalTotalNom));
+    set('s-income', fmtR(p.monthlyIncomeReal));
+    set('s-total-contrib', fmtR(p.totalContribsOverHorizon));
+
+    // Capital events section in the print summary
+    var evSec = document.getElementById('s-events-section');
+    var evBody = document.getElementById('s-events-body');
+    if (p.events && p.events.length > 0){
+      evSec.style.display = '';
+      var refAge = p.refAge;
+      var rows = p.events.slice().sort(function(a, b){ return a.yrOffset - b.yrOffset; })
+        .map(function(ev){
+          var age = refAge + ev.yrOffset;
+          var kindLabel = ev.kind === 'inflow' ? 'Inflow' : 'Outflow';
+          var pvLabel = ev.todaysMoney ? " (today's money)" : ' (nominal)';
+          return '<tr><td>Age ' + age + ' · ' + kindLabel + pvLabel +
+                 '</td><td>' + (ev.kind === 'outflow' ? '−' : '+') + fmtR(ev.amount) + '</td></tr>';
+        });
+      evBody.innerHTML = rows.join('');
+    } else {
+      evSec.style.display = 'none';
+    }
+
+    var baseSec = document.getElementById('s-baseline-section');
+    if (baseline){
+      baseSec.style.display = '';
+      set('s-base-income', fmtR(baseline.monthlyIncomeReal));
+      set('s-plan-income', fmtR(p.monthlyIncomeReal));
+      var dI = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
+      set('s-delta-income', (dI >= 0 ? '+' : '') + fmtR(dI) + '/mo');
+      var dC = (
+        p.inputs.contribRetA + p.inputs.contribRetB + p.inputs.contribDiscA + p.inputs.contribDiscB
+      ) - (
+        baseline.inputs.contribRetA + baseline.inputs.contribRetB +
+        baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
+      );
+      set('s-delta-contrib', (dC >= 0 ? '+' : '') + fmtR(dC) + '/mo');
+    } else {
+      baseSec.style.display = 'none';
+    }
+  }
+
+  // ===== View switching =====
+  function setView(v){
+    chartView = v;
+    document.getElementById('btn-view-capital').classList.toggle('active', v === 'capital');
+    document.getElementById('btn-view-breakdown').classList.toggle('active', v === 'breakdown');
+    document.getElementById('btn-view-table').classList.toggle('active', v === 'table');
+    document.getElementById('chart-capital').style.display = v === 'capital' ? '' : 'none';
+    document.getElementById('chart-breakdown').style.display = v === 'breakdown' ? '' : 'none';
+    document.getElementById('year-table-wrap').style.display = v === 'table' ? '' : 'none';
+    document.getElementById('legend-capital').style.display = v === 'capital' ? '' : 'none';
+    document.getElementById('legend-breakdown').style.display = v === 'breakdown' ? '' : 'none';
+    if (v === 'capital' && chartCapital){ chartCapital.destroy(); chartCapital = null; }
+    if (v === 'breakdown' && chartBreakdown){ chartBreakdown.destroy(); chartBreakdown = null; }
+    refresh();
+  }
+
+  function setMode(m){
+    mode = m;
+    document.getElementById('btn-pv').classList.toggle('active', m === 'pv');
+    document.getElementById('btn-fv').classList.toggle('active', m === 'fv');
+    refresh();
+  }
+
+  function setAnchor(a){
+    anchor = a;
+    document.getElementById('anchor-youngest').classList.toggle('active', a === 'youngest');
+    document.getElementById('anchor-oldest').classList.toggle('active', a === 'oldest');
+    refresh();
+  }
+
+  function updateSliderLabels(){
+    set('return-out', fmtPct(read('return')));
+    set('cpi-out', fmtPct(read('cpi')));
+    set('esc-out', fmtPct(read('esc')));
+  }
+
+  // ===== Baseline lock =====
+  function lockBaseline(){
+    var inputs = readInputs();
+    var p = project(inputs);
+    baseline = {
+      inputs: inputs,
+      p: p,
+      monthlyIncomeReal: p.monthlyIncomeReal,
+      finalTotalReal: p.finalTotalReal
+    };
+    var btn = document.getElementById('btn-lock');
+    btn.textContent = '✓ Baseline locked';
+    btn.classList.remove('secondary');
+    btn.classList.add('locked');
+    refresh();
+  }
+  function clearBaseline(){
+    baseline = null;
+    var btn = document.getElementById('btn-lock');
+    btn.textContent = 'Lock as baseline';
+    btn.classList.add('secondary');
+    btn.classList.remove('locked');
+    refresh();
+  }
+
+  // ===== Refresh =====
+  function refresh(){
+    updateSliderLabels();
+    var inputs = readInputs();
+    var p = project(inputs);
+    updateAnchorRow(p);
+    updateSummary(p);
+    updateDelta(p);
+    updateHeaderChips();
+    if (chartView === 'capital') buildCapitalChart(p);
+    else if (chartView === 'breakdown') buildBreakdownChart(p);
+    else if (chartView === 'table') buildYearTable(p);
+    updatePrintSummary(p);
+  }
+
+  // ===== Wire up =====
+  ['return', 'cpi', 'esc'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', refresh);
+  });
+  var hpInputs = [
+    'hp-ret-A','hp-disc-A','hp-ret-contrib-A','hp-disc-contrib-A',
+    'hp-ret-B','hp-disc-B','hp-ret-contrib-B','hp-disc-contrib-B'
+  ];
+  hpInputs.forEach(function(id){
+    var el = document.getElementById(id);
+    el.addEventListener('input', refresh);
+    el.addEventListener('blur', function(){
+      var n = parseFloat((el.value || '').replace(/[^0-9.\-]/g, ''));
+      if (!isFinite(n)) n = 0;
+      el.value = Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' ');
+      refresh();
+    });
+  });
+  ['hp-age-A', 'hp-age-B'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+      renderEvents();  // ref-age may have changed; re-render to update year labels
+      refresh();
+    });
+  });
+  document.getElementById('retirement-age').addEventListener('input', refresh);
+  document.getElementById('retirement-age').addEventListener('blur', function(){
+    var el = document.getElementById('retirement-age');
+    var n = parseInt(el.value, 10);
+    if (!isFinite(n) || n < 50) n = 50;
+    if (n > 75) n = 75;
+    el.value = n;
+    refresh();
+  });
+  ['client-name', 'client-date', 'adviser-name'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+      updatePrintSummary(project(readInputs()));
+    });
+  });
+  document.getElementById('anchor-youngest').addEventListener('click', function(){
+    setAnchor('youngest');
+    renderEvents();  // ref-age changes; re-render year labels
+  });
+  document.getElementById('anchor-oldest').addEventListener('click', function(){
+    setAnchor('oldest');
+    renderEvents();
+  });
+  document.getElementById('btn-view-capital').addEventListener('click', function(){ setView('capital'); });
+  document.getElementById('btn-view-breakdown').addEventListener('click', function(){ setView('breakdown'); });
+  document.getElementById('btn-view-table').addEventListener('click', function(){ setView('table'); });
+  document.getElementById('btn-pv').addEventListener('click', function(){ setMode('pv'); });
+  document.getElementById('btn-fv').addEventListener('click', function(){ setMode('fv'); });
+  document.getElementById('btn-lock').addEventListener('click', lockBaseline);
+  document.getElementById('btn-relock').addEventListener('click', lockBaseline);
+  document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
+  document.getElementById('add-event-btn').addEventListener('click', function(){
+    eventsStore.push(newEvent());
+    renderEvents();
+    // Expand the events section if it's collapsed
+    if (document.getElementById('events-header').classList.contains('collapsed')){
+      toggleCollapse('events-header', 'events-body');
+    }
+    refresh();
+  });
+
+  // ===== Collapsible sections =====
+  function toggleCollapse(headerId, bodyId){
+    var header = document.getElementById(headerId);
+    var body = document.getElementById(bodyId);
+    var isCollapsed = header.classList.toggle('collapsed');
+    body.classList.toggle('collapsed', isCollapsed);
+    if (!isCollapsed){
+      // Open: remove max-height constraint after transition
+      body.style.maxHeight = body.scrollHeight + 'px';
+      setTimeout(function(){
+        if (!body.classList.contains('collapsed')){
+          body.style.maxHeight = '';
+        }
+      }, 220);
+    } else {
+      // Close: set explicit max-height first so transition works
+      body.style.maxHeight = body.scrollHeight + 'px';
+      requestAnimationFrame(function(){
+        body.style.maxHeight = '0';
+      });
+    }
+  }
+  document.getElementById('hp-header').addEventListener('click', function(){
+    toggleCollapse('hp-header', 'hp-body');
+  });
+  document.getElementById('events-header').addEventListener('click', function(){
+    toggleCollapse('events-header', 'events-body');
+  });
+
+  // ===== Summary chips on collapsible headers =====
+  function fmtShortR(n){
+    var s = fmtShort(n);
+    return s;
+  }
+  function updateHeaderChips(){
+    var ageA = parseAge('hp-age-A', 40);
+    var ageB = parseAge('hp-age-B', 40);
+    var totalStart = parseCurrency('hp-ret-A') + parseCurrency('hp-disc-A') +
+                     parseCurrency('hp-ret-B') + parseCurrency('hp-disc-B');
+    var totalContrib = parseCurrency('hp-ret-contrib-A') + parseCurrency('hp-disc-contrib-A') +
+                       parseCurrency('hp-ret-contrib-B') + parseCurrency('hp-disc-contrib-B');
+    set('hp-summary-chip',
+      ageA + '/' + ageB + ' · ' + fmtShortR(totalStart) + ' capital · ' + fmtShortR(totalContrib) + '/mo in');
+    if (eventsStore.length === 0){
+      set('events-summary-chip', 'none');
+    } else {
+      var inflows = eventsStore.filter(function(e){ return e.kind === 'inflow'; }).length;
+      var outflows = eventsStore.filter(function(e){ return e.kind === 'outflow'; }).length;
+      var parts = [];
+      if (inflows) parts.push(inflows + ' inflow' + (inflows > 1 ? 's' : ''));
+      if (outflows) parts.push(outflows + ' outflow' + (outflows > 1 ? 's' : ''));
+      set('events-summary-chip', parts.join(' · '));
+    }
+    set('events-ref-spouse', anchor === 'youngest' ? 'youngest' : 'oldest');
+  }
+
+  // Date
+  var today = new Date();
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var dateStr = today.getDate() + ' ' + months[today.getMonth()] + ' ' + today.getFullYear();
+  set('doc-date', dateStr);
+  set('footer-date', dateStr);
+  document.getElementById('client-date').value = dateStr;
+
+  renderEvents();
+  refresh();
+})();
+</script>
+</body>
+</html>
