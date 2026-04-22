@@ -16,23 +16,29 @@ Chart.js is the only runtime dependency, loaded from `cdnjs.cloudflare.com`.
 <header>              Simple Wealth brand + document title + print button
 <title-block>         H1, subtitle
 <client-bar>          Prepared for / Meeting date / Adviser
-<household-position>  Collapsible. Per-spouse ages, balances, contributions. Spouse headers are click-to-edit.
-<anchor-row>          Youngest/oldest toggle + retirement age input (50-75)
+<household-position>  Collapsible. Per-spouse ages, balances, contributions, plus the
+                      retire-when anchor row (youngest/oldest toggle + retirement age
+                      input). Spouse headers are click-to-edit.
 <capital-events>      Collapsible. Default empty. Inflow/outflow event list.
-<market-assumptions>  Sliders: return, CPI, contribution escalation
+<market-assumptions>  Collapsible. Sliders: return, CPI, contribution escalation.
 <summary-cards>       Projected monthly income, capital at retirement, years to go.
                       Income + capital cards also carry a delta-line when a baseline is locked.
+<scenario-row>        Shown only when a baseline is locked. Four sliders centred on
+                      baseline values: retirement contributions, discretionary
+                      contributions, expected return, retirement age. Moving a slider
+                      mutates the underlying household/market inputs.
 <controls-row>        View toggle (Capital/Breakdown/Table) + Real/Nominal + Lock button.
                       The Lock button swaps with a Re-lock + Clear pair when a baseline is locked.
 <chart-card>          One of three views at a time: capital bars, breakdown bars, year table
-<narrative>           "In plain terms" card: three headed sections —
-                      PLANNED (always), BASELINE POSITION + PLANNED SCENARIO (when locked).
+<narrative>           "In plain terms" card. Two layouts:
+                      no baseline: CURRENT POSITION (one section).
+                      baseline locked: BASELINE POSITION + PLANNED SCENARIO.
 <print-summary>       Compliance-ready tables wrapped in three collapsed <details> accordions:
                       detail tables, methodology, disclaimer. Forced open at print time.
 <footer>
 ```
 
-The household-position and capital-events sections are collapsible via click on their section header. Each shows a summary chip when collapsed (e.g. "40/40 · R3.5m capital · R20k/mo in" on household, "2 inflows · 1 outflow" on events).
+The household-position, capital-events, and market-assumptions sections are each collapsible via click on their section header. Each shows a summary chip when collapsed (e.g. "40/40 · R3.5m capital · R20k/mo in · retiring at 65" on household, "2 inflows · 1 outflow" on events, "10.00% return · 5.00% CPI · 6.00% escalation" on market assumptions).
 
 ## The JS, bottom to top
 
@@ -55,6 +61,7 @@ var lastProjection = null;   // most recent project() result, cached for out-of-
 var eventsStore = [];        // [{ id, age, amount, todaysMoney, kind }]
 var eventSeq = 1;
 var spouseNames = { A: 'Spouse A', B: 'Spouse B' };  // editable via the panel headers
+var scenarioAnchors = null;  // captured from baseline.inputs when locked; drives the scenario slider row
 ```
 
 ### 3. Events store
@@ -117,7 +124,7 @@ renderSpouseLabels();
 
 ### 7. Baseline lock
 
-`lockBaseline()` captures a full snapshot of the current `{ inputs, project-result, monthlyIncomeReal, finalTotalReal }`. `clearBaseline()` resets to null. When `baseline` is non-null: the income and capital outcome cards grow delta-lines (`Baseline X · ±Y (±Z%)`), the chart shows a dashed baseline total line, the narrative adds `BASELINE POSITION` and `PLANNED SCENARIO` sections, the print summary adds a "Comparison to baseline" section, and the Lock button swaps for a Re-lock + Clear pair.
+`lockBaseline()` captures a full snapshot of the current `{ inputs, project-result, monthlyIncomeReal, finalTotalReal }` AND captures scenario anchors (see §10). `clearBaseline()` resets both to null and hides the scenario slider row. When `baseline` is non-null: the income and capital outcome cards grow delta-lines (`Baseline X · ±Y (±Z%)`), the chart shows a dashed baseline total line, the narrative switches from the single `CURRENT POSITION` section to `BASELINE POSITION` + `PLANNED SCENARIO`, the print summary adds a "Comparison to baseline" section, the scenario slider row appears below the outcome cards, and the Lock button swaps for a Re-lock + Clear pair.
 
 **Hard freeze semantics**: the baseline includes return and CPI assumptions, so changing them after lock moves the planned line but not the baseline line. This was a deliberate decision — a "lock" that doesn't lock everything would be confusing in a meeting.
 
@@ -130,6 +137,16 @@ renderSpouseLabels();
 ### 9. Event wiring
 
 At the end: slider listeners, text-input listeners with blur-to-format, toggle listeners, view switcher, baseline lock, add-event button, section collapse listeners. Everything ends by calling `refresh()`.
+
+### 10. Planned-scenario sliders
+
+A meeting-time adjustment surface centred on the locked baseline. Visible only while a baseline is locked. Four sliders: retirement contributions (±R10 000 / month, step R500), discretionary contributions (±R10 000, step R500), expected return (±2 percentage points, step 0.5 pp), retirement age (±5 years, step 1).
+
+`captureScenarioAnchors()` reads `baseline.inputs` on lock and stores the reference values. `configureScenarioSliders()` sets each slider's `min`/`max`/`step`/`value` based on those anchors (clamped to the existing main-slider ranges so the global 50–75 retirement-age bound and 3–15% return bound still hold).
+
+Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`. Contribution sliders split any household-total delta proportionally between the two spouses based on their baseline share (zero-zero baseline falls back to 50/50). The underlying household-panel / return-slider / retirement-age inputs are written back directly, then `refresh()` runs the normal projection pipeline.
+
+`updateScenarioReadouts()` runs from `refresh()` and re-reads the current underlying inputs to sync each slider's thumb position and update the delta pills. This means direct edits in the household panel or the market-assumptions sliders also move the scenario thumbs — the scenario row reflects the current state, it doesn't hold its own truth.
 
 ## Data flow on a user interaction
 
