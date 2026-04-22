@@ -23,11 +23,11 @@ The root `<div class="calc" data-view="empty|filled|compare" id="calc-root">` wr
 
 ```js
 if (baseline) return 'compare';
-if ((nameA || nameB) && anyBalance > 0 && isFinite(retAge)) return 'filled';
+if (projectionRequested) return 'filled';
 return 'empty';
 ```
 
-Note: default inputs are non-empty and defaults of `Spouse A` / `Spouse B` are treated as "not yet named". A fresh open lands on `filled` — the empty state is shown only when someone genuinely clears the form (or we add a "Start fresh" button in the future).
+`projectionRequested` is a module-scoped boolean that starts false and flips to true when the adviser clicks the `#btn-see-projection` CTA at the bottom of State 1. Once set, it stays true for the rest of the session — clearing a baseline returns the view to State 2, not back to State 1. A fresh page load always lands on `empty`; the transition is user-initiated, not data-driven. Typing names/balances into the State 1 fields does NOT transition — the sync-to handlers still run and populate the canonical inputs, but the view stays put until the button is clicked.
 
 ## Top-to-bottom page structure
 
@@ -131,6 +131,7 @@ var lastProjection = null;   // most recent project() result
 var eventsStore = [];        // [{ id, age, amount, todaysMoney, kind }]
 var eventSeq = 1;
 var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
+var projectionRequested = false; // one-way gate: State 1 → State 2 on CTA click
 var scenarioAnchors = null;  // captured from baseline.inputs on lock; drives the scenario levers
 ```
 
