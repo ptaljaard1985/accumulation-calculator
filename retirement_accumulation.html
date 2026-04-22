@@ -256,6 +256,25 @@
     border-top: 1px solid var(--line);
   }
   .hp-col-head:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+  .spouse-name-edit {
+    display: inline-block;
+    min-width: 1em;
+    padding: 1px 4px;
+    margin: -1px -4px;
+    border-radius: 3px;
+    border-bottom: 1px dashed var(--line);
+    cursor: text;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .spouse-name-edit:hover {
+    border-bottom-color: var(--brand);
+    background: var(--surface-alt);
+  }
+  .spouse-name-edit:focus {
+    outline: none;
+    border-bottom: 1px solid var(--brand);
+    background: var(--surface);
+  }
   .hp-field label {
     display: block; font-size: 12px; color: var(--ink-muted); margin-bottom: 4px;
   }
@@ -550,16 +569,106 @@
     margin-top: 32px; letter-spacing: 0.3px;
   }
 
+  /* Narrative summary */
+  .narrative {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px 32px;
+    margin-top: 14px;
+  }
+  .narrative-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--ink-faint); font-weight: 600; margin: 0 0 14px;
+  }
+  .narrative p {
+    margin: 0 0 12px;
+    font-size: 14px; line-height: 1.7; color: var(--ink);
+  }
+  .narrative p:last-child { margin-bottom: 0; }
+
+  /* Collapsible accordions in the appendix */
+  .accordion {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-top: 10px;
+  }
+  .accordion + .accordion { margin-top: 8px; }
+  .accordion > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 18px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faint); font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+    user-select: none;
+  }
+  .accordion > summary::-webkit-details-marker { display: none; }
+  .accordion > summary::after {
+    content: "\25BE";
+    font-size: 11px; color: var(--ink-faint);
+    transition: transform 0.18s;
+  }
+  .accordion[open] > summary::after { transform: rotate(180deg); }
+  .accordion > summary:hover { color: var(--ink-muted); }
+  .accordion-body {
+    padding: 4px 18px 18px;
+    border-top: 1px solid var(--line);
+  }
+  .accordion-body h3 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faint); font-weight: 600; margin: 18px 0 10px;
+  }
+  .accordion-body h3:first-child { margin-top: 8px; }
+
   /* Print */
   @media print {
     body { background: white; }
     .page { padding: 0; max-width: 100%; }
     .no-print { display: none !important; }
-    .chart-card, .household-panel, .delta-bar, .summary, .anchor-row {
+    .delta-bar, .summary, .narrative {
       page-break-inside: avoid;
     }
+    .chart-card { page-break-inside: avoid; page-break-before: avoid; }
     .print-summary { page-break-before: always; border: none; padding: 0; }
     .client-bar input { border: none !important; }
+    /* Hide the input-editing surfaces from page 1. The same data lives in the
+       appendix tables on pages 2+. */
+    #hp-header, #events-header,
+    .collapsible-body,
+    .market-assumptions-panel,
+    .anchor-row,
+    .section-header:not(.outcome-header) {
+      display: none !important;
+    }
+    .outcome-header { margin-top: 0; }
+    /* Keep multi-column layouts on print even though the page width is narrow
+       enough to trigger the mobile breakpoint. */
+    .summary { grid-template-columns: repeat(3, 1fr) !important; gap: 10px; margin-bottom: 14px; }
+    .client-bar { grid-template-columns: repeat(3, 1fr) !important; }
+    .summary-card { padding: 14px 16px; }
+    .summary-card .value { font-size: 26px; }
+    .narrative { margin-top: 12px; padding: 18px 24px; }
+    .narrative p { margin-bottom: 10px; font-size: 13px; line-height: 1.6; }
+    .title-block { margin-bottom: 14px; }
+    .title-block h1 { font-size: 22px; }
+    .title-block .sub { font-size: 12px; line-height: 1.5; }
+    .chart-wrap { height: 200px !important; max-height: 200px; }
+    .chart-wrap canvas { height: 200px !important; max-height: 200px !important; }
+    .chart-card { padding: 8px 12px; margin-bottom: 8px; }
+    .chart-legend { margin-bottom: 4px; font-size: 11px; }
+    /* Let the narrative stay with the chart on page 1; don't force a break before it */
+    .narrative { page-break-before: avoid; padding: 14px 20px; margin-top: 8px; }
+    .narrative-title { margin-bottom: 8px; font-size: 11px; }
+    .narrative p { margin-bottom: 8px; font-size: 12.5px; line-height: 1.55; }
+    .title-block h1 { font-size: 20px; }
+    .title-block .sub { font-size: 11.5px; }
+    /* Force accordions open and flatten their chrome for the compliance appendix */
+    .accordion { border: none; background: transparent; margin: 0; }
+    .accordion > summary { display: none; }
+    .accordion + .accordion { margin-top: 14px; }
+    .accordion > .accordion-body { border-top: none; padding: 0; }
   }
 
   @media (max-width: 900px) {
@@ -616,7 +725,9 @@
   <div class="household-panel">
     <div class="hp-row">
       <div class="hp-col-head">
-        <span>Spouse A</span>
+        <span class="spouse-name-edit" data-spouse="A" data-spouse-template="header"
+              role="textbox" contenteditable="plaintext-only" spellcheck="false"
+              aria-label="Edit spouse name">Spouse A</span>
         <span style="text-transform:none; letter-spacing:0; color:var(--ink-muted); font-weight:400; display: inline-flex; align-items: center; gap: 8px;">
           age
           <input type="number" id="hp-age-A" value="40" min="18" max="64" step="1"
@@ -643,7 +754,9 @@
 
     <div class="hp-row">
       <div class="hp-col-head">
-        <span>Spouse B</span>
+        <span class="spouse-name-edit" data-spouse="B" data-spouse-template="header"
+              role="textbox" contenteditable="plaintext-only" spellcheck="false"
+              aria-label="Edit spouse name">Spouse B</span>
         <span style="text-transform:none; letter-spacing:0; color:var(--ink-muted); font-weight:400; display: inline-flex; align-items: center; gap: 8px;">
           age
           <input type="number" id="hp-age-B" value="40" min="18" max="64" step="1"
@@ -693,7 +806,7 @@
   <div class="collapsible-body collapsed" id="events-body" style="max-height: 0;">
     <div class="household-panel">
       <div style="font-size: 12px; color: var(--ink-muted); margin-bottom: 10px; line-height: 1.5;">
-        One-off inflows (inheritances, bonuses, maturing policies) or outflows (a house purchase, a child's wedding). Inflows increase the discretionary portfolio; outflows come from the discretionary portfolio. Ages are anchored to the <span id="events-ref-spouse">youngest</span> spouse.
+        One-off inflows (inheritances, bonuses, maturing policies) or outflows (a house purchase, a child's wedding). Inflows increase the discretionary portfolio; outflows come from the discretionary portfolio. Ages are anchored to <span id="events-ref-spouse">Spouse A</span>'s age.
       </div>
       <div id="events-list"></div>
       <button class="add-event-btn" id="add-event-btn">＋ Add a capital event</button>
@@ -701,7 +814,7 @@
   </div>
 
   <div class="section-header">Market assumptions</div>
-  <div class="household-panel">
+  <div class="household-panel market-assumptions-panel">
     <div class="assumptions-grid">
       <div class="lever">
         <div class="lever-head">
@@ -727,7 +840,7 @@
     </div>
   </div>
 
-  <div class="section-header">Projected outcome at retirement</div>
+  <div class="section-header outcome-header">Projected outcome at retirement</div>
   <div class="summary">
     <div class="summary-card primary">
       <div class="label">Projected monthly income at retirement</div>
@@ -796,67 +909,91 @@
     </div>
   </div>
 
+  <section class="narrative" id="narrative-summary">
+    <h2 class="narrative-title">In plain terms</h2>
+    <p id="narrative-headline">—</p>
+    <p id="narrative-contributions">—</p>
+    <p id="narrative-composition">—</p>
+    <p id="narrative-events" style="display: none;">—</p>
+    <p id="narrative-baseline" style="display: none;">—</p>
+  </section>
+
   <div class="print-summary" id="print-summary">
     <h2>Summary of assumptions and outcome</h2>
 
-    <h3>Client &amp; meeting</h3>
-    <table class="summary-table">
-      <tr><td>Client</td><td id="s-client">—</td></tr>
-      <tr><td>Meeting date</td><td id="s-date">—</td></tr>
-      <tr><td>Adviser</td><td id="s-adviser">—</td></tr>
-    </table>
+    <details class="accordion" data-accordion="tables">
+      <summary>Detail tables</summary>
+      <div class="accordion-body">
+        <h3>Client &amp; meeting</h3>
+        <table class="summary-table">
+          <tr><td>Client</td><td id="s-client">—</td></tr>
+          <tr><td>Meeting date</td><td id="s-date">—</td></tr>
+          <tr><td>Adviser</td><td id="s-adviser">—</td></tr>
+        </table>
 
-    <h3>Starting position</h3>
-    <table class="summary-table">
-      <tr><td>Spouse A (age · retirement · discretionary)</td><td id="s-pos-A">—</td></tr>
-      <tr><td>Spouse B (age · retirement · discretionary)</td><td id="s-pos-B">—</td></tr>
-      <tr><td>Household capital today</td><td id="s-cap-today">—</td></tr>
-    </table>
+        <h3>Starting position</h3>
+        <table class="summary-table">
+          <tr><td data-spouse="A" data-spouse-template="summary-pos">Spouse A (age · retirement · discretionary)</td><td id="s-pos-A">—</td></tr>
+          <tr><td data-spouse="B" data-spouse-template="summary-pos">Spouse B (age · retirement · discretionary)</td><td id="s-pos-B">—</td></tr>
+          <tr><td>Household capital today</td><td id="s-cap-today">—</td></tr>
+        </table>
 
-    <h3>Contributions &amp; assumptions</h3>
-    <table class="summary-table">
-      <tr><td>Spouse A monthly contributions (retirement · discretionary)</td><td id="s-contrib-A">—</td></tr>
-      <tr><td>Spouse B monthly contributions (retirement · discretionary)</td><td id="s-contrib-B">—</td></tr>
-      <tr><td>Annual contribution escalation</td><td id="s-esc">—</td></tr>
-      <tr><td>Expected investment return (nominal, p.a.)</td><td id="s-return">—</td></tr>
-      <tr><td>Expected inflation (CPI)</td><td id="s-cpi">—</td></tr>
-      <tr><td>Retirement age anchor</td><td id="s-anchor">—</td></tr>
-      <tr><td>Horizon</td><td id="s-horizon">—</td></tr>
-    </table>
+        <h3>Contributions &amp; assumptions</h3>
+        <table class="summary-table">
+          <tr><td data-spouse="A" data-spouse-template="summary-contrib">Spouse A monthly contributions (retirement · discretionary)</td><td id="s-contrib-A">—</td></tr>
+          <tr><td data-spouse="B" data-spouse-template="summary-contrib">Spouse B monthly contributions (retirement · discretionary)</td><td id="s-contrib-B">—</td></tr>
+          <tr><td>Annual contribution escalation</td><td id="s-esc">—</td></tr>
+          <tr><td>Expected investment return (nominal, p.a.)</td><td id="s-return">—</td></tr>
+          <tr><td>Expected inflation (CPI)</td><td id="s-cpi">—</td></tr>
+          <tr><td>Retirement age anchor</td><td id="s-anchor">—</td></tr>
+          <tr><td>Horizon</td><td id="s-horizon">—</td></tr>
+        </table>
 
-    <h3>Projected outcome at retirement</h3>
-    <table class="summary-table">
-      <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
-      <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
-      <tr><td>Projected monthly income at 5% draw (today's money, before tax)</td><td id="s-income">—</td></tr>
-      <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
-    </table>
+        <h3>Projected outcome at retirement</h3>
+        <table class="summary-table">
+          <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
+          <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
+          <tr><td>Projected monthly income at 5% draw (today's money, before tax)</td><td id="s-income">—</td></tr>
+          <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
+        </table>
 
-    <div id="s-events-section" style="display: none;">
-      <h3>Capital events</h3>
-      <table class="summary-table">
-        <tbody id="s-events-body"></tbody>
-      </table>
-    </div>
+        <div id="s-events-section" style="display: none;">
+          <h3>Capital events</h3>
+          <table class="summary-table">
+            <tbody id="s-events-body"></tbody>
+          </table>
+        </div>
 
-    <div id="s-baseline-section" style="display: none;">
-      <h3>Comparison to baseline</h3>
-      <table class="summary-table">
-        <tr><td>Baseline monthly income (today's money)</td><td id="s-base-income">—</td></tr>
-        <tr><td>Planned monthly income (today's money)</td><td id="s-plan-income">—</td></tr>
-        <tr><td>Change in monthly income</td><td id="s-delta-income">—</td></tr>
-        <tr><td>Change in current monthly contributions</td><td id="s-delta-contrib">—</td></tr>
-      </table>
-    </div>
+        <div id="s-baseline-section" style="display: none;">
+          <h3>Comparison to baseline</h3>
+          <table class="summary-table">
+            <tr><td>Baseline monthly income (today's money)</td><td id="s-base-income">—</td></tr>
+            <tr><td>Planned monthly income (today's money)</td><td id="s-plan-income">—</td></tr>
+            <tr><td>Change in monthly income</td><td id="s-delta-income">—</td></tr>
+            <tr><td>Change in current monthly contributions</td><td id="s-delta-contrib">—</td></tr>
+          </table>
+        </div>
+      </div>
+    </details>
 
-    <div class="assumptions">
-      <strong style="color: var(--ink);">Notes on methodology.</strong>
-      Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income is a simple approximation: 5% of the combined capital (retirement fund plus discretionary) divided by twelve, shown in today's money and before tax. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
-    </div>
+    <details class="accordion" data-accordion="methodology">
+      <summary>Methodology &amp; assumptions</summary>
+      <div class="accordion-body">
+        <div class="assumptions">
+          <strong style="color: var(--ink);">Notes on methodology.</strong>
+          Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income is a simple approximation: 5% of the combined capital (retirement fund plus discretionary) divided by twelve, shown in today's money and before tax. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
+        </div>
+      </div>
+    </details>
 
-    <div class="disclaimer">
-      This projection is illustrative only and is based on the assumptions entered at the time of the meeting. Actual outcomes will differ, potentially materially, depending on investment performance, inflation, contribution levels, career changes, legislative changes, and individual circumstances. This document does not constitute financial advice in isolation and should be read together with a full financial plan and formal record of advice. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP no. 50637. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).
-    </div>
+    <details class="accordion" data-accordion="disclaimer">
+      <summary>Disclaimer</summary>
+      <div class="accordion-body">
+        <div class="disclaimer" style="border-top: none; margin-top: 0; padding-top: 4px;">
+          This projection is illustrative only and is based on the assumptions entered at the time of the meeting. Actual outcomes will differ, potentially materially, depending on investment performance, inflation, contribution levels, career changes, legislative changes, and individual circumstances. This document does not constitute financial advice in isolation and should be read together with a full financial plan and formal record of advice. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP no. 50637. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).
+        </div>
+      </div>
+    </details>
   </div>
 
   <div class="footer-meta">
@@ -908,6 +1045,61 @@
   var chartBreakdown = null;
   var eventsStore = [];       // [{ id, age, amount, todaysMoney, kind }]
   var eventSeq = 1;
+  var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
+  var SPOUSE_NAME_MAX = 30;
+
+  // Returns { younger, older } resolved to current names.
+  // Ties break to A, matching Math.min/Math.max behaviour in the projection.
+  function resolveYoungerOlder(){
+    var ageA = parseAge('hp-age-A', 40);
+    var ageB = parseAge('hp-age-B', 40);
+    if (ageA <= ageB) return { younger: spouseNames.A, older: spouseNames.B };
+    return { younger: spouseNames.B, older: spouseNames.A };
+  }
+
+  // Single render pass for every [data-spouse] node. Safe to call often.
+  function renderSpouseLabels(){
+    var yo = resolveYoungerOlder();
+    var nodes = document.querySelectorAll('[data-spouse]');
+    for (var i = 0; i < nodes.length; i++){
+      var el = nodes[i];
+      var which = el.getAttribute('data-spouse');
+      var tmpl = el.getAttribute('data-spouse-template') || 'header';
+      var name = spouseNames[which] || ('Spouse ' + which);
+      // Skip the editable header itself while it has focus so we don't blow away the user's in-progress typing
+      if (tmpl === 'header' && document.activeElement === el) continue;
+      if (tmpl === 'header'){
+        el.textContent = name;
+      } else if (tmpl === 'summary-pos'){
+        el.textContent = name + ' (age · retirement · discretionary)';
+      } else if (tmpl === 'summary-contrib'){
+        el.textContent = name + ' monthly contributions (retirement · discretionary)';
+      }
+    }
+    // Events helper prose: resolve the anchor side to an actual name.
+    var refEl = document.getElementById('events-ref-spouse');
+    if (refEl){
+      refEl.textContent = anchor === 'youngest' ? yo.younger : yo.older;
+    }
+  }
+
+  function commitSpouseNameEdit(el){
+    var which = el.getAttribute('data-spouse');
+    if (!which || !spouseNames.hasOwnProperty(which)) return;
+    var raw = (el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (raw.length > SPOUSE_NAME_MAX) raw = raw.slice(0, SPOUSE_NAME_MAX);
+    if (raw.length === 0) raw = spouseNames[which]; // never allow empty
+    spouseNames[which] = raw;
+    el.textContent = raw;
+    renderSpouseLabels();
+    refresh();
+  }
+
+  function revertSpouseNameEdit(el){
+    var which = el.getAttribute('data-spouse');
+    if (!which) return;
+    el.textContent = spouseNames[which] || ('Spouse ' + which);
+  }
 
   // ===== Events store =====
   function newEvent(){
@@ -1516,9 +1708,8 @@
     set('s-esc', fmtPct(p.inputs.esc * 100));
     set('s-return', fmtPct(p.inputs.rNom * 100));
     set('s-cpi', fmtPct(p.inputs.cpi * 100));
-    set('s-anchor', anchor === 'youngest'
-      ? 'Youngest spouse reaches 65'
-      : 'Oldest spouse reaches 65');
+    var yo = resolveYoungerOlder();
+    set('s-anchor', (anchor === 'youngest' ? yo.younger : yo.older) + ' reaches 65');
     set('s-horizon', p.years + ' years · retiring in ' + p.retirementYearCalendar);
 
     set('s-cap-real', fmtR(p.finalTotalReal));
@@ -1561,6 +1752,90 @@
       set('s-delta-contrib', (dC >= 0 ? '+' : '') + fmtR(dC) + '/mo');
     } else {
       baseSec.style.display = 'none';
+    }
+  }
+
+  function updateNarrative(p){
+    var setHTML = function(id, html){ document.getElementById(id).innerHTML = html; };
+    var show = function(id, on){ document.getElementById(id).style.display = on ? '' : 'none'; };
+
+    var inputs = p.inputs;
+    var last = p.real.total.length - 1;
+    var retShare = p.real.total[last] > 0 ? Math.round(100 * p.real.ret[last] / p.real.total[last]) : 0;
+    var discShare = Math.max(0, 100 - retShare);
+
+    var hhMonthly = inputs.contribRetA + inputs.contribDiscA + inputs.contribRetB + inputs.contribDiscB;
+    var spouseAMonthly = inputs.contribRetA + inputs.contribDiscA;
+    var spouseBMonthly = inputs.contribRetB + inputs.contribDiscB;
+    var shareA = hhMonthly > 0 ? Math.round(100 * spouseAMonthly / hhMonthly) : 0;
+    var shareB = Math.max(0, 100 - shareA);
+    var nameA = spouseNames.A;
+    var nameB = spouseNames.B;
+
+    setHTML('narrative-headline',
+      'At an assumed <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and ' +
+      '<strong>' + fmtPct(inputs.cpi * 100) + '</strong> inflation, the household is projected to ' +
+      'accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> by ' + p.retirementYearCalendar +
+      ' — roughly ' + fmtR(p.finalTotalNom) + ' in future rands. ' +
+      'Drawn at 5% per year this supports <strong>' + fmtR(p.monthlyIncomeReal) + '/month</strong> ' +
+      'in retirement, in today’s money and before tax.'
+    );
+
+    setHTML('narrative-contributions',
+      'Starting from ' + fmtR(p.nominal.total[0]) + ' today, combined contributions of ' +
+      fmtR(hhMonthly) + '/month — escalating ' + fmtPct(inputs.esc * 100) + ' per year — ' +
+      'add up to ' + fmtR(p.totalContribsOverHorizon) + ' over the ' + p.years + '-year horizon.'
+    );
+
+    var composition = 'Of the projected capital, ' + retShare + '% sits in retirement-fund savings and ' +
+                      discShare + '% in discretionary investments.';
+    if (hhMonthly > 0){
+      composition += ' ' + nameA + ' contributes ' + shareA + '% of the household’s monthly savings today; ' +
+                     nameB + ' contributes the remaining ' + shareB + '%.';
+    }
+    setHTML('narrative-composition', composition);
+
+    if (p.events && p.events.length > 0){
+      var nIn = p.events.filter(function(e){ return e.kind === 'inflow'; }).length;
+      var nOut = p.events.length - nIn;
+      var parts = [];
+      if (nIn) parts.push(nIn + ' inflow' + (nIn > 1 ? 's' : ''));
+      if (nOut) parts.push(nOut + ' outflow' + (nOut > 1 ? 's' : ''));
+      setHTML('narrative-events',
+        'This view includes ' + parts.join(' and ') + '. ' +
+        'Inflows are added to the discretionary portfolio; outflows are drawn from it.'
+      );
+      show('narrative-events', true);
+    } else {
+      show('narrative-events', false);
+    }
+
+    if (baseline){
+      var dI = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
+      var dC = (
+        inputs.contribRetA + inputs.contribRetB + inputs.contribDiscA + inputs.contribDiscB
+      ) - (
+        baseline.inputs.contribRetA + baseline.inputs.contribRetB +
+        baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
+      );
+      var incomeWord = dI >= 0 ? 'delivers ' : 'delivers ';
+      var incomeSign = dI >= 0 ? '+' : '−';
+      var contribPhrase;
+      if (Math.abs(dC) < 1){
+        contribPhrase = 'from the same monthly contributions';
+      } else if (dC > 0){
+        contribPhrase = 'at a cost of +' + fmtR(dC) + '/month in additional contributions today';
+      } else {
+        contribPhrase = 'while freeing up ' + fmtR(Math.abs(dC)) + '/month in contributions today';
+      }
+      setHTML('narrative-baseline',
+        'Compared with the locked baseline, this plan ' + incomeWord +
+        '<strong>' + incomeSign + fmtR(Math.abs(dI)) + '/month</strong> in retirement income (today’s money), ' +
+        contribPhrase + '.'
+      );
+      show('narrative-baseline', true);
+    } else {
+      show('narrative-baseline', false);
     }
   }
 
@@ -1638,6 +1913,8 @@
     else if (chartView === 'breakdown') buildBreakdownChart(p);
     else if (chartView === 'table') buildYearTable(p);
     updatePrintSummary(p);
+    updateNarrative(p);
+    renderSpouseLabels();
   }
 
   // ===== Wire up =====
@@ -1678,6 +1955,60 @@
       updatePrintSummary(project(readInputs()));
     });
   });
+
+  // Inline-edit spouse names: single delegator for the two editable headers.
+  document.addEventListener('keydown', function(e){
+    var el = e.target;
+    if (!el || !el.classList || !el.classList.contains('spouse-name-edit')) return;
+    if (e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+    else if (e.key === 'Escape'){ e.preventDefault(); revertSpouseNameEdit(el); el.blur(); }
+  });
+  document.addEventListener('focusout', function(e){
+    var el = e.target;
+    if (!el || !el.classList || !el.classList.contains('spouse-name-edit')) return;
+    commitSpouseNameEdit(el);
+  });
+
+  // Force accordions open for print, restore prior state after.
+  // Also tell Chart.js to resize so the canvas respects the print media query.
+  var accordionStateBeforePrint = null;
+  window.addEventListener('beforeprint', function(){
+    var acc = document.querySelectorAll('details.accordion');
+    accordionStateBeforePrint = [];
+    for (var i = 0; i < acc.length; i++){
+      accordionStateBeforePrint.push(acc[i].open);
+      acc[i].open = true;
+    }
+    if (chartCapital) chartCapital.resize();
+    if (chartBreakdown) chartBreakdown.resize();
+  });
+  window.addEventListener('afterprint', function(){
+    if (accordionStateBeforePrint){
+      var acc = document.querySelectorAll('details.accordion');
+      for (var i = 0; i < acc.length && i < accordionStateBeforePrint.length; i++){
+        acc[i].open = accordionStateBeforePrint[i];
+      }
+      accordionStateBeforePrint = null;
+    }
+    if (chartCapital) chartCapital.resize();
+    if (chartBreakdown) chartBreakdown.resize();
+  });
+
+  // `beforeprint` does not fire under headless --print-to-pdf; matchMedia does.
+  // This covers both paths.
+  if (window.matchMedia){
+    var printMQ = window.matchMedia('print');
+    var onPrintChange = function(){
+      if (chartCapital) chartCapital.resize();
+      if (chartBreakdown) chartBreakdown.resize();
+      if (printMQ.matches){
+        var acc = document.querySelectorAll('details.accordion');
+        for (var i = 0; i < acc.length; i++) acc[i].open = true;
+      }
+    };
+    if (printMQ.addEventListener) printMQ.addEventListener('change', onPrintChange);
+    else if (printMQ.addListener) printMQ.addListener(onPrintChange);
+  }
   document.getElementById('anchor-youngest').addEventListener('click', function(){
     setAnchor('youngest');
     renderEvents();  // ref-age changes; re-render year labels
@@ -1757,7 +2088,8 @@
       if (outflows) parts.push(outflows + ' outflow' + (outflows > 1 ? 's' : ''));
       set('events-summary-chip', parts.join(' · '));
     }
-    set('events-ref-spouse', anchor === 'youngest' ? 'youngest' : 'oldest');
+    var refYo = resolveYoungerOlder();
+    set('events-ref-spouse', anchor === 'youngest' ? refYo.younger : refYo.older);
   }
 
   // Date

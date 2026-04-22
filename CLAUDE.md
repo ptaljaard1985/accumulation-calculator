@@ -24,16 +24,26 @@ These are not preferences. Breaking any of them is a regression:
 
 ## How the code is organised
 
-Inside the single HTML file:
+Inside the single HTML file (approximate line ranges; file is currently ~2100 lines):
 
-- **Lines 1–620**: CSS using `:root` CSS variables as design tokens. Collapsible sections, event rows, and the household panel are all styled here.
-- **Lines 620–1010**: HTML structure — header, client bar, household position (collapsible), retirement-anchor row, market assumptions, summary cards, delta bar, chart controls, chart card, print summary.
-- **Lines 1010–1200**: JS helpers (formatting, parsing, collapsible logic).
-- **Lines 1200–1420**: `project()` — the core projection function. Monthly compounding, contribution escalation, growth breakdown decomposition, capital events application.
-- **Lines 1420–1780**: Rendering — summary cards, delta bar, charts (capital + breakdown), year table, print summary.
-- **Lines 1780–end**: Events store + rendering, baseline lock, event wiring.
+- **Lines 1–670**: CSS using `:root` CSS variables as design tokens. Collapsible sections, event rows, household panel, narrative card, accordion styles, and the `@media print` block are all here.
+- **Lines 670–1000**: HTML structure — header, client bar, household position (collapsible), retirement-anchor row, capital events, market assumptions, summary cards, delta bar, chart controls, chart card, narrative section, and the print-summary accordions.
+- **Lines 1000–1220**: JS helpers, state (`spouseNames`, `baseline`, `chartView`…), `renderSpouseLabels()` (walks `[data-spouse]` nodes), events store + rendering.
+- **Lines 1220–1420**: `project()` — the core projection function. Monthly compounding, contribution escalation, growth breakdown decomposition, capital events application.
+- **Lines 1420–1910**: Rendering — summary cards, delta bar, charts (capital + breakdown), year table, `updatePrintSummary()`, `updateNarrative()`.
+- **Lines 1910–end**: Baseline lock, event wiring, inline-rename handlers, print/matchMedia handlers, init.
 
 See `docs/ARCHITECTURE.md` for more detail on any section.
+
+## Labels and print conventions
+
+Two patterns worth knowing:
+
+1. **Spouse-name label binding.** The two spouse headers on the household panel are editable (`contenteditable` spans). Names live in one JS object (`spouseNames = { A, B }`) and flow to every downstream label via nodes tagged `[data-spouse="A"|"B"]` with a `data-spouse-template` saying how to interpolate (`header`, `summary-pos`, `summary-contrib`). `renderSpouseLabels()` is the single source of truth — it runs on init, on every `refresh()`, and on every rename commit. When adding a new place that displays a spouse name, tag it with `data-spouse` + an appropriate template instead of hard-coding the string, and extend `renderSpouseLabels()` if you need a new template.
+
+2. **On-screen collapsibles, print-always-open.** The appendix below the chart (detail tables / methodology / disclaimer) uses native `<details class="accordion">`. On screen they're closed by default. For PDF output we force them open two ways: a `beforeprint` listener sets `open=true` on every accordion (for interactive Cmd+P), and a `window.matchMedia('print')` listener does the same (for headless `--print-to-pdf`, which does not fire `beforeprint`). The same matchMedia listener calls `chart.resize()` so Chart.js picks up the print-only `.chart-wrap { height: 200px }` rule. If you add a third appendix block, wrap it in `<details class="accordion">` and both handlers will pick it up automatically.
+
+The print layout has two conceptual zones: page 1 is client-facing (header, client bar, outcome cards, chart, narrative) and pages 2+ are the compliance appendix (the accordions). The `@media print` block hides input panels (`.collapsible-body`, `.market-assumptions-panel`, `.anchor-row`, the input section headers) and forces the appendix to start on a new page via `page-break-before: always` on `.print-summary`. When adding new on-screen input surfaces, add them to the hide list; when adding new output surfaces, decide which zone they belong in.
 
 ## Core calculation conventions
 
@@ -117,3 +127,26 @@ Both must pass before any change ships. See `tests/README.md`.
 ## When in doubt
 
 Ask. Pierre would rather answer one question now than fix a silent regression later.
+
+## Session Log
+
+### Session 1 — 2026-04-22
+
+**Shipped:**
+- Inline-editable spouse names. "Spouse A" / "Spouse B" headers on the household panel are click-to-edit; committed names flow to the events helper prose ("Ages are anchored to {name}'s age"), the print-summary starting-position and contributions rows, the retirement-age anchor row ("{name} reaches 65"), and the narrative paragraphs. Implemented via a single `spouseNames` state, `[data-spouse]`/`data-spouse-template` binding, and `renderSpouseLabels()`.
+- Narrative "In plain terms" card below the chart. Renders 3 always-on paragraphs (headline, contributions, composition) plus optional events and baseline paragraphs. New `updateNarrative(p)` hooked into the render pipeline next to `updatePrintSummary()`.
+- The four appendix tables, methodology, and disclaimer are wrapped in three `<details class="accordion">` blocks — collapsed on screen, forced open for print via `beforeprint` + `matchMedia('print')` listeners (the latter is needed for headless `--print-to-pdf`, which does not fire `beforeprint`).
+- Print layout restructured into two zones: page 1 client-facing (header, client bar, outcome cards, chart, narrative), pages 2+ compliance appendix. New `@media print` rules hide `.collapsible-body`, `.market-assumptions-panel`, `.anchor-row`, and non-outcome section headers; force outcome cards and client-bar to 3-column; shrink the chart to 200px via `matchMedia('print')` + `chart.resize()`.
+
+**Decisions (and why):**
+- Spouse names default to "Spouse A" / "Spouse B", not empty. Rationale: the tool still makes sense before the adviser personalises (demo use, muscle memory).
+- Names are rendered in every context exactly as typed — no auto-lowercase, no title-case fixup. Rationale: adviser controls their own casing; predictable > clever.
+- No `localStorage` persistence for spouse names. Rationale: consistent with every other input — nothing persists across reloads today. If adviser asks, it's a one-line addition.
+- Anchor buttons ("Youngest spouse" / "Oldest spouse") deliberately kept as labels-of-a-rule, not personalised, so clicking them to re-assign the rule remains unambiguous.
+- `<details class="accordion">` chosen over a bespoke JS accordion. Rationale: zero-JS semantics, keyboard accessible, works with browser print.
+- Chart.js canvas height for print is enforced via a `matchMedia('print')` listener that calls `chart.resize()`. `beforeprint` alone doesn't fire under headless `--print-to-pdf`, which is the main testing path.
+
+**Known cosmetic issue (print):** The final narrative paragraph ("Of the projected capital… Spouse B contributes the remaining 45%.") can orphan to page 2 in headless `--print-to-pdf` output because the print media query applies after initial layout. In interactive Cmd+P the layout is recomputed before finalisation and the full narrative typically fits on page 1. Not worth further tightening; the critical headline information (outcome cards + chart + first two narrative paragraphs) is on page 1 in all cases.
+
+**Tests:** 12 JS + 37 Python, all green. No calculation code was changed — this session was UI/print only.
+
