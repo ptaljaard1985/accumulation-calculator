@@ -391,40 +391,26 @@
   }
   .summary-card.primary .sub-value { color: rgba(255,255,255,0.65); }
 
-  /* Delta bar */
-  .delta-bar {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--success);
-    border-radius: var(--radius);
-    padding: 14px 18px;
-    margin-bottom: 22px;
-    display: flex; align-items: center; gap: 16px;
-    flex-wrap: wrap;
-  }
-  .delta-bar.negative { border-left-color: var(--danger); }
-  .delta-bar .delta-main {
-    font-size: 15px; color: var(--ink); font-weight: 500;
+  /* Baseline delta lines inside outcome cards */
+  .summary-card .delta-line {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 11.5px;
+    color: var(--ink-muted);
     font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
   }
-  .delta-bar .delta-main .positive { color: var(--success); }
-  .delta-bar .delta-main .negative { color: var(--danger); }
-  .delta-bar .delta-sep { color: var(--ink-faint); }
-  .delta-bar .delta-cost {
-    font-size: 13px; color: var(--ink-muted);
-    font-variant-numeric: tabular-nums;
+  .summary-card .delta-line .delta-sep { color: var(--ink-faint); }
+  .summary-card .delta-line .delta-value.positive { color: var(--success); font-weight: 500; }
+  .summary-card .delta-line .delta-value.negative { color: var(--danger); font-weight: 500; }
+  .summary-card.primary .delta-line {
+    border-top-color: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.68);
   }
-  .delta-bar .delta-actions { margin-left: auto; display: flex; gap: 6px; }
-  .delta-bar .delta-actions button {
-    padding: 4px 10px; font-size: 12px;
-    background: transparent; color: var(--ink-muted);
-    border: 1px solid var(--line);
-    border-radius: var(--radius); cursor: pointer;
-    font-family: inherit;
-  }
-  .delta-bar .delta-actions button:hover {
-    border-color: var(--ink-muted); color: var(--ink);
-  }
+  .summary-card.primary .delta-line .delta-sep { color: rgba(255,255,255,0.35); }
+  .summary-card.primary .delta-line .delta-value.positive { color: #9be7be; }
+  .summary-card.primary .delta-line .delta-value.negative { color: #f5a1a1; }
 
   /* Controls row */
   .controls-row {
@@ -586,6 +572,13 @@
     font-size: 14px; line-height: 1.7; color: var(--ink);
   }
   .narrative p:last-child { margin-bottom: 0; }
+  .narrative-section { margin-top: 18px; }
+  .narrative-section:first-of-type { margin-top: 0; }
+  .narrative-section h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faint); font-weight: 600; margin: 0 0 8px;
+  }
+  .narrative-section p:last-child { margin-bottom: 0; }
 
   /* Collapsible accordions in the appendix */
   .accordion {
@@ -627,7 +620,7 @@
     body { background: white; }
     .page { padding: 0; max-width: 100%; }
     .no-print { display: none !important; }
-    .delta-bar, .summary, .narrative {
+    .summary, .narrative {
       page-break-inside: avoid;
     }
     .chart-card { page-break-inside: avoid; page-break-before: avoid; }
@@ -654,14 +647,14 @@
     .title-block { margin-bottom: 14px; }
     .title-block h1 { font-size: 22px; }
     .title-block .sub { font-size: 12px; line-height: 1.5; }
-    .chart-wrap { height: 200px !important; max-height: 200px; }
-    .chart-wrap canvas { height: 200px !important; max-height: 200px !important; }
-    .chart-card { padding: 8px 12px; margin-bottom: 8px; }
-    .chart-legend { margin-bottom: 4px; font-size: 11px; }
+    .chart-wrap { width: 100% !important; height: 320px !important; }
+    .chart-legend { margin-bottom: 6px; font-size: 11px; }
     /* Let the narrative stay with the chart on page 1; don't force a break before it */
     .narrative { page-break-before: avoid; padding: 14px 20px; margin-top: 8px; }
     .narrative-title { margin-bottom: 8px; font-size: 11px; }
     .narrative p { margin-bottom: 8px; font-size: 12.5px; line-height: 1.55; }
+    .narrative-section { margin-top: 12px; }
+    .narrative-section h3 { font-size: 10.5px; margin-bottom: 6px; }
     .title-block h1 { font-size: 20px; }
     .title-block .sub { font-size: 11.5px; }
     /* Force accordions open and flatten their chrome for the compliance appendix */
@@ -846,26 +839,26 @@
       <div class="label">Projected monthly income at retirement</div>
       <div class="value" id="sum-income">R0</div>
       <div class="sub-value" id="sum-income-sub">today's money · 5% of combined capital, before tax</div>
+      <div class="delta-line" id="sum-income-delta" style="display: none;">
+        <span>Baseline <span id="sum-income-baseline">—</span></span>
+        <span class="delta-sep">·</span>
+        <span class="delta-value" id="sum-income-delta-value">—</span>
+      </div>
     </div>
     <div class="summary-card">
       <div class="label">Household capital at retirement</div>
       <div class="value" id="sum-capital">R0</div>
       <div class="sub-value" id="sum-capital-sub">today's money</div>
+      <div class="delta-line" id="sum-capital-delta" style="display: none;">
+        <span>Baseline <span id="sum-capital-baseline">—</span></span>
+        <span class="delta-sep">·</span>
+        <span class="delta-value" id="sum-capital-delta-value">—</span>
+      </div>
     </div>
     <div class="summary-card">
       <div class="label">Years until retirement</div>
       <div class="value" id="sum-years">—</div>
       <div class="sub-value" id="sum-years-sub">retiring in —</div>
-    </div>
-  </div>
-
-  <div class="delta-bar" id="delta-bar" style="display: none;">
-    <div class="delta-main" id="delta-main">—</div>
-    <span class="delta-sep">·</span>
-    <div class="delta-cost" id="delta-cost">—</div>
-    <div class="delta-actions no-print">
-      <button id="btn-relock">Re-lock baseline</button>
-      <button id="btn-clear-baseline">Clear baseline</button>
     </div>
   </div>
 
@@ -881,6 +874,10 @@
         <button id="btn-fv">Nominal (future rands)</button>
       </div>
       <button id="btn-lock" class="action-btn secondary">Lock as baseline</button>
+      <span id="baseline-actions" style="display: none; gap: 6px;">
+        <button id="btn-relock" class="action-btn secondary">Re-lock</button>
+        <button id="btn-clear-baseline" class="action-btn secondary">Clear baseline</button>
+      </span>
     </div>
   </div>
 
@@ -911,11 +908,19 @@
 
   <section class="narrative" id="narrative-summary">
     <h2 class="narrative-title">In plain terms</h2>
-    <p id="narrative-headline">—</p>
-    <p id="narrative-contributions">—</p>
-    <p id="narrative-composition">—</p>
-    <p id="narrative-events" style="display: none;">—</p>
-    <p id="narrative-baseline" style="display: none;">—</p>
+    <div class="narrative-section" id="narrative-planned">
+      <h3>Planned</h3>
+      <p id="narrative-planned-p1">—</p>
+      <p id="narrative-planned-p2">—</p>
+    </div>
+    <div class="narrative-section" id="narrative-baseline-section" style="display: none;">
+      <h3>Baseline position</h3>
+      <p id="narrative-baseline-p">—</p>
+    </div>
+    <div class="narrative-section" id="narrative-scenario-section" style="display: none;">
+      <h3>Planned scenario</h3>
+      <p id="narrative-scenario-p">—</p>
+    </div>
   </section>
 
   <div class="print-summary" id="print-summary">
@@ -1022,6 +1027,10 @@
     return sign + 'R' + Math.round(n);
   }
   function fmtPct(n){ return n.toFixed(2) + '%'; }
+
+  function totalMonthlyContribs(inputs){
+    return inputs.contribRetA + inputs.contribDiscA + inputs.contribRetB + inputs.contribDiscB;
+  }
   function set(id, val){ var el = document.getElementById(id); if (el) el.textContent = val; }
   function read(id){ return parseFloat(document.getElementById(id).value); }
   function parseCurrency(id){
@@ -1043,6 +1052,7 @@
   var baseline = null;
   var chartCapital = null;
   var chartBreakdown = null;
+  var lastProjection = null;
   var eventsStore = [];       // [{ id, age, amount, todaysMoney, kind }]
   var eventSeq = 1;
   var spouseNames = { A: 'Spouse A', B: 'Spouse B' };
@@ -1450,40 +1460,52 @@
     set('sum-capital-sub', "today's money · " + fmtShort(p.finalTotalNom) + ' nominal');
     set('sum-years', p.years);
     set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
-  }
 
-  function updateDelta(p){
-    var bar = document.getElementById('delta-bar');
-    var mainEl = document.getElementById('delta-main');
-    var costEl = document.getElementById('delta-cost');
+    var incomeDeltaEl = document.getElementById('sum-income-delta');
+    var capitalDeltaEl = document.getElementById('sum-capital-delta');
     var legendBase = document.getElementById('legend-baseline-capital');
+
     if (!baseline){
-      bar.style.display = 'none';
+      incomeDeltaEl.style.display = 'none';
+      capitalDeltaEl.style.display = 'none';
       if (legendBase) legendBase.style.display = 'none';
       return;
     }
-    bar.style.display = '';
-    if (chartView === 'capital' && legendBase) legendBase.style.display = '';
 
-    var incomeDelta = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
-    var contribDelta = (
-      p.inputs.contribRetA + p.inputs.contribRetB + p.inputs.contribDiscA + p.inputs.contribDiscB
-    ) - (
-      baseline.inputs.contribRetA + baseline.inputs.contribRetB +
-      baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
-    );
-    var sign = incomeDelta >= 0 ? '+' : '−';
-    var absIncome = Math.abs(incomeDelta);
-    var cls = incomeDelta >= 0 ? 'positive' : 'negative';
-    mainEl.innerHTML = 'Planned vs baseline: <span class="' + cls + '">' +
-                       sign + fmtR(absIncome) + '/mo</span> in retirement income (today\u2019s money)';
-    bar.classList.toggle('negative', incomeDelta < 0);
+    if (legendBase) legendBase.style.display = chartView === 'capital' ? '' : 'none';
 
-    if (Math.abs(contribDelta) < 1){
-      costEl.textContent = 'from the same monthly contributions (assumption change only)';
+    var bp = baseline.p;
+    var dIncome = p.monthlyIncomeReal - bp.monthlyIncomeReal;
+    var dCapital = p.finalTotalReal - bp.finalTotalReal;
+    var pctIncome = bp.monthlyIncomeReal > 0 ? Math.round(100 * dIncome / bp.monthlyIncomeReal) : 0;
+    var pctCapital = bp.finalTotalReal > 0 ? Math.round(100 * dCapital / bp.finalTotalReal) : 0;
+
+    var signedR = function(v){ return (v >= 0 ? '+' : '−') + fmtR(Math.abs(v)); };
+    var signedPct = function(v){ return (v >= 0 ? '+' : '−') + Math.abs(v) + '%'; };
+    var cls = function(v){ return v >= 0 ? 'positive' : 'negative'; };
+
+    set('sum-income-baseline', fmtR(bp.monthlyIncomeReal));
+    var incomeValEl = document.getElementById('sum-income-delta-value');
+    incomeValEl.className = 'delta-value ' + cls(dIncome);
+    incomeValEl.textContent = signedR(dIncome) + '/mo (' + signedPct(pctIncome) + ')';
+    incomeDeltaEl.style.display = '';
+
+    set('sum-capital-baseline', fmtShort(bp.finalTotalReal));
+    var capitalValEl = document.getElementById('sum-capital-delta-value');
+    capitalValEl.className = 'delta-value ' + cls(dCapital);
+    capitalValEl.textContent = signedR(dCapital) + ' (' + signedPct(pctCapital) + ')';
+    capitalDeltaEl.style.display = '';
+  }
+
+  function updateBaselineControls(){
+    var lockBtn = document.getElementById('btn-lock');
+    var actions = document.getElementById('baseline-actions');
+    if (baseline){
+      lockBtn.style.display = 'none';
+      actions.style.display = 'inline-flex';
     } else {
-      var costSign = contribDelta >= 0 ? '+' : '−';
-      costEl.textContent = 'from ' + costSign + fmtR(Math.abs(contribDelta)) + '/mo in additional contributions today';
+      lockBtn.style.display = '';
+      actions.style.display = 'none';
     }
   }
 
@@ -1743,12 +1765,7 @@
       set('s-plan-income', fmtR(p.monthlyIncomeReal));
       var dI = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
       set('s-delta-income', (dI >= 0 ? '+' : '') + fmtR(dI) + '/mo');
-      var dC = (
-        p.inputs.contribRetA + p.inputs.contribRetB + p.inputs.contribDiscA + p.inputs.contribDiscB
-      ) - (
-        baseline.inputs.contribRetA + baseline.inputs.contribRetB +
-        baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
-      );
+      var dC = totalMonthlyContribs(p.inputs) - totalMonthlyContribs(baseline.inputs);
       set('s-delta-contrib', (dC >= 0 ? '+' : '') + fmtR(dC) + '/mo');
     } else {
       baseSec.style.display = 'none';
@@ -1764,7 +1781,7 @@
     var retShare = p.real.total[last] > 0 ? Math.round(100 * p.real.ret[last] / p.real.total[last]) : 0;
     var discShare = Math.max(0, 100 - retShare);
 
-    var hhMonthly = inputs.contribRetA + inputs.contribDiscA + inputs.contribRetB + inputs.contribDiscB;
+    var hhMonthly = totalMonthlyContribs(inputs);
     var spouseAMonthly = inputs.contribRetA + inputs.contribDiscA;
     var spouseBMonthly = inputs.contribRetB + inputs.contribDiscB;
     var shareA = hhMonthly > 0 ? Math.round(100 * spouseAMonthly / hhMonthly) : 0;
@@ -1772,7 +1789,8 @@
     var nameA = spouseNames.A;
     var nameB = spouseNames.B;
 
-    setHTML('narrative-headline',
+    // Planned — paragraph 1: headline
+    setHTML('narrative-planned-p1',
       'At an assumed <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and ' +
       '<strong>' + fmtPct(inputs.cpi * 100) + '</strong> inflation, the household is projected to ' +
       'accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> by ' + p.retirementYearCalendar +
@@ -1781,61 +1799,85 @@
       'in retirement, in today’s money and before tax.'
     );
 
-    setHTML('narrative-contributions',
+    // Planned — paragraph 2: contributions + composition (+ events sentence if any)
+    var p2 =
       'Starting from ' + fmtR(p.nominal.total[0]) + ' today, combined contributions of ' +
       fmtR(hhMonthly) + '/month — escalating ' + fmtPct(inputs.esc * 100) + ' per year — ' +
-      'add up to ' + fmtR(p.totalContribsOverHorizon) + ' over the ' + p.years + '-year horizon.'
-    );
-
-    var composition = 'Of the projected capital, ' + retShare + '% sits in retirement-fund savings and ' +
-                      discShare + '% in discretionary investments.';
+      'add up to ' + fmtR(p.totalContribsOverHorizon) + ' over the ' + p.years + '-year horizon. ' +
+      'Of the projected capital, ' + retShare + '% sits in retirement-fund savings and ' +
+      discShare + '% in discretionary investments.';
     if (hhMonthly > 0){
-      composition += ' ' + nameA + ' contributes ' + shareA + '% of the household’s monthly savings today; ' +
-                     nameB + ' contributes the remaining ' + shareB + '%.';
+      p2 += ' ' + nameA + ' contributes ' + shareA + '% of the household’s monthly savings today; ' +
+            nameB + ' contributes the remaining ' + shareB + '%.';
     }
-    setHTML('narrative-composition', composition);
-
     if (p.events && p.events.length > 0){
       var nIn = p.events.filter(function(e){ return e.kind === 'inflow'; }).length;
       var nOut = p.events.length - nIn;
       var parts = [];
       if (nIn) parts.push(nIn + ' inflow' + (nIn > 1 ? 's' : ''));
       if (nOut) parts.push(nOut + ' outflow' + (nOut > 1 ? 's' : ''));
-      setHTML('narrative-events',
-        'This view includes ' + parts.join(' and ') + '. ' +
-        'Inflows are added to the discretionary portfolio; outflows are drawn from it.'
-      );
-      show('narrative-events', true);
-    } else {
-      show('narrative-events', false);
+      p2 += ' This view also includes ' + parts.join(' and ') +
+            ' — inflows added to the discretionary portfolio, outflows drawn from it.';
     }
+    setHTML('narrative-planned-p2', p2);
 
+    // Baseline + Planned scenario sections appear only when a baseline is locked.
     if (baseline){
-      var dI = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
-      var dC = (
-        inputs.contribRetA + inputs.contribRetB + inputs.contribDiscA + inputs.contribDiscB
-      ) - (
-        baseline.inputs.contribRetA + baseline.inputs.contribRetB +
-        baseline.inputs.contribDiscA + baseline.inputs.contribDiscB
+      var bp = baseline.p;
+
+      setHTML('narrative-baseline-p',
+        'At the baseline assumptions, the household accumulates <strong>' +
+        fmtR(bp.finalTotalReal) + '</strong> in today’s money by ' + bp.retirementYearCalendar +
+        ', supporting <strong>' + fmtR(bp.monthlyIncomeReal) + '/month</strong> in retirement ' +
+        '(today’s money, before tax).'
       );
-      var incomeWord = dI >= 0 ? 'delivers ' : 'delivers ';
-      var incomeSign = dI >= 0 ? '+' : '−';
-      var contribPhrase;
-      if (Math.abs(dC) < 1){
-        contribPhrase = 'from the same monthly contributions';
-      } else if (dC > 0){
-        contribPhrase = 'at a cost of +' + fmtR(dC) + '/month in additional contributions today';
+      show('narrative-baseline-section', true);
+
+      var incomeDelta = p.monthlyIncomeReal - bp.monthlyIncomeReal;
+      var capitalDelta = p.finalTotalReal - bp.finalTotalReal;
+      var totalContribDelta = p.totalContribsOverHorizon - bp.totalContribsOverHorizon;
+      var contribMonthlyDelta = totalMonthlyContribs(inputs) - totalMonthlyContribs(baseline.inputs);
+      var incomeAnnualDelta = incomeDelta * 12;
+      var pctChange = bp.monthlyIncomeReal > 0
+        ? Math.round(100 * incomeDelta / bp.monthlyIncomeReal)
+        : 0;
+
+      var sign = incomeDelta >= 0 ? '+' : '−';
+      var improvWord = incomeDelta >= 0 ? 'improvement' : 'reduction';
+      var capitalWord = capitalDelta >= 0 ? 'additional' : 'lower';
+      var contribsWord = totalContribDelta >= 0 ? 'extra' : 'less';
+      var capSign = capitalDelta >= 0 ? '+' : '−';
+      var annualSign = incomeAnnualDelta >= 0 ? '+' : '−';
+
+      var contribClause;
+      if (Math.abs(contribMonthlyDelta) < 1){
+        contribClause = 'at the same monthly contributions';
+      } else if (contribMonthlyDelta > 0){
+        contribClause = 'at a cost of <strong>+' + fmtR(contribMonthlyDelta) + '/month</strong> in additional contributions today';
       } else {
-        contribPhrase = 'while freeing up ' + fmtR(Math.abs(dC)) + '/month in contributions today';
+        contribClause = 'while freeing up <strong>' + fmtR(Math.abs(contribMonthlyDelta)) + '/month</strong> in contributions today';
       }
-      setHTML('narrative-baseline',
-        'Compared with the locked baseline, this plan ' + incomeWord +
-        '<strong>' + incomeSign + fmtR(Math.abs(dI)) + '/month</strong> in retirement income (today’s money), ' +
-        contribPhrase + '.'
-      );
-      show('narrative-baseline', true);
+
+      var scenario =
+        'Compared with the locked baseline, this plan delivers <strong>' + sign + fmtR(Math.abs(incomeDelta)) + '/month</strong> ' +
+        'in retirement income — a <strong>' + Math.abs(pctChange) + '% ' + improvWord + '</strong> — ' +
+        contribClause + '. ' +
+        'Over the ' + p.years + '-year horizon that’s <strong>' + fmtR(Math.abs(totalContribDelta)) + '</strong> in ' +
+        contribsWord + ' contributions (future rands), compounding to <strong>' + capSign + fmtR(Math.abs(capitalDelta)) + '</strong> of ' +
+        capitalWord + ' retirement capital (today’s money). ' +
+        'In annual terms, the higher income adds <strong>' + annualSign + fmtR(Math.abs(incomeAnnualDelta)) + '</strong> per year in today’s money';
+
+      if (incomeDelta >= 0){
+        scenario += ' — meaningful room for discretionary spending, travel, or legacy.';
+      } else {
+        scenario += '.';
+      }
+
+      setHTML('narrative-scenario-p', scenario);
+      show('narrative-scenario-section', true);
     } else {
-      show('narrative-baseline', false);
+      show('narrative-baseline-section', false);
+      show('narrative-scenario-section', false);
     }
   }
 
@@ -1885,18 +1927,12 @@
       monthlyIncomeReal: p.monthlyIncomeReal,
       finalTotalReal: p.finalTotalReal
     };
-    var btn = document.getElementById('btn-lock');
-    btn.textContent = '✓ Baseline locked';
-    btn.classList.remove('secondary');
-    btn.classList.add('locked');
+    updateBaselineControls();
     refresh();
   }
   function clearBaseline(){
     baseline = null;
-    var btn = document.getElementById('btn-lock');
-    btn.textContent = 'Lock as baseline';
-    btn.classList.add('secondary');
-    btn.classList.remove('locked');
+    updateBaselineControls();
     refresh();
   }
 
@@ -1905,9 +1941,9 @@
     updateSliderLabels();
     var inputs = readInputs();
     var p = project(inputs);
+    lastProjection = p;
     updateAnchorRow(p);
     updateSummary(p);
-    updateDelta(p);
     updateHeaderChips();
     if (chartView === 'capital') buildCapitalChart(p);
     else if (chartView === 'breakdown') buildBreakdownChart(p);
@@ -1970,7 +2006,6 @@
   });
 
   // Force accordions open for print, restore prior state after.
-  // Also tell Chart.js to resize so the canvas respects the print media query.
   var accordionStateBeforePrint = null;
   window.addEventListener('beforeprint', function(){
     var acc = document.querySelectorAll('details.accordion');
@@ -1995,16 +2030,15 @@
   });
 
   // `beforeprint` does not fire under headless --print-to-pdf; matchMedia does.
-  // This covers both paths.
   if (window.matchMedia){
     var printMQ = window.matchMedia('print');
     var onPrintChange = function(){
-      if (chartCapital) chartCapital.resize();
-      if (chartBreakdown) chartBreakdown.resize();
       if (printMQ.matches){
         var acc = document.querySelectorAll('details.accordion');
         for (var i = 0; i < acc.length; i++) acc[i].open = true;
       }
+      if (chartCapital) chartCapital.resize();
+      if (chartBreakdown) chartBreakdown.resize();
     };
     if (printMQ.addEventListener) printMQ.addEventListener('change', onPrintChange);
     else if (printMQ.addListener) printMQ.addListener(onPrintChange);
@@ -2101,6 +2135,7 @@
   document.getElementById('client-date').value = dateStr;
 
   renderEvents();
+  updateBaselineControls();
   refresh();
 })();
 </script>
