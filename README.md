@@ -4,21 +4,19 @@ An interactive retirement projection tool for two-spouse pre-retiree South Afric
 
 ## What it does
 
-Given two spouses' current retirement-fund and discretionary balances, their monthly contribution levels, and a handful of market assumptions, the calculator projects household capital year-by-year from today to a configurable retirement age and shows:
+Given two spouses' current retirement-fund and discretionary balances, their monthly contribution levels, and a handful of market assumptions, the calculator projects household capital year-by-year from today to a configurable retirement age. The UI has three states:
 
-- **Projected monthly retirement income** (the primary answer), computed as 5% of the combined capital divided by twelve, in today's money, before tax
-- **Household capital at retirement**, in both real and nominal terms
-- **Three chart views**: stacked-bar capital trajectory, a growth-breakdown that decomposes the total into starting-capital-compounded + cumulative contributions + growth-on-contributions, and a year-by-year table
-- **Current vs planned comparison** via a "Lock as baseline" button — the delta is shown in retirement-income terms and in monthly-contribution terms
-- **Optional capital events**: one-off inflows (inheritances, bonuses) or outflows (house purchases, school fees)
+- **Empty** — a title-page setup for a fresh plan: family-name editable inline, two-column spouse setup, retirement-age and market-assumption defaults, dashed preview placeholder.
+- **Filled** — the working state once a plan is entered. Top plan-inputs bar summarises the whole plan at a glance; an `Edit plan ↓` drawer holds the full inputs. Editorial headline ("At 65, R 48 200 a month — comfortably, at today's prices."), chart card with Capital / Breakdown / Table segmented view, a three-cell outcome strip (monthly income · household capital · years to retirement), and a plain-English narrative.
+- **Compare** — after clicking "Lock as baseline", the view becomes a two-up: a muted baseline card next to a navy-ringed scenario card. Both hold mini-charts with a shared y-axis, hero numbers, and meta rows; a delta chip on the scenario card summarises the monthly-income change. A four-slider "Scenario levers" panel centred on the baseline lets the adviser nudge contributions, expected return, and retirement age to explore the shape of the decision.
 
-The print button produces a compliance-ready PDF summary including inputs, outputs, methodology, and the FAIS/POPIA disclaimer.
+Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, and a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer.
 
 ## Running it
 
 Open `retirement_accumulation.html` in a browser. That's it — no build, no server, no install.
 
-Chart.js loads from `cdnjs.cloudflare.com`; everything else is inline. The file works offline if Chart.js is cached.
+External runtime deps (loaded via `<link>` / `<script>` tags): Chart.js from `cdnjs.cloudflare.com`, and the Fraunces / Inter Tight / JetBrains Mono webfont families from `fonts.googleapis.com`. Everything else — tokens, styles, logic — is inline. The file opens and computes offline; webfonts and the chart library fall back gracefully if the network is unavailable.
 
 Tested on recent Safari and Chrome.
 
@@ -36,7 +34,7 @@ docs/
 tests/
   README.md                     how to run tests
   python/                       math audits (pytest, 37 tests)
-  js/                           JS tests against shipped HTML (node, 12 tests)
+  js/                           JS tests against shipped HTML (node, 14 tests)
 ```
 
 ## Running the tests

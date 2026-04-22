@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Calc · Hi-Fi Mock</title>
+<link rel="stylesheet" href="hifi-calc.css?v=4">
+<style>
+  html, body { margin: 0; padding: 0; background: #efe9dc; font-family: 'Inter Tight', sans-serif; }
+  .tweaks {
+    position: fixed; bottom: 18px; right: 18px;
+    background: #fff;
+    border: 1px solid #d4cfc2;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    z-index: 100;
+    display: none;
+    width: 260px;
+  }
+  .tweaks.on { display: block; }
+  .tweaks h4 {
+    margin: 0 0 8px; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1.8px; color: #7a8292; font-weight: 600;
+  }
+  .tweaks .row { margin-bottom: 10px; }
+  .tweaks .row:last-child { margin-bottom: 0; }
+  .tweaks label { display: block; font-size: 10px; color: #7a8292; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.2px; }
+  .tweaks .opts { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tweaks .opt {
+    padding: 4px 9px; border: 1px solid #d4cfc2;
+    border-radius: 4px; cursor: pointer; font-size: 11px;
+    background: #fff; color: #3a4250;
+  }
+  .tweaks .opt.on { background: #1f2d3d; color: #faf7f0; border-color: #1f2d3d; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<div class="tweaks" id="tweaks">
+  <h4>Tweaks</h4>
+  <div class="row">
+    <label>Show states</label>
+    <div class="opts" id="states-opts">
+      <span class="opt" data-state="empty">Empty</span>
+      <span class="opt on" data-state="filled">Filled</span>
+      <span class="opt on" data-state="compare">Compare</span>
+    </div>
+  </div>
+  <div class="row">
+    <label>Artboard size</label>
+    <div class="opts" id="size-opts">
+      <span class="opt" data-size="s">1200</span>
+      <span class="opt on" data-size="m">1340</span>
+      <span class="opt" data-size="l">1480</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="hifi-primitives.jsx"></script>
+<script type="text/babel" src="hifi-states.jsx"></script>
+
+<script type="text/babel">
+/* global React, ReactDOM, DesignCanvas, DCSection, DCArtboard,
+          CanvasEmpty, CanvasFilled, CanvasCompare */
+
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "shown": [
+    "empty",
+    "filled",
+    "compare"
+  ],
+  "size": "l"
+}/*EDITMODE-END*/;
+
+const SIZES = { s: 1200, m: 1340, l: 1480 };
+const HEIGHT = 920;
+
+const STATES = [
+  { id: 'empty',   label: 'State 1 · Empty (before inputs)',      comp: CanvasEmpty,
+    note: "No rail. Plan inputs sit in an expanded top drawer so setup reads as one focused task. Canvas below shows progress pills + a 'ready when you are' prompt. Works backward from State 3's full-width layout." },
+  { id: 'filled',  label: 'State 2 · Single (baseline-only)', comp: CanvasFilled,
+    note: "Plan inputs collapsed into a slim top summary bar (editable via the drawer). Canvas goes full-width: editorial headline, hero chart, three outcome cells, narrative. Same frame as State 3 — just one scenario." },
+  { id: 'compare', label: 'State 3 · Compare (F · baseline locked)',   comp: CanvasCompare,
+    note: "F exactly: tight question at top, two cards side-by-side each with their own chart, scenario levers beneath. No side rail stealing width." },
+];
+
+function App() {
+  const [shown, setShown] = React.useState(TWEAKS.shown);
+  const [size, setSize] = React.useState(TWEAKS.size);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === '__activate_edit_mode') document.getElementById('tweaks').classList.add('on');
+      else if (d.type === '__deactivate_edit_mode') document.getElementById('tweaks').classList.remove('on');
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  React.useEffect(() => {
+    const onClick = (e) => {
+      const el = e.target.closest('.opt');
+      if (!el) return;
+      if (el.dataset.state) {
+        const s = el.dataset.state;
+        setShown(prev => {
+          const next = prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s];
+          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { shown: next } }, '*');
+          return next;
+        });
+      } else if (el.dataset.size) {
+        setSize(el.dataset.size);
+        window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { size: el.dataset.size } }, '*');
+      }
+    };
+    const t = document.getElementById('tweaks');
+    t.addEventListener('click', onClick);
+    return () => t.removeEventListener('click', onClick);
+  }, []);
+
+  React.useEffect(() => {
+    document.querySelectorAll('[data-state]').forEach(el => {
+      el.classList.toggle('on', shown.includes(el.dataset.state));
+    });
+    document.querySelectorAll('[data-size]').forEach(el => {
+      el.classList.toggle('on', el.dataset.size === size);
+    });
+  }, [shown, size]);
+
+  const W = SIZES[size];
+  const order = ['empty', 'filled', 'compare'];
+  const visible = STATES.filter(s => shown.includes(s.id))
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+
+  return (
+    <DesignCanvas>
+      <DCSection
+        id="hifi"
+        title="Retirement calculator — hi-fi direction"
+        subtitle="F-style full-width layout throughout. Plan inputs live in a top bar/drawer (no left rail). State 3 is the two-up compare from approach F; State 1 and State 2 work backward from it."
+      >
+        {visible.map(s => (
+          <DCArtboard
+            key={s.id}
+            id={`state-${s.id}`}
+            label={s.label}
+            width={W}
+            height={HEIGHT}
+            note={s.note}
+          >
+            <div className="calc no-rail">
+              <s.comp />
+            </div>
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
