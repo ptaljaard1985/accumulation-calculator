@@ -88,9 +88,21 @@ Three across. The first is filled navy with white text — the "primary answer" 
 
 Structure per card: tiny muted label (12px), big value (28px / 500), optional sub-value (12px muted). The primary card's sub-value uses `rgba(255,255,255,0.65)` not `--ink-muted`.
 
-### Delta bar
+When a baseline is locked, the income and capital cards grow a fourth row — a thin `.delta-line` above a hairline separator, reading `Baseline <X> · ±<delta> (±<pct>%)`. Positive deltas render in `--success` on the light cards and a lightened green (`#9be7be`) on the primary card; negatives use `--danger` and `#f5a1a1`. The years-until-retirement card deliberately has no delta — the figure depends on input toggles rather than on the plan, and a `+5 years` read would confuse more than it informs.
 
-Only visible when baseline is locked. Coloured left border (green if planned beats baseline, red if it lags). Main message text + a secondary "cost" line. Two action buttons on the right (re-lock, clear baseline).
+### Narrative "In plain terms" card
+
+Below the chart, above the compliance appendix. Card styling matches the summary cards. Title `IN PLAIN TERMS` in uppercase small-caps (11–12px, letter-spaced). Body is structured as up to three headed `.narrative-section` blocks:
+
+- **PLANNED** (always rendered) — two paragraphs combining headline numbers, contributions, composition, and events.
+- **BASELINE POSITION** (only when a baseline is locked) — one paragraph summarising what the baseline produces.
+- **PLANNED SCENARIO** (only when a baseline is locked) — one paragraph with the delta, percentage change, lifetime contribution cost, extra retirement capital, and an annualised-impact framing.
+
+Section headings follow the same 12px uppercase / letter-spaced rhythm as other `h3`s. Copy is sign-aware: for a worse-than-baseline scenario, the wording flips (improvement → reduction, additional → lower, etc.) and the qualitative closing sentence is dropped.
+
+### Compliance appendix — accordion group
+
+Three native `<details class="accordion">` blocks: detail tables, methodology & assumptions, disclaimer. Closed by default on screen (keeps the meeting view uncluttered). Forced open on print via a `beforeprint` handler (for interactive Cmd+P) and a `matchMedia('print')` listener (for headless `--print-to-pdf`, which does not fire `beforeprint`). Summary markers are hidden in print so the output reads as plain tables/prose.
 
 ### Sliders
 
@@ -128,11 +140,13 @@ Custom HTML legend above the chart. Chart.js's built-in legend is disabled entir
 @media print { ... }
 ```
 
-Hides: toggles, buttons, lock button, delta-bar action buttons, chart series-toggle buttons. Everything with class `.no-print` is suppressed.
+Two-zone PDF. Page 1 is the client-facing view: header, client bar, outcome cards, chart (320 px tall, full card width), narrative. Pages 2+ are the compliance appendix: all three accordions forced open and flattened, with `page-break-before: always` on `.print-summary` to start cleanly on a fresh page.
 
-Shows: everything else. The print summary block is pushed to a new page with `page-break-before: always` to keep the interactive chrome separate from the compliance document.
+Hidden in print: the input surfaces (`.collapsible-body`, `.market-assumptions-panel`, `.anchor-row`, non-outcome section headers), all toggles and view switchers, the Lock / Re-lock / Clear buttons. Everything with class `.no-print` is suppressed.
 
-Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common — a button that accidentally prints, a header that doesn't repeat on page 2, a table cut off mid-row.
+Multi-column layouts are forced to stay three-wide in print (the page width would otherwise trigger the 900 px mobile breakpoint and stack them vertically).
+
+Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common — a button that accidentally prints, a header that doesn't repeat on page 2, a table cut off mid-row, a chart canvas that renders at half width because Chart.js hasn't resized for the print media yet (this one bit us in an early iteration).
 
 ## Don't
 
