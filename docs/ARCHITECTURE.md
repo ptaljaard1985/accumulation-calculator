@@ -158,6 +158,8 @@ The helper-prose span ("Ages anchored to {name}'s age.") uses `class="events-ref
 
 `readInputs()` gathers every canonical input in one dict — ages, balances, contributions, `rNom` / `cpi` / `esc`, `anchor`, `retirementAge`, `incomeGoal` (monthly rand target in today's money, rendering-only — `project()` does not consume it), and `events`.
 
+**Client-input defaults + clamps (Session 11).** Spouse ages, retirement age, the four balance inputs, and the four monthly contribution inputs ship with **no HTML `value=""` defaults and no `min`/`max`/`step` constraints** — they render blank with a `placeholder="—"` until the adviser types. `parseAge(id, fallback)` is now a straight `isFinite(n) ? n : fallback` with no 18/64 clamp; every call site still passes `40` as the fallback, which is an internal NaN backstop (invisible because the HTML input is blank). The retirement-age block in `readInputs()` reads the raw integer and falls back to 65 only when the field is truly blank — no 50/75 clamp. The `retirement-age` blur handler calls `refresh()` directly (previously it was snapping values back into 50-75). Market assumption defaults (5% return / 5% CPI / 5% escalation) and the `project()` horizon-minimum (`years = max(1, retirementAge − refAge)`) are unchanged.
+
 **`data-goal-active` hide pattern.** Any surface that displays goal-progress (outcome-strip sub-line, compare-card meta row, plan-bar fact cell, print-summary row, export-deck answer slot) carries `data-goal-active="false"` in the markup. A single CSS rule `[data-goal-active="false"] { display: none !important; }` collapses them all. Renderers flip the attribute via the shared `setGoalActive(id, bool)` helper, driven by `computeGoalProgress(p)` which returns `null` when the goal is blank or zero.
 
 ### 5. Rendering functions
@@ -219,7 +221,7 @@ Logic from Session 3, range-widened in Session 7. `captureScenarioAnchors()` on 
 
 - **Contributions** (retirement + discretionary): `±R30 000` around the anchor, floor-clamped at R0. Step R500.
 - **Expected return**: fixed **0% → 15%** scale, independent of anchor. Step 0.5pp. The canonical `#return` drawer input now accepts `min=0` to match, so `applyScenarioReturn`'s clamp to `#return.min`/`#return.max` no longer produces a dead zone at the low end.
-- **Retirement age**: `±10 years` around the anchor, clamped to the `#retirement-age` input's own 50–75 bounds. Step 1y.
+- **Retirement age**: `±10 years` around the anchor. Step 1y. Session 11 removed the `#retirement-age` input's 50/75 bounds, so the lever now spans `anchor ± 10` without clipping (previously `Math.max(50, …)` / `Math.min(75, …)` collapsed the range when the locked retirement age sat near an old limit). `applyScenarioRetAge()` no longer clamps the written-back value for the same reason.
 
 Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`, which write back into the underlying household / return / retirement-age inputs and kick `refresh()`. Contribution deltas split proportionally between spouses by baseline share.
 
@@ -234,6 +236,8 @@ The family-name editable span (`#family-name`) is a `contenteditable` in the tit
 State 1 also hosts three "shadow" sliders (`#empty-return`, `#empty-cpi`, `#empty-esc`) that mirror the canonical `#return` / `#cpi` / `#esc` inputs. For range elements with `data-sync-to`, a second sync branch listens on `input` (not `blur`) and pipes the live value into the canonical input + dispatches `input` on the target — the canonical listener then fires `refresh()`. `updateSliderLabels()` writes the formatted percent into both the drawer readouts (`#return-out` / `#cpi-out` / `#esc-out`) AND the State 1 readouts (`#empty-return-out` / `#empty-cpi-out` / `#empty-esc-out`), and sets the shadow-thumb positions from the canonical values *unless* the shadow slider is currently focused (prevents a feedback fight while dragging).
 
 The two State 1 retire-when chips (`.empty-name-chip`) click-to-anchor. On click, the handler reads the current ages, determines whether the clicked spouse is younger-or-equal to the other, and calls `setAnchor('youngest')` or `setAnchor('oldest')` accordingly — delegating to the shared path the drawer Youngest/Oldest toggle already uses. `updateAnchorChips()` (called from `refresh()`) keeps the `.is-on` class in sync regardless of which surface drove the anchor change.
+
+**CTA gate (Session 11).** `updateSeeProjectionEnabled()` disables `#btn-see-projection` unless both `#hp-age-A` and `#hp-age-B` parse as finite integers. Wired once to the existing `input` listener on each age input (so State 1 shadow ages — which dispatch `input` on the canonical target via `data-sync-to` blur — and direct drawer edits both trigger it) and called once at init. No gate on retirement age, balances, or contributions: those can stay blank and the projection reads them as 0 (money fields) or 65 (retirement-age fallback in `readInputs`). CSS: `.empty-cta .btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }`.
 
 ### 10. Drawer toggle
 
