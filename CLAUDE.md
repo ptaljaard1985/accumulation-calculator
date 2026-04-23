@@ -113,7 +113,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (37 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (14 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (21 tests).
 
 ## What not to do
 
@@ -131,6 +131,42 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 8 — 2026-04-23
+
+**Shipped (export-design-change):** a 12-page A4-landscape "Export report" deck folded into the calculator as an opt-in print mode. Triggered by a new plan-bar button; coexists with the existing portrait print path without touching it.
+
+- **Design brief.** `export/` folder (handoff bundle with `Retirement Report.html` + `deck-stage.js` + `report-data.js`) specified a 12-slide client-facing deck. Rejected the bundle's integration contract (`localStorage['sw-calc-snapshot']` + `window.open()` to a sibling HTML file) on two grounds: (a) the bundle's `report-data.js` re-implements `project()` from scratch, which is a silent-regression trap directly at odds with CLAUDE.md's "math is auditable" rule; (b) three files with a `window.open()` dependency breaks the `file://` single-file model that lets the adviser email the calculator. Folded the deck into `retirement_accumulation.html` instead. Zero math duplication.
+- **Architecture.** `data-export-mode="true"` on `#calc-root` swaps screen layout to show `.export-deck` and hide everything else. `<html class="export-printing">` plus a dynamically-injected `<style id="export-page-sheet">@page { size: A4 landscape; margin: 0; }</style>` supply the page-size override only for this print pass. Normal Cmd+P and the canvas-foot Print/PDF never touch either gate, so the existing portrait `@media print` rules remain authoritative for the working-copy flow.
+- **Button placement.** Plan-bar top row, next to `Edit plan ↓`. `.btn.ghost` styling. Automatically hidden in State 1 by inheritance from `.plan-bar[data-view-only="filled+compare"]`.
+- **Pages.** Cover (family name, prepared-for, FSP 50637) · The Answer (real stacked chart + outcome strip + `describeCurrentPosition` narrative) · Household (two-spouse editorial grid) · Assumptions (editorial table + aside note) · Projection (nominal stacked chart + starting/real/nominal strip) · Breakdown (3-layer decomp chart + 3 slab cells) · Capital events (conditional on `eventsStore.length > 0`) · Compare (conditional on `baseline`, two cards with shared y-ceiling + delta chip) · Year-by-year table (every 5th year + retirement row highlighted) · Methodology · Compliance · Next steps.
+- **Charts.** 5 dedicated new `<canvas>` elements (`export-chart-answer`, `export-chart-projection-nom`, `export-chart-breakdown`, `export-chart-compare-baseline`, `export-chart-compare-scenario`). Built fresh on button click, destroyed on `afterprint`. Rationale: screen canvases are sized for State 2/3 cards (~280–1000px); landscape A4 content area is ~1588×1123px; the print-time `chart.resize()` pattern on live screen instances is the exact fragile path that burned Session 2/3. Dedicated instances sidestep that entirely.
+- **Conditional pages + renumbering.** `.export-page[data-export-page-active="false"] { display: none; }` hides events/compare when inactive (both screen and print). `renumberExportPages()` walks visible pages and assigns roman numerals + `NN / TT` page counts so the document always reads as a coherent sequence regardless of which conditionals fire.
+- **No math duplication.** Every number in the deck reads from `lastProjection` / `baseline.p` / `eventsStore` / `spouseNames` / hidden meta inputs (`#client-name`, `#client-date`, `#adviser-name`). All formatting through existing `fmtR` / `fmtShort` / `fmtPct`. Narrative slots on the Answer page reuse `describeCurrentPosition(p)` verbatim; Compare page reuses `describeBaselinePosition` + `describePlannedScenario` (all three already em-dash-compliant per existing JS tests).
+- **Defensive rAF-double.** `startExport()` calls `buildExportDeck` + `buildExportCharts` synchronously, then does `requestAnimationFrame(function(){ requestAnimationFrame(window.print); })`. The double rAF gives the browser two frames to flush layout so Chart.js measures the visible (landscape-sized) canvases, not pre-export screen dimensions.
+- **New helpers.** `toRoman(n)`, `deriveFamilyName(clientName)` (takes last whitespace token, e.g. "Thabo & Amara Nkosi" → "Nkosi"), `escapeHtml(s)`, `setBind(name, html)`, `setBindText(name, txt)`, `renumberExportPages()`, `populateEventsPage(p, events)`, `populateComparePage(p, bline)`, `populateYearTable(p)`, `padSeries(s, n)` (pads a shorter baseline series with its last value so the two compare charts share an x-axis).
+- **FSP number.** Bundle's README flagged `[FSP# — TBC]`; calculator already hard-codes FSP 50637 at line 1765 (existing disclaimer). Reused that throughout the deck (cover-page FSP cell, compliance page FSP mention, closing page foot).
+- **Family-name source.** `deriveFamilyName()` reads `#client-name` and takes the last token. Not perfect for compound surnames like "van der Merwe" — flagged as an open question in the plan but good enough for the Pillay / Nkosi / Khumalo common cases. If it bites a client, promote `#family-name` (the State 1 editable span) to a persisted hidden input and have the cover bind to that instead.
+
+**Decisions (and why):**
+
+- **In-calculator print mode over separate static bundle.** User confirmed the single-file + folded approach after I outlined three architectures. The deciding factor was CLAUDE.md's "math is auditable" rule, combined with the practical reality that the adviser emails this file to clients — a second HTML file wouldn't travel.
+- **A4 landscape, not portrait.** User chose landscape to match the bundle's deck-stage design (1588×1123 px). Existing portrait `@media print` rules stay for the working-copy flow.
+- **5 dedicated export canvases over reusing screen canvases.** See Charts note above. Memory is cheap; fragility is expensive.
+- **Inline @page injection over named pages (`page: identifier`).** Browser support for named page references is patchy and the failure mode (silently defaulting to browser page-size) would have been hard to diagnose in the field. Injecting a `<style>` with an unconditional `@page { size: A4 landscape }` gives bulletproof behaviour; removing the `<style>` on `afterprint` preserves the portrait path. Tested pattern.
+- **Events page as a list, not a timeline.** The reference design had an age-axis timeline with above/below event labels. Skipped: timelines need ~100 lines of positioning CSS and read less clearly in monochrome PDF print. A tabular list with kind-badge/age/year/basis/amount columns is cleaner for the adviser's use case (client scans, asks "what's this one?", adviser explains).
+- **Dual Print/PDF buttons, both retained.** Canvas-foot Print/PDF (portrait, internal working copy) and plan-bar Export report (landscape, client deliverable) answer different questions. Collapsing them into one would force the adviser to choose at the wrong moment.
+- **Em-dash audit via zone-scoped regex, not whole-file.** Static copy on methodology / compliance / next-steps / assumptions aside scans em-dash-free. Placeholder text like `R —` (will be overwritten by `setBindText` at runtime) and `<span data-bind="...">——</span>` (ditto) are stripped before scanning. The spirit of the rule — "no em-dashes in what a client reads" — is preserved; the letter of the rule would false-positive on placeholders.
+
+**Tests:** 21 JS (14 existing + 7 new) + 37 Python, all green. New JS tests cover: `toRoman` correctness, `deriveFamilyName` extraction, `escapeHtml` presence, 12-page + 2-conditional deck structure, export-mode gating (button + canvases + `@page` injection + `teardownExport` wiring), static prose em-dash audit, assumptions-aside em-dash audit.
+
+**Docs updated:** `CLAUDE.md` session log (this entry) + File inventory test count (14 → 21 JS), `docs/ARCHITECTURE.md` (new §13 Export deck, plus entry in Top-to-bottom page structure), `docs/DESIGN.md` (new Export deck section after Print).
+
+**Known caveats:**
+
+- **Visual verification pending.** Opened in a browser is the authoritative check. Four matrices to eyeball: (no events, no baseline) = 10 pages; (events, no baseline) = 11; (no events, baseline) = 11; (events + baseline) = 12. Also: Cmd+P without clicking Export must still produce the existing portrait output (regression check).
+- **Font fallback under headless print.** Existing exposure; magnified by landscape hero type. If `--headless --print-to-pdf` ever becomes part of CI, an inline Fraunces subset would be worth adding. Not required today.
+- **Long first names.** Household card headings (serif 30px) assume names up to ~20 chars. Names like "Christopher-James" may crowd. A defensive `font-size: clamp(...)` could absorb this if it bites.
 
 ### Session 7 — 2026-04-23
 
