@@ -454,6 +454,10 @@
     padding: 12px 28px;
     font-size: 13px;
   }
+  .empty-cta .btn.primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   /* ─── Plan-inputs bar (State 2 & 3) ─────────── */
   .plan-bar {
@@ -2068,7 +2072,7 @@
           <button type="button" class="empty-name-chip"
                   data-anchor-spouse="B" data-spouse="B" data-spouse-template="chip">Spouse B</button>
           <span class="empty-foot-reaches">reaches</span>
-          <input class="empty-age-input" data-sync-to="retirement-age" value="65" inputmode="numeric">
+          <input class="empty-age-input" data-sync-to="retirement-age" placeholder="—" inputmode="numeric">
         </div>
       </div>
       <div class="empty-foot-right">
@@ -2178,24 +2182,24 @@
                   role="textbox" contenteditable="plaintext-only" spellcheck="false"
                   aria-label="Edit spouse name">Spouse A</span>
             <span class="age-wrap">age
-              <input type="number" class="age-input" id="hp-age-A" value="40" min="18" max="64" step="1">
+              <input type="number" class="age-input" id="hp-age-A" placeholder="—">
             </span>
           </div>
           <div class="field">
             <div class="field-label"><span>Retirement balance</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-A" value="1 500 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-A" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Discretionary balance</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-A" value="500 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-A" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Monthly retirement</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-A" value="8 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-A" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Monthly discretionary</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-A" value="3 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-A" placeholder="—" inputmode="numeric"></div>
           </div>
         </div>
 
@@ -2205,24 +2209,24 @@
                   role="textbox" contenteditable="plaintext-only" spellcheck="false"
                   aria-label="Edit spouse name">Spouse B</span>
             <span class="age-wrap">age
-              <input type="number" class="age-input" id="hp-age-B" value="40" min="18" max="64" step="1">
+              <input type="number" class="age-input" id="hp-age-B" placeholder="—">
             </span>
           </div>
           <div class="field">
             <div class="field-label"><span>Retirement balance</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-B" value="1 200 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-B" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Discretionary balance</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-B" value="300 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-B" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Monthly retirement</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-B" value="7 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-ret-contrib-B" placeholder="—" inputmode="numeric"></div>
           </div>
           <div class="field">
             <div class="field-label"><span>Monthly discretionary</span></div>
-            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-B" value="2 000" inputmode="numeric"></div>
+            <div class="field-input"><span class="pfx">R</span><input type="text" id="hp-disc-contrib-B" placeholder="—" inputmode="numeric"></div>
           </div>
         </div>
       </div>
@@ -2242,7 +2246,7 @@
             <button id="anchor-oldest" type="button">oldest</button>
           </div>
           <span>reaches</span>
-          <input type="number" class="anchor-age-input" id="retirement-age" value="65" min="50" max="75" step="1">
+          <input type="number" class="anchor-age-input" id="retirement-age" placeholder="—">
         </div>
 
         <div class="plan-drawer-head" style="margin-top: 24px;">
@@ -3321,9 +3325,7 @@
   }
   function parseAge(id, fallback){
     var n = parseInt(document.getElementById(id).value, 10);
-    if (!isFinite(n) || n < 18) n = fallback;
-    if (n > 64) n = 64;
-    return n;
+    return isFinite(n) ? n : fallback;
   }
 
   // ===== State =====
@@ -3477,7 +3479,7 @@
           '<option value="inflow"'  + (ev.kind === 'inflow'  ? ' selected' : '') + '>Inflow (+)</option>' +
           '<option value="outflow"' + (ev.kind === 'outflow' ? ' selected' : '') + '>Outflow (−)</option>' +
         '</select>' +
-        '<div class="event-input-wrap"><input type="number" data-field="age" value="' + ev.age + '" min="18" max="95" step="1"></div>' +
+        '<div class="event-input-wrap"><input type="number" data-field="age" value="' + ev.age + '"></div>' +
         '<div class="event-cell">' +
           '<div class="event-input-wrap" style="flex: 1;"><span class="pfx">R</span><input type="text" data-field="amount" value="' + amountStr + '" inputmode="numeric"></div>' +
         '<label class="event-pv-toggle"><input type="checkbox" data-field="todaysMoney"' + (ev.todaysMoney ? ' checked' : '') + '> today\u2019s money</label>' +
@@ -3737,8 +3739,7 @@
 
   function readInputs(){
     var retAge = parseInt(document.getElementById('retirement-age').value, 10);
-    if (!isFinite(retAge) || retAge < 50) retAge = 50;
-    if (retAge > 75) retAge = 75;
+    if (!isFinite(retAge)) retAge = 65;
     return {
       ageA: parseAge('hp-age-A', 40),
       ageB: parseAge('hp-age-B', 40),
@@ -4396,8 +4397,8 @@
     retSl.value = scenarioAnchors.rNomPct;
 
     var age = document.getElementById('scenario-retage');
-    age.min = Math.max(50, scenarioAnchors.retirementAge - SCENARIO_RETAGE_SPAN);
-    age.max = Math.min(75, scenarioAnchors.retirementAge + SCENARIO_RETAGE_SPAN);
+    age.min = scenarioAnchors.retirementAge - SCENARIO_RETAGE_SPAN;
+    age.max = scenarioAnchors.retirementAge + SCENARIO_RETAGE_SPAN;
     age.step = 1;
     age.value = scenarioAnchors.retirementAge;
   }
@@ -4456,7 +4457,6 @@
     var slider = document.getElementById('scenario-retage');
     var v = parseInt(slider.value, 10);
     if (!isFinite(v)) return;
-    v = Math.max(50, Math.min(75, v));
     document.getElementById('retirement-age').value = v;
     refresh();
   }
@@ -4784,27 +4784,29 @@
     var el = document.getElementById(id);
     el.addEventListener('input', refresh);
     el.addEventListener('blur', function(){
-      var n = parseFloat((el.value || '').replace(/[^0-9.\-]/g, ''));
+      var raw = (el.value || '').trim();
+      if (!raw) { refresh(); return; }
+      var n = parseFloat(raw.replace(/[^0-9.\-]/g, ''));
       if (!isFinite(n)) n = 0;
       el.value = Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' ');
       refresh();
     });
   });
+  function updateSeeProjectionEnabled(){
+    var a = parseInt(document.getElementById('hp-age-A').value, 10);
+    var b = parseInt(document.getElementById('hp-age-B').value, 10);
+    var btn = document.getElementById('btn-see-projection');
+    if (btn) btn.disabled = !(isFinite(a) && isFinite(b));
+  }
   ['hp-age-A', 'hp-age-B'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){
+      updateSeeProjectionEnabled();
       renderEvents();
       refresh();
     });
   });
   document.getElementById('retirement-age').addEventListener('input', refresh);
-  document.getElementById('retirement-age').addEventListener('blur', function(){
-    var el = document.getElementById('retirement-age');
-    var n = parseInt(el.value, 10);
-    if (!isFinite(n) || n < 50) n = 50;
-    if (n > 75) n = 75;
-    el.value = n;
-    refresh();
-  });
+  document.getElementById('retirement-age').addEventListener('blur', refresh);
 
   (function wireIncomeGoal(){
     var el = document.getElementById('income-goal');
@@ -5622,6 +5624,7 @@
 
   renderEvents();
   updateBaselineControls();
+  updateSeeProjectionEnabled();
   refresh();
 })();
 </script>
