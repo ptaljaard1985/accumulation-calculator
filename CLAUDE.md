@@ -97,7 +97,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 12 tests
+# JS tests (actual shipped JS) — 34 tests
 cd tests/js
 node run.js
 ```
@@ -113,7 +113,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (37 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (28 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (34 tests).
 
 ## What not to do
 
@@ -131,6 +131,32 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 10 — 2026-04-23
+
+**Shipped (tweak-pr-10):** three real-meeting follow-ups — a capital-events entry surface on State 1, an Export-deck layout fix that was collapsing "The Answer" page to blank, and a sharper green/red treatment for goal progress.
+
+- **Capital events on State 1.** Adviser couldn't add events during the household-setup conversation — they had to click through to State 2, open the drawer, and fight the cramped column II. Added a new `.empty-events-panel` full-width block between the State 1 foot band and the "See current projection" CTA. Same `Capital events` eyebrow voice as the foot-band sections, same helper prose ("One-off inflows or outflows. Ages anchored to {name}'s age."), same `.events-list` / `.event-row` markup and styles the drawer uses. One shared `renderEvents()` now paints BOTH `#events-list` (drawer) and `#empty-events-list` (State 1) from the same `eventsStore`. The `+ Add an event` button in State 1 is wired to `#empty-add-event-btn` (does not force the drawer open — there's no drawer in State 1). The helper-prose `events-ref-spouse` span was promoted from an id to a class so both drawer + State 1 copies stay fresh; the two JS call sites that updated it now use `querySelectorAll('.events-ref-spouse')`.
+- **Cross-container sync (one-way at state transition).** State 1 and the drawer are never both visible, so live per-keystroke cross-container sync is unnecessary. `onEventInput` continues to update the year-label inline (preserving focus). The `#btn-see-projection` CTA handler now calls `renderEvents()` before `refresh()`, so the drawer (which is about to become visible in State 2) is freshened with any events the adviser added in State 1.
+- **Export Answer page collapsing to blank.** `.export-page[data-export-page="answer"]` declared `grid-template-rows: auto auto 1fr auto auto` (5 rows) against 7 children (topbar, eyebrow, h1, chart-card, outcome-strip, narrative, foot). The 2 unplaced children were auto-flowing into implicit rows, pushing total content past the 210mm print height; Chrome's print engine paginated the page across two physical sheets despite `overflow: hidden`, leaving physical page 2 blank and physical page 3 crammed with the chart + narrative + foot. Fix: dropped the `.export-narrative` block from the Answer page entirely (markup + CSS rules + `setBind('answer-narrative', ...)` call) and updated `grid-template-rows` to `auto auto auto 1fr auto auto` (6 rows). The narrative is retained on the State 2 portrait print (working-copy PDF), so nothing is lost from the overall output — it's just absent from the client-deliverable deck where the chart + outcome strip + headline carry the story.
+- **Goal progress: binary green / red.** Session 9's "never red" constraint (gold-on-track / ink-2-behind) read too quietly in meetings. Swapped `.goal-progress-on-track` to `var(--pos)` (forest green `#2f6b3a`) and `.goal-progress-behind` to `var(--neg)` (rust red `#a64236`). Both at weight 500 for visual parity. Extended class-binding to three more surfaces that were rendering plain text: compare-card `#cmp-baseline-goal` + `#cmp-scenario-goal` (both wrap the % in a span), print-summary `#s-goal` cell, and the export-deck `answer-goal` slot. Plan-bar fact cell shows the goal AMOUNT not progress — skipped. Narrative `goalSentence()` is prose with `<strong>` emphasis — skipped (editorial voice).
+
+**Decisions (and why):**
+
+- **Shared `renderEvents()` + shared row markup over parallel State-1-specific HTML.** The row already uses `data-field` attributes (not IDs), and the event-delegation listener (`onEventInput` / `onEventClick`) is idempotent — attaching it to a second container just wires a second listener that closes over the same `eventsStore`. One visual style, one renderer, zero risk of the two surfaces drifting. The panel wrapper uses State 1's existing `.empty-foot-eyebrow` label so it reads like the other foot-band sections rather than the numbered drawer heads.
+- **`events-ref-spouse` id → class.** Needed a second span in State 1 carrying the same text. Cheaper than a second id + a two-target update function.
+- **Drop the narrative from the Answer page (not shrink the chart).** User decision. Tried shrinking the chart to fit 7 children, but doing that would kill the chart's visual weight on the deck's "headline answer" page. Dropping the narrative keeps the chart at 72mm and the page renders cleanly within 210mm. The narrative still lands in the working-copy portrait PDF, which is the internal document; the deck is the client deliverable where less copy is the right answer anyway.
+- **Binary threshold, not three-tier.** User pick. The narrative already carries a three-tier prose variant (overshoot / near-miss / shortfall), which handles the tonal nuance of "you're close". The color signal is just the on-track / behind binary — simpler to scan at the primary outcome strip in a meeting.
+- **Wrap the % in a span, don't color the whole value.** Rands stay neutral (the numbers are facts); only the "on track to 108% of target" / "covers 72% of target" phrase carries the traffic-light tone. Reads as a compact status badge rather than a loud metric.
+
+**Tests:** 34 JS (28 + 6 new) + 37 Python, all green. New JS tests cover: `#empty-events-list` + `#empty-add-event-btn` + `.empty-events-panel` markup present; `renderEvents` iterates `[events-list, empty-events-list]`; `events-ref-spouse` is a class on 2+ spans and no longer an id; `#empty-add-event-btn` click handler pushes `newEvent()` + calls `renderEvents` + `refresh`; `.goal-progress-on-track` uses `var(--pos)` and `.goal-progress-behind` uses `var(--neg)`; compare-card / print / export-deck all wrap the % in a `goal-progress-*` span.
+
+**Docs updated:** `CLAUDE.md` session log (this entry) + File inventory test count (28 → 34 JS), `docs/ARCHITECTURE.md` (renderEvents paints both containers, Answer page loses narrative slot, goal-progress class binding extended), `docs/DESIGN.md` (empty-state capital-events panel, outcome-strip goal-progress note swapped to green/red, compare-card + export-deck goal note updated, Answer page narrative removed).
+
+**Known caveats:**
+
+- **Visual verification pending.** Four matrices to eyeball: (a) State 1 with 2 events — panel shows between foot band and CTA, rows render as in the drawer; (b) CTA click → State 2 drawer shows the same 2 events (sync via `renderEvents()` pre-refresh); (c) outcome-strip sub-line shows green when projected ≥ goal, red when below; (d) Export report → physical page 2 is "The Answer" with all 6 children visible, physical page 3 is "Household" (no spill-over).
+- **Focus-on-edit.** Typing in State 1's events list updates only the year label inline — the drawer's copy stays stale until state transition (where `renderEvents()` refreshes it). This is intentional to preserve focus during typing; since the drawer isn't visible in State 1, the stale DOM is invisible.
 
 ### Session 9 — 2026-04-23
 
