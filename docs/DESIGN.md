@@ -129,7 +129,7 @@ Below the two cards: a centred `Retirement fund · Discretionary` legend (one ro
 
 ### Scenario levers (State 3)
 
-Four-column grid of thin sliders inside a single card — Retirement contributions, Discretionary contributions, Expected return, Retirement age. Each slider has a label, a mono readout (with a small gold `delta` pill when the slider is off-centre), a 2px track in `--line`, and a 12px circle thumb with a 1.5px `--gold-2` border on a white surface. Ranges centre on the locked baseline: contributions ±R10 000/mo (step R500), return ±2 pp (step 0.5 pp), retirement age ±5 yr (step 1).
+Four-column grid of thin sliders inside a single card — Retirement contributions, Discretionary contributions, Expected return, Retirement age. Each slider has a label, a mono readout (with a small gold `delta` pill when the slider is off-anchor), a 2px track in `--line`, and a 12px circle thumb with a 1.5px `--gold-2` border on a white surface. Ranges: **contributions ±R30 000/mo** (step R500, floor-clamped at R0), **retirement age ±10 yr** (step 1, bounded by the 50–75 input limits). The **expected return** slider is a fixed **0% → 15%** scale (step 0.5 pp) rather than a ± window around the anchor — a macroeconomic range gives the thumb position a constant meaning across clients. The return readout carries an inline `· baseline X.XX%` note so the anchor is always visible.
 
 Moving a slider writes back into the underlying `#hp-*`, `#return`, or `#retirement-age` inputs and kicks the normal projection pipeline. Contribution deltas split proportionally between spouses A and B based on their baseline share. The panel is hidden in print (`.no-print`).
 
