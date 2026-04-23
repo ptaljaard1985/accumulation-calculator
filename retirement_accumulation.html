@@ -352,6 +352,60 @@
     font-variant-numeric: tabular-nums;
   }
   .empty-age-input:focus { outline: none; border-color: var(--navy); }
+
+  /* Retire-when spouse-name chips (State 1) */
+  .empty-name-chip {
+    background: transparent; border: 0;
+    padding: 0 2px;
+    font-family: var(--serif); font-size: 22px;
+    font-weight: 300; line-height: 1;
+    color: var(--mute);
+    cursor: pointer;
+    transition: color 120ms ease;
+  }
+  .empty-name-chip:hover { color: var(--ink-2); }
+  .empty-name-chip.is-on {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--gold-2);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+  }
+  .empty-name-chip:focus-visible {
+    outline: 2px solid var(--navy-soft);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  .empty-foot-reaches {
+    font-family: var(--serif); font-size: 22px;
+    font-weight: 300; color: var(--ink-2);
+    margin: 0 4px;
+  }
+
+  /* Market-assumption inline slider grid (State 1) */
+  .empty-assump-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    row-gap: 10px; column-gap: 16px;
+    align-items: center;
+    margin-top: 2px;
+  }
+  .empty-assump-row {
+    display: contents;
+    cursor: pointer;
+  }
+  .empty-assump-label {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--mute); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 1.2px;
+  }
+  .empty-assump-val {
+    font-family: var(--mono); font-size: 13px;
+    color: var(--ink); min-width: 52px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .empty-assump-grid input[type="range"].thin { width: 100%; }
   .empty-cta {
     display: flex;
     justify-content: center;
@@ -1170,11 +1224,11 @@
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-disc-A" placeholder="—" inputmode="numeric"></div>
         </div>
         <div class="field">
-          <div class="field-label"><span>Monthly retirement</span></div>
+          <div class="field-label"><span>Monthly retirement contributions</span></div>
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-ret-contrib-A" placeholder="—" inputmode="numeric"></div>
         </div>
         <div class="field">
-          <div class="field-label"><span>Monthly discretionary</span></div>
+          <div class="field-label"><span>Monthly discretionary contributions</span></div>
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-disc-contrib-A" placeholder="—" inputmode="numeric"></div>
         </div>
       </div>
@@ -1199,11 +1253,11 @@
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-disc-B" placeholder="—" inputmode="numeric"></div>
         </div>
         <div class="field">
-          <div class="field-label"><span>Monthly retirement</span></div>
+          <div class="field-label"><span>Monthly retirement contributions</span></div>
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-ret-contrib-B" placeholder="—" inputmode="numeric"></div>
         </div>
         <div class="field">
-          <div class="field-label"><span>Monthly discretionary</span></div>
+          <div class="field-label"><span>Monthly discretionary contributions</span></div>
           <div class="field-input empty"><span class="pfx">R</span><input data-sync-to="hp-disc-contrib-B" placeholder="—" inputmode="numeric"></div>
         </div>
       </div>
@@ -1211,19 +1265,41 @@
 
     <div class="empty-foot">
       <div class="empty-foot-left">
-        <div class="empty-foot-eyebrow">Retire when the youngest reaches</div>
+        <div class="empty-foot-eyebrow">Retire when</div>
         <div class="empty-foot-value">
+          <button type="button" class="empty-name-chip is-on"
+                  data-anchor-spouse="A" data-spouse="A" data-spouse-template="chip">Spouse A</button>
+          <span class="empty-dot">·</span>
+          <button type="button" class="empty-name-chip"
+                  data-anchor-spouse="B" data-spouse="B" data-spouse-template="chip">Spouse B</button>
+          <span class="empty-foot-reaches">reaches</span>
           <input class="empty-age-input" data-sync-to="retirement-age" value="65" inputmode="numeric">
-          <span class="empty-foot-hint">default · adjust later</span>
         </div>
       </div>
       <div class="empty-foot-right">
         <div class="empty-foot-eyebrow">Market assumptions</div>
-        <div class="empty-foot-value">
-          <span class="num">10%</span><span class="empty-dot">·</span>
-          <span class="num">5%</span><span class="empty-dot">·</span>
-          <span class="num">6%</span>
-          <span class="empty-foot-hint">return · CPI · escalation</span>
+        <div class="empty-assump-grid">
+          <label class="empty-assump-row">
+            <span class="empty-assump-label">Return</span>
+            <input type="range" class="thin" id="empty-return"
+                   min="3" max="15" step="0.25" value="5"
+                   data-sync-to="return">
+            <span class="empty-assump-val num" id="empty-return-out">5.00%</span>
+          </label>
+          <label class="empty-assump-row">
+            <span class="empty-assump-label">CPI</span>
+            <input type="range" class="thin" id="empty-cpi"
+                   min="2" max="10" step="0.25" value="5"
+                   data-sync-to="cpi">
+            <span class="empty-assump-val num" id="empty-cpi-out">5.00%</span>
+          </label>
+          <label class="empty-assump-row">
+            <span class="empty-assump-label">Escalation</span>
+            <input type="range" class="thin" id="empty-esc"
+                   min="0" max="12" step="0.25" value="5"
+                   data-sync-to="esc">
+            <span class="empty-assump-val num" id="empty-esc-out">5.00%</span>
+          </label>
         </div>
       </div>
     </div>
@@ -1371,9 +1447,9 @@
         <div class="slider">
           <div class="slider-head">
             <span class="slider-label">Expected return (nominal)</span>
-            <span class="slider-value" id="return-out">10.00%</span>
+            <span class="slider-value" id="return-out">5.00%</span>
           </div>
-          <div class="slider-rail"><input type="range" class="thin" id="return" min="3" max="15" step="0.25" value="10"></div>
+          <div class="slider-rail"><input type="range" class="thin" id="return" min="3" max="15" step="0.25" value="5"></div>
         </div>
         <div class="slider">
           <div class="slider-head">
@@ -1385,9 +1461,9 @@
         <div class="slider">
           <div class="slider-head">
             <span class="slider-label">Contribution escalation</span>
-            <span class="slider-value" id="esc-out">6.00%</span>
+            <span class="slider-value" id="esc-out">5.00%</span>
           </div>
-          <div class="slider-rail"><input type="range" class="thin" id="esc" min="0" max="12" step="0.25" value="6"></div>
+          <div class="slider-rail"><input type="range" class="thin" id="esc" min="0" max="12" step="0.25" value="5"></div>
         </div>
 
         <div class="plan-drawer-head" style="margin-top: 24px;">
@@ -1783,12 +1859,30 @@
         el.textContent = name + ' (age · retirement · discretionary)';
       } else if (tmpl === 'summary-contrib'){
         el.textContent = name + ' monthly contributions (retirement · discretionary)';
+      } else if (tmpl === 'chip'){
+        el.textContent = name;
       }
     }
     // Events helper prose: resolve the anchor side to an actual name.
     var refEl = document.getElementById('events-ref-spouse');
     if (refEl){
       refEl.textContent = anchor === 'youngest' ? yo.younger : yo.older;
+    }
+  }
+
+  // Toggle .is-on on the State 1 retire-when chips from the current `anchor`
+  // rule and the current ages. Ties resolve to A (matches resolveYoungerOlder).
+  function updateAnchorChips(){
+    var ageA = parseAge('hp-age-A', 40);
+    var ageB = parseAge('hp-age-B', 40);
+    var aIsYounger = ageA <= ageB;
+    var onSide;
+    if (anchor === 'youngest') onSide = aIsYounger ? 'A' : 'B';
+    else onSide = aIsYounger ? 'B' : 'A';
+    var chips = document.querySelectorAll('.empty-name-chip');
+    for (var i = 0; i < chips.length; i++){
+      var side = chips[i].getAttribute('data-anchor-spouse');
+      chips[i].classList.toggle('is-on', side === onSide);
     }
   }
 
@@ -2620,9 +2714,23 @@
   }
 
   function updateSliderLabels(){
-    set('return-out', fmtPct(read('return')));
-    set('cpi-out', fmtPct(read('cpi')));
-    set('esc-out', fmtPct(read('esc')));
+    var rOut = fmtPct(read('return'));
+    var cOut = fmtPct(read('cpi'));
+    var eOut = fmtPct(read('esc'));
+    set('return-out', rOut);
+    set('cpi-out', cOut);
+    set('esc-out', eOut);
+    set('empty-return-out', rOut);
+    set('empty-cpi-out', cOut);
+    set('empty-esc-out', eOut);
+    // Mirror slider values into the State 1 shadow sliders so the thumbs
+    // track when the drawer sliders are moved directly.
+    var er = document.getElementById('empty-return');
+    var ec = document.getElementById('empty-cpi');
+    var ee = document.getElementById('empty-esc');
+    if (er && document.activeElement !== er) er.value = read('return');
+    if (ec && document.activeElement !== ec) ec.value = read('cpi');
+    if (ee && document.activeElement !== ee) ee.value = read('esc');
   }
 
   // ===== Baseline lock =====
@@ -2848,6 +2956,7 @@
     updatePrintSummary(p);
     updateNarrative(p);
     renderSpouseLabels();
+    updateAnchorChips();
     updateScenarioReadouts();
   }
 
@@ -3101,6 +3210,32 @@
   }
   document.querySelectorAll('[data-sync-to]').forEach(function(el){
     el.addEventListener('blur', function(){ syncToTarget(el); refresh(); });
+  });
+  // Range sliders with data-sync-to pipe live into the canonical input on every
+  // `input` so drag feels responsive. The canonical input's own `input`
+  // listener handles the refresh + readout mirror.
+  document.querySelectorAll('input[type="range"][data-sync-to]').forEach(function(el){
+    el.addEventListener('input', function(){
+      var targetId = el.getAttribute('data-sync-to');
+      var target = document.getElementById(targetId);
+      if (!target) return;
+      target.value = el.value;
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+  // Retire-when spouse-name chips (State 1). Clicking a name resolves it to
+  // the 'youngest' / 'oldest' rule based on current ages and defers to the
+  // shared setAnchor path so the drawer toggle stays in sync.
+  document.querySelectorAll('.empty-name-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var side = chip.getAttribute('data-anchor-spouse');
+      var ageA = parseAge('hp-age-A', 40);
+      var ageB = parseAge('hp-age-B', 40);
+      var aIsYounger = ageA <= ageB;
+      var clickedIsYounger = (side === 'A') ? aIsYounger : !aIsYounger;
+      setAnchor(clickedIsYounger ? 'youngest' : 'oldest');
+      renderEvents();
+    });
   });
   // Spouse-name sync (empty state first-name input → spouseNames)
   document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
