@@ -1282,7 +1282,7 @@
           <label class="empty-assump-row">
             <span class="empty-assump-label">Return</span>
             <input type="range" class="thin" id="empty-return"
-                   min="3" max="15" step="0.25" value="5"
+                   min="0" max="15" step="0.25" value="5"
                    data-sync-to="return">
             <span class="empty-assump-val num" id="empty-return-out">5.00%</span>
           </label>
@@ -1449,7 +1449,7 @@
             <span class="slider-label">Expected return (nominal)</span>
             <span class="slider-value" id="return-out">5.00%</span>
           </div>
-          <div class="slider-rail"><input type="range" class="thin" id="return" min="3" max="15" step="0.25" value="5"></div>
+          <div class="slider-rail"><input type="range" class="thin" id="return" min="0" max="15" step="0.25" value="5"></div>
         </div>
         <div class="slider">
           <div class="slider-head">
@@ -1487,9 +1487,9 @@
     <div>
       <div class="canvas-head-eyebrow">Projected outcome at retirement</div>
       <h1 class="headline">
-        At <span class="num" id="headline-age">65</span>,
-        <span class="gold-under"><span class="num" id="headline-income">R —</span></span> a month —<br>
-        <em>comfortably</em>, at today's prices.
+        At <span id="headline-anchor-name">Spouse A</span>'s age
+        <span class="num" id="headline-age">65</span>, projected starting retirement income of
+        <span class="gold-under"><span class="num" id="headline-income">R —</span></span> per month, in today's money.
       </h1>
       <p class="headline-sub">
         The household reaches retirement with <span class="num" id="headline-capital">R —</span> in combined capital, supporting a 5% drawdown before tax.
@@ -1690,7 +1690,7 @@
     </div>
   </div>
 
-  <div class="print-summary" id="print-summary">
+  <div class="print-summary" id="print-summary" data-view-only="filled+compare">
     <h2>Summary of assumptions and outcome</h2>
 
     <details class="accordion" data-accordion="tables">
@@ -1872,13 +1872,16 @@
 
   // Toggle .is-on on the State 1 retire-when chips from the current `anchor`
   // rule and the current ages. Ties resolve to A (matches resolveYoungerOlder).
-  function updateAnchorChips(){
+  function resolveAnchorSpouseKey(){
     var ageA = parseAge('hp-age-A', 40);
     var ageB = parseAge('hp-age-B', 40);
     var aIsYounger = ageA <= ageB;
-    var onSide;
-    if (anchor === 'youngest') onSide = aIsYounger ? 'A' : 'B';
-    else onSide = aIsYounger ? 'B' : 'A';
+    if (anchor === 'youngest') return aIsYounger ? 'A' : 'B';
+    return aIsYounger ? 'B' : 'A';
+  }
+
+  function updateAnchorChips(){
+    var onSide = resolveAnchorSpouseKey();
     var chips = document.querySelectorAll('.empty-name-chip');
     for (var i = 0; i < chips.length; i++){
       var side = chips[i].getAttribute('data-anchor-spouse');
@@ -2254,6 +2257,9 @@
     set('headline-age', p.retirementAge);
     set('headline-income', fmtR(p.monthlyIncomeReal));
     set('headline-capital', fmtShort(p.finalTotalReal));
+    var anchorKey = resolveAnchorSpouseKey();
+    var anchorNameEl = document.getElementById('headline-anchor-name');
+    if (anchorNameEl) anchorNameEl.textContent = spouseNames[anchorKey];
   }
 
   // Individual button visibility — the State 3 compact head contains both
@@ -2762,11 +2768,10 @@
   // household panel / market-assumptions inputs (with proportional per-spouse
   // split for contributions), then refreshes. Hidden entirely when no baseline
   // is locked — the sliders only make sense as adjustments around a reference.
-  var SCENARIO_CONTRIB_SPAN = 10000;  // rands each side of anchor
+  var SCENARIO_CONTRIB_SPAN = 30000;  // rands each side of anchor
   var SCENARIO_CONTRIB_STEP = 500;
-  var SCENARIO_RETURN_SPAN = 2;       // percentage points each side
-  var SCENARIO_RETURN_STEP = 0.5;
-  var SCENARIO_RETAGE_SPAN = 5;       // years each side
+  var SCENARIO_RETURN_STEP = 0.5;     // return slider uses a fixed 0-15% scale
+  var SCENARIO_RETAGE_SPAN = 10;      // years each side
 
   function captureScenarioAnchors(){
     if (!baseline){ scenarioAnchors = null; return; }
@@ -2801,11 +2806,8 @@
     disc.value = scenarioAnchors.discContrib.total;
 
     var retSl = document.getElementById('scenario-return');
-    var mainReturn = document.getElementById('return');
-    var mainMin = parseFloat(mainReturn.min);
-    var mainMax = parseFloat(mainReturn.max);
-    retSl.min = Math.max(mainMin, scenarioAnchors.rNomPct - SCENARIO_RETURN_SPAN);
-    retSl.max = Math.min(mainMax, scenarioAnchors.rNomPct + SCENARIO_RETURN_SPAN);
+    retSl.min = 0;
+    retSl.max = 15;
     retSl.step = SCENARIO_RETURN_STEP;
     retSl.value = scenarioAnchors.rNomPct;
 
@@ -2888,7 +2890,7 @@
     var deltaEl = document.getElementById(deltaId);
     if (!valEl || !deltaEl) return;
     if (kind === 'currency') valEl.textContent = fmtR(value);
-    else if (kind === 'percent') valEl.textContent = value.toFixed(2) + '%';
+    else if (kind === 'percent') valEl.textContent = value.toFixed(2) + '%  ·  baseline ' + anchor.toFixed(2) + '%';
     else if (kind === 'years') valEl.textContent = value;
     var d = value - anchor;
     deltaEl.className = 'delta';

@@ -198,9 +198,15 @@ The chart branch is skipped for the view that isn't active — main charts only 
 
 ### 8. Scenario sliders (levers panel)
 
-Unchanged logic from Session 3. `captureScenarioAnchors()` on lock. `configureScenarioSliders()` sets each slider's range centred on the baseline value, clamped to the main-slider bounds. Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`, which write back into the underlying household / return / retirement-age inputs and kick `refresh()`. Contribution deltas split proportionally between spouses by baseline share.
+Logic from Session 3, range-widened in Session 7. `captureScenarioAnchors()` on lock. `configureScenarioSliders()` sets each slider's range:
 
-`updateScenarioReadouts()` re-reads the current underlying inputs on every `refresh()` and syncs each slider's thumb + delta pill.
+- **Contributions** (retirement + discretionary): `±R30 000` around the anchor, floor-clamped at R0. Step R500.
+- **Expected return**: fixed **0% → 15%** scale, independent of anchor. Step 0.5pp. The canonical `#return` drawer input now accepts `min=0` to match, so `applyScenarioReturn`'s clamp to `#return.min`/`#return.max` no longer produces a dead zone at the low end.
+- **Retirement age**: `±10 years` around the anchor, clamped to the `#retirement-age` input's own 50–75 bounds. Step 1y.
+
+Moving a slider invokes `applyScenarioContrib('ret'|'disc')`, `applyScenarioReturn()`, or `applyScenarioRetAge()`, which write back into the underlying household / return / retirement-age inputs and kick `refresh()`. Contribution deltas split proportionally between spouses by baseline share.
+
+`updateScenarioReadouts()` re-reads the current underlying inputs on every `refresh()` and syncs each slider's thumb + delta pill. The return slider's readout also carries an inline `· baseline X.XX%` annotation since its fixed scale means the anchor is no longer at centre — this is a special case inside `setScenarioReadout`'s `kind === 'percent'` branch (the only call site in scenario-readouts).
 
 ### 9. State 1 → canonical input sync
 

@@ -132,6 +132,31 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 7 — 2026-04-23
+
+**Shipped (feat/session-7):** wider State 3 scenario sliders, a reworded State 2 headline, and a cleaner State 1 with the appendix no longer hanging off the bottom.
+
+- **Scenario slider ranges widened.** `SCENARIO_CONTRIB_SPAN` 10 000 → 30 000 (±R30k each side of baseline, step R500 unchanged). `SCENARIO_RETAGE_SPAN` 5 → 10 (±10y, still clamped inside `#retirement-age`'s 50–75 bounds). Real-meeting feedback: clients routinely ask "what if we added R25k?" or "what if we retired early?" and the ±R10k / ±5y windows were too narrow to reach those conversations.
+- **Return slider: fixed 0-15% scale.** Dropped the `SCENARIO_RETURN_SPAN` constant entirely. `configureScenarioSliders()` now sets `scenario-return` to `min=0 max=15 step=0.5` unconditionally, with the thumb initialised at the baseline percentage. The scale is macroeconomic (0% is a crisis floor, 15% is aggressive equity) so thumb position has a constant, across-client meaning rather than a client-specific ±2 pp window.
+- **Return readout shows baseline inline.** `setScenarioReadout`'s `percent` branch now writes `"X.XX%  ·  baseline Y.YY%"`. The delta pill (signed offset, green/red) stays. At baseline the readout reads e.g. `"10.00%  ·  baseline 10.00%"` with no pill; off-baseline it reads `"7.50%  ·  baseline 10.00%   −2.50%"`. Chose inline annotation over a visual tick mark on the track because the mono readout cell has the room and the text is unambiguous (asked the user; they picked the text-label option).
+- **Canonical `#return` and `#empty-return` widened to `min=0 max=15`.** The scenario slider's `applyScenarioReturn` clamps the written-back value against the canonical input's min/max. Without widening, moving the scenario thumb below 3% would silently clamp to 3% — a dead zone. Widening both the drawer and State 1 shadow slider to `min=0` keeps the full stack consistent. Defaults unchanged (5%).
+- **State 2 headline reworded.** Was: `At 63, R86 415 a month — comfortably, at today's prices.` Now: `At [anchor-spouse-name]'s age 63, projected starting retirement income of R86 415 per month, in today's money.` User wrote "projected started" in their message; tweaked to "starting" on the assumption that was intended — happy to flip if wrong. The `<em>comfortably</em>` flourish is gone (it read as copywriting, not a fact); the `gold-under` accent on the income number stays.
+- **`resolveAnchorSpouseKey()` helper extracted.** Session 6's `updateAnchorChips()` computed which spouse matches the current anchor rule inline. Pulled that into a standalone helper so `updateSummary()` can also call it to write the anchor spouse's name into `#headline-anchor-name` on every refresh. `updateAnchorChips()` now delegates to the helper — no behaviour change on the empty-state chips.
+- **`.print-summary` gated to State 2/3.** Added `data-view-only="filled+compare"` to the `#print-summary` container. In State 1 the "Summary of assumptions and outcome" heading + three closed accordion rows were dangling below the dashed preview / CTA; they now disappear in the empty state and reappear once a projection is requested. `updateViewVisibility()`'s substring match handles the multi-view attribute value with no JS changes.
+
+**Decisions (and why):**
+
+- **Direct write to `#headline-anchor-name` over extending `renderSpouseLabels()`.** The session-6 template system is good when multiple places in the DOM need the same spouse-name formatting. The headline anchor-name is one span in one place, and "which spouse" depends on the anchor rule + ages rather than a fixed `data-spouse="A|B"` binding. Using the existing template machinery would have meant re-pointing the span's `data-spouse` attribute on every refresh and adding a new template case — more moving parts for no reuse benefit. Direct `el.textContent = spouseNames[anchorKey]` in `updateSummary()` is one line.
+- **Kept `applyScenarioReturn`'s clamp against `#return.min/.max`.** Now that those are 0 and 15, the clamp produces the same result as the slider's own `min="0" max="15"` attributes — redundant but defensive if the underlying input ever narrows again. Didn't remove.
+- **Contribution floor clamp (`Math.max(0, …)`) kept.** With ±R30k, low-baseline households (e.g. R5 000 total retirement contribs) now have an asymmetric range (0 to R35 000). Acceptable: moving the slider left runs out at R0 with a visible `−R5 000` delta chip, which correctly surfaces "can't contribute negative amounts". Symmetric would require allowing negatives, which is nonsense.
+- **No math changes, no test changes.** `project()` and its return shape untouched. 37 Python + 14 JS green both before and after.
+
+**Tests:** 14 JS + 37 Python, all green.
+
+**Docs updated:** `CLAUDE.md` session log (this entry), `docs/ARCHITECTURE.md` (§8 Scenario sliders — new range numbers + the return-baseline annotation), `docs/DESIGN.md` (Scenario-levers section — ranges and the fixed 0-15 return scale).
+
+**Known caveat:** Visual verification needs a browser. Opened `retirement_accumulation.html` in Safari at the end of the session; static JS parse + tests pass, but the headline readability (does "At Sarah's age 63, projected starting retirement income…" scan well in Fraunces 44px?), the return-slider readout fit (`7.50%  ·  baseline 10.00%   −2.50%` in mono 12px at 4-column and 2-column responsive), and the State 1 foot-of-page cleanup all want an eyeball.
+
 ### Session 6 — 2026-04-23
 
 **Shipped (feat/session-6):** three State 1 refinements that emerged from real-meeting feedback on image 7.
