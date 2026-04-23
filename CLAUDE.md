@@ -113,7 +113,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (37 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (21 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (28 tests).
 
 ## What not to do
 
@@ -131,6 +131,43 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 9 — 2026-04-23
+
+**Shipped (design-tweaks-pr9):** two targeted tweaks surfaced from real-meeting use — a placeholder bug in the State 1 title plate, and a new household income-goal input that drives a progress readout across States 2/3, print, and the export deck.
+
+- **Family-name placeholder bug fixed.** State 1 title was `A plan for the _______ family.` with the bracketed portion (including `the` and `family`) inside a single `contenteditable` span (`#family-name`). On focus the handler cleared the span, so when the adviser typed "Nkosi" the word "family" vanished and the editorial template collapsed to `A plan for Nkosi.`. Restructured: the span now holds ONLY the editable surname (placeholder `_______`), with `A plan for the` as static text before the span and `family.` as static text after. Rewrite of `wireFamilyName` dropped the `strip('the '|' family')` regex defensiveness it no longer needed — `client-name` now stores the bare surname directly, which is exactly what `deriveFamilyName()` returns elsewhere.
+- **CSS polish on `.empty-family`:** added `white-space: nowrap` so a long surname doesn't line-wrap the static `family.` suffix off the edge.
+- **New household income goal.** Added a single canonical input `#income-goal` (monthly rand, today's money, pre-tax) that:
+  - lives under a new **V. Household goal** drawer head in col II (right after Capital events);
+  - is shadowed in State 1 by a new full-width `.empty-foot-goal` row below the Retire-when / Market-assumptions grid, styled with the same dashed editorial pill as the balance fields (`data-sync-to="income-goal"`);
+  - extends `readInputs()` with an `incomeGoal` field; `project()` is untouched (goal is rendering-only).
+- **Default: blank.** User decision — forces the adviser to enter the household's goal during every session rather than anchoring on a number. All downstream surfaces guard on `hasGoal = incomeGoal > 0`.
+- **New `[data-goal-active]` hide pattern.** Any element carrying `data-goal-active="false"` is hidden via `[data-goal-active="false"] { display: none !important; }`. Toggled on/off by `setGoalActive(id, bool)` in every renderer. Avoids sprinkling individual `display: none` rules; one CSS declaration, many consumers.
+- **Progress readout wired to every surface:**
+  - **State 2 outcome strip** — primary cell gains a second sub-line `Goal R 80 000 / mo · on track to 108% of target`. Percent picks up the `goal-progress-on-track` (gold) or `goal-progress-behind` (ink-2) class at the 100% threshold. Never red — motivational tone.
+  - **State 3 compare cards** — a fifth meta-row (`Goal progress · 108% of R 80 000`) on both baseline and scenario cards. Scenario's row carries a `pp` delta via the existing `setMetaDelta` helper (extended with a new `'pp'` kind that formats e.g. `+12 pp`). Both cards read against the *current* goal, not a baseline-frozen snapshot — goal is an adviser-level discussion point, not an assumption locked with `scenarioAnchors`.
+  - **Plan-bar** — 6th fact cell `Income goal · R 80 000`, hidden until set. `.plan-bar-row`'s flex layout absorbs the extra cell with no layout work.
+  - **Narrative** — a new `goalSentence(projectedIncome, goal)` helper returns three variants (overshoot / near-miss / shortfall), added to `describeCurrentPosition` after the 5% drawdown sentence. Em-dash-free by construction. Not added to `describeBaselinePosition` / `describePlannedScenario` since State 3's narrative is hidden by `data-view-only="filled"` and the compare cards already carry the progress visually.
+  - **Print summary** — new `s-goal-row` between income and total-contrib, carrying `data-goal-active="false"` so it drops out of the appendix when unused.
+  - **Export deck page 2 "The Answer"** — primary outcome-cell gains a second `.export-outcome-sub` bound to `answer-goal` with the same guard. No new page, no layout reshuffle.
+
+**Decisions (and why):**
+
+- **Goal is rendering-only, not an input to `project()`.** A target doesn't change the projection — the projection produces a number, and the goal compares against it. Keeping `project()` untouched preserves the Python audit contract (37 tests still pass unchanged) and makes the goal easy to suppress cleanly when not set. If a future change wants to, say, solve for "what contribution rate hits the goal", that's a separate derived computation, not a modification to `project()`.
+- **Full-width row in State 1, not a third column.** User choice (preview-selected). The two existing columns (Retire-when / Market-assumptions) are already tight; a third would have crowded both. A dedicated row below reads as a deliberate "set your target" step and mirrors the editorial voice of the household-goal drawer head.
+- **Blank default, not R60 000.** User choice. Every adviser meeting starts with a fresh goal conversation; a default would anchor the conversation (positively or negatively) before the household has weighed in. The blank-guarded rendering means a fresh page load looks exactly like it did before this session, until a goal is typed — zero regression risk for advisers who never use the feature.
+- **Baseline and scenario compare cards both read against the current goal.** Alternative was to freeze goal with the baseline (store `incomeGoal` in `scenarioAnchors` on lock). Rejected: the goal is an adviser-level conversational target, not a plan assumption; a baseline lock with a different goal would produce "108% vs 110%" readings on the baseline card that don't correspond to anything the adviser cares to defend. Using the current goal gives both cards the same yardstick, which is what "goal progress" should mean.
+- **`setMetaDelta` extended with a `'pp'` kind instead of a new helper.** Three lines. The threshold (|delta| < 1pp → empty) matches the existing pattern for currency/years/pct.
+
+**Tests:** 28 JS (21 + 7 new) + 37 Python, all green. New JS tests cover: static `family.` suffix lives outside the editable span; canonical `#income-goal` input + sync + all consumer IDs present; `readInputs` returns `incomeGoal`; `goalSentence(projected, 0) === null`; `goalSentence` variants (overshoot / near-miss / shortfall) include expected phrases and have no em-dashes; `describeCurrentPosition` includes the goal sentence when set and omits it when blank.
+
+**Docs updated:** `CLAUDE.md` session log (this entry) + File inventory test count (21 → 28 JS), `docs/ARCHITECTURE.md` (readInputs +1 field, rendering-function list, new data-goal-active pattern), `docs/DESIGN.md` (Empty state section for `.empty-foot-goal`, goal progress treatment on outcome strip + compare cards + plan-bar).
+
+**Known caveats:**
+
+- **State 1 shadow input shows raw typed value.** Existing pattern for all State 1 shadow inputs — they propagate to the canonical input, which formats on blur (e.g., "60000" → "60 000" in the drawer), but the State 1 field itself keeps whatever the user typed. Consistent with the balance fields. If it becomes a meeting-floor papercut, a `refreshEmptyFields()` mirror-back would be a few lines.
+- **Visual verification pending.** Opened in a browser is the authoritative check. Four states to eyeball: (a) State 1 with blank goal — progress line absent on outcome strip; (b) State 2 with goal 80k and R86k projected — "on track to 108%" in gold; (c) State 2 with goal 120k — "covers 72%" in ink-2; (d) State 3 with goal set — both compare cards show the goal-progress row and scenario shows the `±pp` delta. Cmd+P and Export report should both carry the goal line when set and omit it cleanly when blank.
 
 ### Session 8 — 2026-04-23
 
