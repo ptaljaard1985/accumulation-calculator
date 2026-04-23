@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Plan · Report — Simple Wealth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..500&family=Inter+Tight:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ink:      #1a1f26;
+    --ink-2:    #3a4250;
+    --mute:     #7a8292;
+    --faint:    #b4bac4;
+    --hairline: #e4e1d8;
+    --line:     #d4cfc2;
+    --paper:    #faf7f0;
+    --paper-2:  #f2ede2;
+    --paper-3:  #ebe4d3;
+    --surface:  #ffffff;
+    --navy:     #1f2d3d;
+    --navy-2:   #2d3e50;
+    --navy-soft:#38495b;
+    --gold:     #b8893c;
+    --gold-2:   #9c7226;
+    --gold-soft:#e3c987;
+    --gold-pale:#f5ebd1;
+    --pos: #2f6b3a;
+    --neg: #a64236;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans:  'Inter Tight', -apple-system, sans-serif;
+    --mono:  'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: var(--sans); color: var(--ink); background: #2a2a28; overflow: hidden; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* Each slide is an immediate child section of deck-stage */
+  /* A4 landscape: 297 × 210 mm. We use a crisp, integer-friendly pixel canvas
+     at the same 1.414:1 ratio: 1588 × 1123 px (~ 136 dpi equivalent). */
+  deck-stage section.slide {
+    width: 1588px; height: 1123px;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  /* ─── Common slide chrome ─── */
+  .slide-frame {
+    position: absolute;
+    inset: 56px 80px 56px 80px;
+    display: flex;
+    flex-direction: column;
+  }
+  .slide-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 40px;
+    flex-shrink: 0;
+  }
+  .slide-topbar-left {
+    display: flex; align-items: center; gap: 18px;
+  }
+  .slide-topbar .sw-logo { height: 28px; width: auto; display: block; }
+  .slide-topbar .sw-logo-fallback {
+    font-family: var(--serif); font-size: 18px; font-weight: 500; color: var(--navy);
+    letter-spacing: -0.2px;
+  }
+  .slide-topbar .sw-logo-fallback strong { font-weight: 700; }
+  .slide-topbar .tag {
+    font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600;
+    padding-left: 18px; border-left: 1px solid var(--hairline);
+  }
+  .slide-topbar .meta {
+    font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--mute); font-weight: 500;
+    display: flex; gap: 24px; align-items: center;
+  }
+  .slide-topbar .meta .sep {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--faint);
+  }
+
+  .slide-foot {
+    position: absolute; left: 80px; right: 80px; bottom: 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--mute); font-weight: 500;
+    padding-top: 14px; border-top: 1px solid var(--hairline);
+  }
+  .slide-foot .rom { font-family: var(--serif); font-style: italic; font-size: 13px; text-transform: none; color: var(--gold-2); letter-spacing: 0; }
+
+  .eyebrow {
+    font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 14px;
+  }
+  .eyebrow .rom {
+    font-family: var(--serif); font-style: italic; font-size: 14px;
+    text-transform: none; color: var(--gold-2); letter-spacing: 0;
+    margin-right: 8px; font-weight: 500;
+  }
+
+  .serif-h1 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 72px; line-height: 1.02; letter-spacing: -1px;
+    color: var(--ink); margin: 0;
+  }
+  .serif-h1 em { font-style: italic; font-weight: 300; }
+  .serif-h1 .num { font-family: var(--serif); font-weight: 400; color: var(--navy); font-feature-settings: "tnum"; letter-spacing: 0; }
+  .serif-h1 .gold-under {
+    position: relative; white-space: nowrap; padding: 0 4px;
+  }
+  .serif-h1 .gold-under::after {
+    content: ''; position: absolute; left: 4px; right: 4px; bottom: 6px;
+    height: 12px; background: var(--gold-soft); opacity: 0.55;
+    z-index: 0; border-radius: 2px;
+  }
+  .serif-h1 .gold-under > * { position: relative; z-index: 1; }
+
+  .serif-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 52px; line-height: 1.05; letter-spacing: -0.6px;
+    color: var(--ink); margin: 0;
+  }
+  .serif-h2 em { font-style: italic; }
+
+  .serif-sub {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 22px; line-height: 1.5; color: var(--mute);
+    margin: 0; max-width: 900px;
+  }
+
+  /* ─── Slide: Cover ─── */
+  .slide-cover { background: var(--paper); }
+  .slide-cover .slide-frame { justify-content: space-between; }
+  .cover-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .cover-top .sw-logo { height: 36px; }
+  .cover-top .doc-label {
+    font-size: 11px; letter-spacing: 2.8px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; text-align: right;
+    line-height: 1.8;
+  }
+  .cover-mid { margin-top: auto; margin-bottom: auto; max-width: 1500px; }
+  .cover-title {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 128px; line-height: 0.98; letter-spacing: -2.6px;
+    color: var(--ink); margin: 0 0 28px;
+  }
+  .cover-title em { font-style: italic; font-weight: 300; }
+  .cover-title .family-line {
+    display: block;
+  }
+  .cover-title .family-name {
+    color: var(--navy);
+    font-weight: 400;
+    font-style: italic;
+  }
+  .cover-subtitle {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 32px; color: var(--mute); margin: 0; max-width: 1100px;
+    line-height: 1.4;
+  }
+  .cover-rule {
+    width: 80px; height: 2px; background: var(--gold);
+    margin: 36px 0 0;
+  }
+  .cover-foot {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 40px; padding-top: 28px; border-top: 1px solid var(--hairline);
+  }
+  .cover-foot .cell .label {
+    font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 10px;
+  }
+  .cover-foot .cell .val {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 22px; color: var(--ink); line-height: 1.3;
+  }
+  .cover-foot .cell .val.num { font-family: var(--mono); font-size: 16px; font-weight: 500; }
+  .cover-foot .cell .sub {
+    font-size: 12px; color: var(--mute); margin-top: 4px;
+  }
+  .cover-page-num {
+    font-family: var(--serif); font-style: italic; font-size: 18px;
+    color: var(--gold-2);
+  }
+
+  /* ─── Slide: The Answer ─── */
+  .answer-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 26px;
+  }
+  .answer-head { flex-shrink: 0; }
+  .answer-headline {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 64px; line-height: 1.02; letter-spacing: -1.2px;
+    color: var(--ink); margin: 0;
+    max-width: 1100px;
+  }
+  .answer-headline em { font-style: italic; }
+  .answer-headline .hero-num {
+    font-family: var(--serif); font-weight: 400;
+    color: var(--navy); font-feature-settings: "tnum";
+    letter-spacing: -0.8px;
+  }
+  .answer-headline .gold-under {
+    position: relative; white-space: nowrap; padding: 0 4px;
+  }
+  .answer-headline .gold-under::after {
+    content: ''; position: absolute; left: 4px; right: 4px; bottom: 8px;
+    height: 12px; background: var(--gold-soft); opacity: 0.5;
+    z-index: 0; border-radius: 2px;
+  }
+  .answer-headline .gold-under > * { position: relative; z-index: 1; }
+
+  .answer-chart-card {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 22px 32px 18px;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+  }
+  .answer-chart-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .answer-chart-title {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600;
+  }
+  .answer-chart-legend {
+    display: flex; gap: 22px; font-size: 12px; color: var(--mute);
+  }
+  .answer-chart-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .answer-chart-legend .sw { width: 12px; height: 12px; border-radius: 2px; }
+  .answer-chart-wrap { flex: 1; position: relative; min-height: 0; }
+
+  .answer-foot {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+    flex-shrink: 0;
+  }
+  .answer-narrative {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 17px; line-height: 1.55; color: var(--ink-2);
+    margin: 0;
+    padding-left: 18px;
+    border-left: 2px solid var(--gold);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .answer-narrative p { margin: 0 0 10px; }
+  .answer-narrative p:last-child { margin-bottom: 0; }
+  .answer-narrative strong { font-weight: 500; color: var(--ink); }
+  .answer-narrative em { font-style: italic; }
+
+  /* Outcome strip */
+  .outcome-strip {
+    display: flex;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; overflow: hidden;
+    margin-top: 22px; flex-shrink: 0;
+  }
+  .outcome-cell {
+    flex: 1; padding: 22px 28px;
+    border-right: 1px solid var(--hairline);
+  }
+  .outcome-cell:last-child { border-right: none; }
+  .outcome-cell.primary {
+    background: var(--navy); color: var(--paper);
+  }
+  .outcome-cell .cap {
+    font-size: 10.5px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 8px;
+  }
+  .outcome-cell.primary .cap { color: rgba(250,247,240,0.7); }
+  .outcome-cell .val {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 32px; letter-spacing: -0.4px; color: var(--ink);
+    line-height: 1.05; font-feature-settings: "tnum";
+    white-space: nowrap;
+  }
+  .outcome-cell.primary .val { color: var(--paper); font-size: 38px; }
+  .outcome-cell .sub { font-size: 12px; color: var(--mute); margin-top: 6px; }
+  .outcome-cell.primary .sub { color: rgba(250,247,240,0.64); }
+
+  /* ─── Slide: Household ─── */
+  .household-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 80px;
+    min-height: 0;
+    align-content: start;
+  }
+  .household-divider { background: var(--hairline); }
+  .spouse-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 20px; border-bottom: 1px dashed var(--line);
+    margin-bottom: 28px;
+  }
+  .spouse-header .name {
+    font-family: var(--serif); font-weight: 300; font-size: 52px;
+    color: var(--ink); letter-spacing: -0.5px; line-height: 1;
+  }
+  .spouse-header .age {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 24px; color: var(--mute);
+  }
+  .spouse-header .age .num { font-family: var(--serif); font-style: normal; font-weight: 400; color: var(--ink-2); }
+  .spouse-rows { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .spouse-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .spouse-row:last-child { border-bottom: none; }
+  .spouse-row .label {
+    font-size: 13px; letter-spacing: 1.3px; text-transform: uppercase;
+    color: var(--mute); font-weight: 500;
+  }
+  .spouse-row .val {
+    font-family: var(--mono); font-size: 22px; font-weight: 500;
+    color: var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .spouse-row .val .pfx {
+    font-family: var(--serif); font-weight: 400; color: var(--mute);
+    margin-right: 4px; font-size: 18px;
+  }
+  .spouse-row.total { border-top: 2px solid var(--ink); border-bottom: none; padding-top: 22px; margin-top: 10px; }
+  .spouse-row.total .label { color: var(--ink); font-weight: 600; }
+  .spouse-row.total .val { font-size: 26px; }
+
+  /* ─── Slide: Assumptions ─── */
+  .assump-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 60px;
+    min-height: 0;
+  }
+  .assump-table { width: 100%; border-collapse: collapse; }
+  .assump-table tr { border-bottom: 1px solid var(--hairline); }
+  .assump-table tr:last-child { border-bottom: none; }
+  .assump-table td {
+    padding: 22px 0;
+    vertical-align: top;
+  }
+  .assump-table td.lbl {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 26px; color: var(--ink);
+    letter-spacing: -0.2px;
+    width: 40%;
+  }
+  .assump-table td.val {
+    font-family: var(--mono); font-size: 28px; font-weight: 500;
+    color: var(--navy); text-align: right;
+    font-variant-numeric: tabular-nums;
+    width: 18%;
+  }
+  .assump-table td.note {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 16px; color: var(--mute); line-height: 1.45;
+    padding-left: 36px;
+  }
+  .assump-aside {
+    background: var(--paper-2); border-radius: 10px;
+    padding: 36px 32px;
+    display: flex; flex-direction: column; gap: 18px;
+    align-self: start;
+  }
+  .assump-aside .eyebrow { margin-bottom: 4px; }
+  .assump-aside .body {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 17px; line-height: 1.6; color: var(--ink-2);
+  }
+  .assump-aside .body strong { font-weight: 500; color: var(--ink); }
+  .assump-aside .rule { height: 1px; background: var(--hairline); }
+
+  /* ─── Slide: Projection ─── */
+  .projection-layout {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 24px;
+    min-height: 0;
+  }
+  .projection-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 40px;
+  }
+  .projection-head .left .serif-h2 { margin-bottom: 10px; }
+  .projection-head .legend {
+    display: flex; gap: 22px; font-size: 13px; color: var(--mute);
+    padding-bottom: 8px;
+  }
+  .projection-head .legend .k { display: inline-flex; align-items: center; gap: 7px; }
+  .projection-head .legend .sw { width: 14px; height: 14px; border-radius: 2px; }
+  .projection-chart-wrap {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 28px 32px;
+    position: relative; min-height: 0;
+  }
+  .projection-chart-wrap canvas {
+    position: absolute; inset: 28px 32px;
+    width: calc(100% - 64px) !important; height: calc(100% - 56px) !important;
+  }
+  .projection-foot-strip {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; overflow: hidden;
+  }
+  .projection-foot-strip .cell {
+    padding: 20px 28px; border-right: 1px solid var(--hairline);
+  }
+  .projection-foot-strip .cell:last-child { border-right: none; }
+  .projection-foot-strip .cap {
+    font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 6px;
+  }
+  .projection-foot-strip .val {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 30px; color: var(--ink); line-height: 1;
+    font-feature-settings: "tnum";
+  }
+  .projection-foot-strip .sub {
+    font-size: 12px; color: var(--mute); margin-top: 5px;
+  }
+
+  /* ─── Slide: Breakdown ─── */
+  .breakdown-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 48px;
+    min-height: 0;
+  }
+  .breakdown-chart-wrap {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 28px 32px;
+    position: relative; min-height: 0;
+  }
+  .breakdown-chart-wrap canvas {
+    position: absolute; inset: 28px 32px;
+    width: calc(100% - 64px) !important; height: calc(100% - 56px) !important;
+  }
+  .breakdown-breakdown {
+    display: flex; flex-direction: column; gap: 22px;
+    align-self: center;
+  }
+  .breakdown-slab {
+    padding: 24px 26px;
+    border-radius: 10px;
+    border: 1px solid var(--hairline);
+  }
+  .breakdown-slab .cap {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 10px;
+  }
+  .breakdown-slab .cap .sw {
+    width: 12px; height: 12px; border-radius: 2px;
+  }
+  .breakdown-slab .val {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 40px; color: var(--ink); line-height: 1;
+    font-feature-settings: "tnum"; margin-bottom: 8px;
+  }
+  .breakdown-slab .sub {
+    font-size: 13px; color: var(--mute);
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+  }
+  .breakdown-slab.initial { background: rgba(154, 160, 169, 0.12); }
+  .breakdown-slab.contribs { background: rgba(94, 100, 112, 0.08); }
+  .breakdown-slab.growth { background: var(--gold-pale); border-color: var(--gold-soft); }
+  .breakdown-slab.growth .val { color: var(--gold-2); }
+
+  /* ─── Slide: Compare ─── */
+  .compare-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    min-height: 0;
+  }
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 12px; padding: 36px 40px;
+    display: flex; flex-direction: column; min-height: 0;
+    position: relative;
+  }
+  .compare-card.baseline { background: var(--paper-2); }
+  .compare-card.scenario {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 2px var(--navy), 0 8px 24px rgba(31,45,61,0.08);
+  }
+  .compare-card .tag {
+    font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .compare-card.scenario .tag > span:first-child { color: var(--navy); }
+  .compare-card .locked {
+    font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 500;
+  }
+  .compare-card .delta-chip {
+    font-family: var(--mono); font-size: 12px;
+    padding: 4px 10px; border-radius: 12px;
+    background: var(--gold-pale); color: var(--gold-2);
+    font-weight: 500;
+  }
+  .compare-card .delta-chip.neg { background: #fae7e3; color: var(--neg); }
+  .compare-card .hero {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 88px; line-height: 1; letter-spacing: -1.2px;
+    color: var(--ink); font-feature-settings: "tnum";
+    margin-bottom: 4px;
+  }
+  .compare-card.baseline .hero { color: var(--ink-2); font-weight: 300; }
+  .compare-card.scenario .hero { color: var(--navy); }
+  .compare-card .hero-sub {
+    font-size: 14px; color: var(--mute); margin-bottom: 22px;
+  }
+  .compare-card .chart-wrap {
+    flex: 1; min-height: 0; position: relative; margin: 0 -8px 18px;
+  }
+  .compare-card .meta {
+    border-top: 1px solid var(--hairline);
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+    font-size: 13px;
+  }
+  .compare-card .meta .row {
+    display: flex; justify-content: space-between;
+    color: var(--mute);
+    padding: 4px 0;
+  }
+  .compare-card .meta .row .v {
+    font-family: var(--mono); color: var(--ink); font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .compare-card .meta .row .v em {
+    color: var(--gold-2); font-style: normal; margin-left: 6px; font-size: 11px;
+  }
+  .compare-card .meta .row .v em.neg { color: var(--neg); }
+
+  /* ─── Slide: Year-by-year table ─── */
+  .table-layout { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .year-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono); font-size: 17px;
+    font-variant-numeric: tabular-nums;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .year-table thead th {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 1.8px;
+    text-transform: uppercase; color: var(--mute); font-weight: 600;
+    padding: 18px 22px; text-align: right;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .year-table thead th:first-child { text-align: left; }
+  .year-table tbody td {
+    padding: 16px 22px; text-align: right;
+    color: var(--ink);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .year-table tbody tr:last-child td { border-bottom: none; }
+  .year-table tbody td:first-child {
+    text-align: left; font-family: var(--sans); font-weight: 500;
+    color: var(--navy);
+  }
+  .year-table tbody tr.milestone td { background: rgba(184, 137, 60, 0.06); font-weight: 600; color: var(--ink); }
+  .year-table tbody tr.retire td {
+    background: var(--navy); color: var(--paper); font-weight: 600;
+  }
+  .year-table tbody tr.retire td:first-child { color: var(--gold-soft); }
+
+  /* ─── Slide: Methodology / Compliance ─── */
+  .prose-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    min-height: 0;
+  }
+  .prose-col h3 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 26px; letter-spacing: -0.2px;
+    color: var(--ink); margin: 0 0 14px;
+  }
+  .prose-col h3:not(:first-child) { margin-top: 32px; }
+  .prose-col p, .prose-col li {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 17px; line-height: 1.6; color: var(--ink-2);
+    margin: 0 0 12px;
+  }
+  .prose-col p strong { font-weight: 500; color: var(--ink); }
+  .prose-col ul {
+    margin: 0 0 12px; padding: 0;
+    list-style: none;
+  }
+  .prose-col li {
+    padding-left: 22px; position: relative;
+    margin-bottom: 8px;
+  }
+  .prose-col li::before {
+    content: ''; position: absolute;
+    left: 0; top: 12px; width: 8px; height: 1px; background: var(--gold);
+  }
+  .prose-col .tiny {
+    font-size: 13px; color: var(--mute); font-style: italic;
+  }
+
+  /* ─── Slide: Contact / closing ─── */
+  .closing-layout {
+    flex: 1;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    gap: 48px;
+  }
+  .closing-title {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 96px; line-height: 0.98; letter-spacing: -1.8px;
+    color: var(--ink); margin: 0;
+    max-width: 1400px;
+  }
+  .closing-title em { font-style: italic; }
+  .closing-title .gold-under {
+    position: relative; white-space: nowrap; padding: 0 6px;
+  }
+  .closing-title .gold-under::after {
+    content: ''; position: absolute; left: 6px; right: 6px; bottom: 12px;
+    height: 14px; background: var(--gold-soft); opacity: 0.55;
+    z-index: 0; border-radius: 2px;
+  }
+  .closing-title .gold-under > * { position: relative; z-index: 1; }
+  .closing-strip {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    padding: 28px 0; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
+  }
+  .closing-strip .cell { padding: 0 32px; border-right: 1px solid var(--hairline); }
+  .closing-strip .cell:first-child { padding-left: 0; }
+  .closing-strip .cell:last-child { border-right: none; padding-right: 0; }
+  .closing-strip .cap {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 10px;
+  }
+  .closing-strip .val {
+    font-family: var(--serif); font-size: 22px; color: var(--ink);
+    font-weight: 400; line-height: 1.3;
+  }
+  .closing-strip .sub { font-size: 13px; color: var(--mute); margin-top: 4px; }
+
+  /* ─── Capital events slide ─── */
+  .events-summary {
+    display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 48px; padding: 24px 0 28px 0;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 36px;
+  }
+  .events-summary .cell .cap {
+    font-size: 10.5px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600; margin-bottom: 10px;
+  }
+  .events-summary .cell .val {
+    font-family: var(--serif); font-weight: 300;
+    font-size: 34px; line-height: 1.1; letter-spacing: -0.3px;
+    color: var(--navy);
+  }
+  .events-summary .cell .val.pos { color: var(--pos); }
+  .events-summary .cell .val.neg { color: var(--neg); }
+  .events-summary .cell .sub {
+    font-size: 12px; color: var(--mute); margin-top: 6px; line-height: 1.5;
+  }
+
+  .events-body {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 48px; flex: 1; min-height: 0;
+  }
+
+  /* Timeline (left) */
+  .events-timeline {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .events-timeline > .title {
+    font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600;
+    padding-bottom: 10px; border-bottom: 1px solid var(--hairline);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .events-timeline > .title em {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold-2); letter-spacing: 0; text-transform: none; font-weight: 500;
+  }
+  .timeline-plot {
+    position: relative; flex: 1; min-height: 280px;
+    padding: 20px 0 38px 0;
+  }
+  .timeline-axis {
+    position: absolute; left: 0; right: 0; top: 50%;
+    height: 1px; background: var(--line);
+  }
+  .timeline-today, .timeline-retire {
+    position: absolute; top: calc(50% - 34px); bottom: calc(50% - 34px);
+    width: 1px; background: var(--faint);
+  }
+  .timeline-today { left: 0; }
+  .timeline-retire { right: 0; }
+  .timeline-label {
+    position: absolute; font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--mute); font-weight: 600;
+    white-space: nowrap;
+  }
+  .timeline-label.today  { left: 0;   bottom: 0; transform: translateX(-2px); }
+  .timeline-label.retire { right: 0;  bottom: 0; transform: translateX(2px); text-align: right; }
+  .timeline-label.today .age, .timeline-label.retire .age {
+    display: block; font-family: var(--mono); font-size: 11px;
+    color: var(--ink-2); letter-spacing: 0; margin-top: 3px; text-transform: none;
+  }
+  .timeline-tick {
+    position: absolute; top: 50%; width: 1px; height: 6px;
+    background: var(--faint); transform: translate(-50%, -3px);
+  }
+  .timeline-tick-label {
+    position: absolute; top: calc(50% + 10px);
+    font-size: 10px; color: var(--mute); font-family: var(--mono);
+    transform: translateX(-50%);
+  }
+
+  .timeline-event {
+    position: absolute; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .timeline-event .stem {
+    width: 1px;
+    background: var(--line);
+  }
+  .timeline-event.inflow .stem { background: var(--pos); opacity: 0.5; }
+  .timeline-event.outflow .stem { background: var(--neg); opacity: 0.5; }
+  .timeline-event .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--paper); border: 2px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .timeline-event.inflow .dot { border-color: var(--pos); background: #e8f0e6; }
+  .timeline-event.outflow .dot { border-color: var(--neg); background: #f5e2de; }
+  .timeline-event .lbl {
+    position: absolute; white-space: nowrap;
+    font-size: 11px; color: var(--ink-2); line-height: 1.3;
+    text-align: center;
+  }
+  .timeline-event .lbl .amt {
+    display: block; font-family: var(--mono); font-weight: 500;
+    font-size: 12px; color: var(--ink);
+  }
+  .timeline-event .lbl .desc {
+    display: block; font-size: 10.5px; color: var(--mute);
+    letter-spacing: 0.3px; margin-top: 1px;
+  }
+  .timeline-event.above .lbl { bottom: calc(100% + 6px); }
+  .timeline-event.below .lbl { top: calc(100% + 6px); }
+  .timeline-event.above .stem { order: 2; }
+  .timeline-event.above .dot  { order: 3; }
+  .timeline-event.below .stem { order: 1; }
+  .timeline-event.below .dot  { order: 0; }
+
+  /* List (right) */
+  .events-list {
+    display: flex; flex-direction: column;
+  }
+  .events-list > .title {
+    font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase;
+    color: var(--mute); font-weight: 600;
+    padding-bottom: 10px; border-bottom: 1px solid var(--hairline);
+    margin-bottom: 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .events-list > .title em {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold-2); letter-spacing: 0; text-transform: none; font-weight: 500;
+  }
+  .events-list .row {
+    display: grid;
+    grid-template-columns: 58px 1fr auto;
+    gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--hairline);
+    align-items: baseline;
+  }
+  .events-list .row:last-child { border-bottom: none; }
+  .events-list .row .age {
+    font-family: var(--mono); font-size: 13px; color: var(--mute);
+    letter-spacing: 0.5px; padding-top: 2px;
+  }
+  .events-list .row .age em {
+    display: block; font-family: var(--sans); font-style: normal;
+    font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--faint); font-weight: 600; margin-top: 3px;
+  }
+  .events-list .row .mid .kind {
+    font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase;
+    font-weight: 600; display: inline-block;
+    padding: 3px 8px; border-radius: 2px; margin-bottom: 8px;
+  }
+  .events-list .row .mid .kind.inflow  { color: var(--pos); background: rgba(47, 107, 58, 0.08); }
+  .events-list .row .mid .kind.outflow { color: var(--neg); background: rgba(166, 66, 54, 0.08); }
+  .events-list .row .mid .desc {
+    font-family: var(--serif); font-weight: 300; font-size: 22px;
+    line-height: 1.2; letter-spacing: -0.2px; color: var(--ink);
+  }
+  .events-list .row .mid .note {
+    font-size: 11.5px; color: var(--mute); margin-top: 6px; line-height: 1.45;
+  }
+  .events-list .row .amt {
+    font-family: var(--mono); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.2px; text-align: right; white-space: nowrap;
+  }
+  .events-list .row.inflow  .amt { color: var(--pos); }
+  .events-list .row.outflow .amt { color: var(--neg); }
+  .events-list .empty {
+    padding: 40px 0; color: var(--mute);
+    font-family: var(--serif); font-style: italic; font-size: 22px;
+    font-weight: 300; line-height: 1.4;
+  }
+
+  /* Chart.js defaults are overridden per-chart so skip global config here */
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  @media print {
+    html, body { background: white; }
+    deck-stage section.slide { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<deck-stage width="1588" height="1123">
+
+  <!-- ══════ SLIDE 1 · COVER ══════ -->
+  <section class="slide slide-cover" data-screen-label="01 Cover">
+    <div class="slide-frame">
+      <div class="cover-top">
+        <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth"
+             onerror="this.outerHTML='<span class=\'sw-logo-fallback\'>simple<strong>wealth</strong></span>'">
+        <div class="doc-label">
+          Retirement projection<br>
+          <span style="color: var(--faint);">Prepared for private circulation</span>
+        </div>
+      </div>
+
+      <div class="cover-mid">
+        <div class="eyebrow" style="margin-bottom: 28px;">
+          <span class="rom">§</span>Retirement plan
+        </div>
+        <h1 class="cover-title">
+          <span class="family-line">A plan for</span>
+          <span class="family-line">
+            the <span class="family-name" data-field="family-name">——</span>
+          </span>
+          <span class="family-line"><em>family.</em></span>
+        </h1>
+        <div class="cover-rule"></div>
+      </div>
+
+      <div class="cover-foot">
+        <div class="cell">
+          <div class="label">Prepared for</div>
+          <div class="val" data-field="client-name">——</div>
+        </div>
+        <div class="cell">
+          <div class="label">Prepared on</div>
+          <div class="val num" data-field="prepared-date">——</div>
+        </div>
+        <div class="cell">
+          <div class="label">Adviser</div>
+          <div class="val">Simple Wealth <em>(Pty) Ltd</em></div>
+          <div class="sub">FSP <span data-field="fsp">[FSP# — TBC]</span></div>
+        </div>
+        <div class="cell" style="text-align: right;">
+          <div class="cover-page-num">i.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 2 · THE ANSWER ══════ -->
+  <section class="slide" data-screen-label="02 The answer">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">The answer</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date">——</span>
+        </div>
+      </div>
+
+      <div class="answer-stack">
+        <div class="answer-head">
+          <div class="eyebrow"><span class="rom">II.</span>Projected outcome at retirement</div>
+          <h1 class="answer-headline">
+            At <span class="hero-num" data-field="answer-age">65</span>, about
+            <span class="gold-under"><span class="hero-num" data-field="answer-income">R —</span></span>
+            a month — <em>comfortably</em>, at today's prices.
+          </h1>
+        </div>
+
+        <div class="answer-chart-card">
+          <div class="answer-chart-head">
+            <span class="answer-chart-title">Capital build-up · today's money</span>
+            <div class="answer-chart-legend">
+              <span class="k"><span class="sw" style="background: #1f2d3d;"></span>Retirement</span>
+              <span class="k"><span class="sw" style="background: #b8893c;"></span>Discretionary</span>
+            </div>
+          </div>
+          <div class="answer-chart-wrap">
+            <canvas id="chart-answer"></canvas>
+          </div>
+        </div>
+
+        <div class="answer-foot">
+          <div class="answer-narrative" data-field="answer-narrative">
+            <!-- filled by JS -->
+          </div>
+
+          <div class="outcome-strip" style="margin-top: 0;">
+            <div class="outcome-cell primary">
+              <div class="cap">Monthly income</div>
+              <div class="val num" data-field="out-income">R —</div>
+              <div class="sub">today's money · before tax</div>
+            </div>
+            <div class="outcome-cell">
+              <div class="cap">Capital at retirement</div>
+              <div class="val num" data-field="out-capital">R —</div>
+              <div class="sub" data-field="out-capital-sub">today's money</div>
+            </div>
+            <div class="outcome-cell">
+              <div class="cap">Horizon</div>
+              <div class="val num" data-field="out-years">—</div>
+              <div class="sub" data-field="out-years-sub">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">II.</span> &nbsp; 02 / <span data-field="total-slides">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 3 · HOUSEHOLD ══════ -->
+  <section class="slide" data-screen-label="03 Household">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">The household</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-2">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-2">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 36px;">
+        <div class="eyebrow"><span class="rom">III.</span>The starting position, today</div>
+        <h2 class="serif-h2">Where the household <em>stands</em>.</h2>
+      </div>
+
+      <div class="household-grid">
+        <div class="spouse-col" data-spouse="A">
+          <div class="spouse-header">
+            <div class="name" data-field="spA-name">Spouse A</div>
+            <div class="age">age <span class="num" data-field="spA-age">—</span></div>
+          </div>
+          <div class="spouse-rows">
+            <div class="spouse-row">
+              <span class="label">Retirement balance</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spA-ret">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Discretionary balance</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spA-disc">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Monthly retirement contributions</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spA-ret-c">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Monthly discretionary contributions</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spA-disc-c">—</span></span>
+            </div>
+            <div class="spouse-row total">
+              <span class="label">Combined starting capital</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spA-total">—</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="household-divider"></div>
+
+        <div class="spouse-col" data-spouse="B">
+          <div class="spouse-header">
+            <div class="name" data-field="spB-name">Spouse B</div>
+            <div class="age">age <span class="num" data-field="spB-age">—</span></div>
+          </div>
+          <div class="spouse-rows">
+            <div class="spouse-row">
+              <span class="label">Retirement balance</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spB-ret">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Discretionary balance</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spB-disc">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Monthly retirement contributions</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spB-ret-c">—</span></span>
+            </div>
+            <div class="spouse-row">
+              <span class="label">Monthly discretionary contributions</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spB-disc-c">—</span></span>
+            </div>
+            <div class="spouse-row total">
+              <span class="label">Combined starting capital</span>
+              <span class="val"><span class="pfx">R</span><span data-field="spB-total">—</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">III.</span> &nbsp; 03 / <span data-field="total-slides-3">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 4 · ASSUMPTIONS ══════ -->
+  <section class="slide" data-screen-label="04 Assumptions">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Assumptions</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-4">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-4">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 30px;">
+        <div class="eyebrow"><span class="rom">IV.</span>The economic picture behind the numbers</div>
+        <h2 class="serif-h2">The assumptions we're <em>making</em>.</h2>
+      </div>
+
+      <div class="assump-grid">
+        <table class="assump-table">
+          <tr>
+            <td class="lbl">Expected return</td>
+            <td class="val" data-field="a-return">—</td>
+            <td class="note">Nominal, compounded monthly on both the retirement and discretionary pools.</td>
+          </tr>
+          <tr>
+            <td class="lbl">Inflation (CPI)</td>
+            <td class="val" data-field="a-cpi">—</td>
+            <td class="note">Used to deflate future rands into today's money for headline figures.</td>
+          </tr>
+          <tr>
+            <td class="lbl">Contribution escalation</td>
+            <td class="val" data-field="a-esc">—</td>
+            <td class="note">Applied annually to each spouse's monthly contributions, at year-end.</td>
+          </tr>
+          <tr>
+            <td class="lbl">Retirement trigger</td>
+            <td class="val" data-field="a-retage">—</td>
+            <td class="note" data-field="a-anchor-note">Anchored to the younger spouse reaching the retirement age.</td>
+          </tr>
+          <tr>
+            <td class="lbl">Draw-down rate</td>
+            <td class="val">5.0%</td>
+            <td class="note">Applied to the real capital at retirement to derive a sustainable monthly income in today's money.</td>
+          </tr>
+        </table>
+
+        <aside class="assump-aside">
+          <div class="eyebrow" style="margin: 0;"><span class="rom">—</span>Note to the household</div>
+          <div class="body">
+            These are <strong>long-term planning assumptions</strong>, not forecasts. The rates reflect a diversified growth-oriented portfolio over a full accumulation horizon; actual outcomes will vary year to year.
+          </div>
+          <div class="rule"></div>
+          <div class="body">
+            We <strong>stress-test</strong> these inputs at each review. If markets or your circumstances move meaningfully, we re-model with different return, CPI, and escalation bands.
+          </div>
+          <div class="rule"></div>
+          <div class="body">
+            All figures are shown in <strong>today's money</strong> unless marked otherwise, so the numbers you see are directly comparable to your cost of living today.
+          </div>
+        </aside>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">IV.</span> &nbsp; 04 / <span data-field="total-slides-4">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 5 · PROJECTION ══════ -->
+  <section class="slide" data-screen-label="05 Projection">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Projection</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-5">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-5">——</span>
+        </div>
+      </div>
+
+      <div class="projection-layout">
+        <div class="projection-head">
+          <div class="left">
+            <div class="eyebrow"><span class="rom">V.</span>How capital builds over the horizon</div>
+            <h2 class="serif-h2">Year by year, the <em>numbers</em> compound.</h2>
+          </div>
+          <div class="legend">
+            <span class="k"><span class="sw" style="background: #1f2d3d;"></span>Retirement fund</span>
+            <span class="k"><span class="sw" style="background: #b8893c;"></span>Discretionary</span>
+          </div>
+        </div>
+
+        <div class="projection-chart-wrap">
+          <canvas id="chart-projection"></canvas>
+        </div>
+
+        <div class="projection-foot-strip">
+          <div class="cell">
+            <div class="cap">Starting capital (today)</div>
+            <div class="val num" data-field="p-start">R —</div>
+            <div class="sub">combined, before contributions</div>
+          </div>
+          <div class="cell">
+            <div class="cap">At retirement — today's money</div>
+            <div class="val num" data-field="p-end-real">R —</div>
+            <div class="sub" data-field="p-end-real-sub">—</div>
+          </div>
+          <div class="cell">
+            <div class="cap">At retirement — future rands</div>
+            <div class="val num" data-field="p-end-nom">R —</div>
+            <div class="sub">before any drawdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">V.</span> &nbsp; 05 / <span data-field="total-slides-5">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 6 · BREAKDOWN ══════ -->
+  <section class="slide" data-screen-label="06 Breakdown">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Breakdown</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-6">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-6">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 30px;">
+        <div class="eyebrow"><span class="rom">VI.</span>Where the final capital comes from</div>
+        <h2 class="serif-h2">The three ingredients of the <em>result</em>.</h2>
+      </div>
+
+      <div class="breakdown-layout">
+        <div class="breakdown-chart-wrap">
+          <canvas id="chart-breakdown"></canvas>
+        </div>
+
+        <div class="breakdown-breakdown">
+          <div class="breakdown-slab initial">
+            <div class="cap">
+              <span>Starting capital, compounded</span>
+              <span class="sw" style="background: rgba(154, 160, 169, 0.85);"></span>
+            </div>
+            <div class="val num" data-field="br-initial">R —</div>
+            <div class="sub">What today's balances become, left to grow without further contributions.</div>
+          </div>
+          <div class="breakdown-slab contribs">
+            <div class="cap">
+              <span>Cumulative contributions</span>
+              <span class="sw" style="background: rgba(94, 100, 112, 0.88);"></span>
+            </div>
+            <div class="val num" data-field="br-contribs">R —</div>
+            <div class="sub">Every rand paid in over the horizon, escalated annually.</div>
+          </div>
+          <div class="breakdown-slab growth">
+            <div class="cap">
+              <span>Growth on contributions</span>
+              <span class="sw" style="background: var(--gold);"></span>
+            </div>
+            <div class="val num" data-field="br-growth">R —</div>
+            <div class="sub">The compounding return earned on those contributions over time.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">VI.</span> &nbsp; 06 / <span data-field="total-slides-6">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 7 · CAPITAL EVENTS (conditional) ══════ -->
+  <section class="slide" data-screen-label="07 Capital events" data-slide="events">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Capital events</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-ev">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-ev">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <div class="eyebrow"><span class="rom">VII.</span>One-off inflows and outflows on the horizon</div>
+        <h2 class="serif-h2">The moments capital <em>moves</em>.</h2>
+      </div>
+
+      <div class="events-summary">
+        <div class="cell">
+          <div class="cap">Summary</div>
+          <div class="val" data-field="ev-summary-count">— events modelled</div>
+          <div class="sub" data-field="ev-summary-sub">Applied at year-end to the discretionary portfolio, in today's money, before compounding.</div>
+        </div>
+        <div class="cell">
+          <div class="cap">Total inflows</div>
+          <div class="val pos" data-field="ev-inflow-total">+ R —</div>
+          <div class="sub" data-field="ev-inflow-sub">— event(s)</div>
+        </div>
+        <div class="cell">
+          <div class="cap">Total outflows</div>
+          <div class="val neg" data-field="ev-outflow-total">− R —</div>
+          <div class="sub" data-field="ev-outflow-sub">— event(s)</div>
+        </div>
+      </div>
+
+      <div class="events-body">
+        <div class="events-timeline">
+          <div class="title">
+            <span>Timeline · across the horizon</span>
+            <em>in order of occurrence</em>
+          </div>
+          <div class="timeline-plot" id="events-timeline-plot">
+            <div class="timeline-axis"></div>
+            <div class="timeline-today"></div>
+            <div class="timeline-retire"></div>
+            <div class="timeline-label today">
+              Today<span class="age" data-field="ev-tl-today">age —</span>
+            </div>
+            <div class="timeline-label retire">
+              Retirement<span class="age" data-field="ev-tl-retire">age —</span>
+            </div>
+            <!-- events injected by JS -->
+          </div>
+        </div>
+
+        <div class="events-list">
+          <div class="title">
+            <span>Each event, in detail</span>
+            <em>with effect on the plan</em>
+          </div>
+          <div id="events-list-body">
+            <!-- rows injected by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">VII.</span> &nbsp; 07 / <span data-field="total-slides-ev">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 8 · COMPARE (conditional) ══════ -->
+  <section class="slide" data-screen-label="07 Compare" data-slide="compare">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Compare</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-7">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-7">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 26px;">
+        <div class="eyebrow"><span class="rom">VIII.</span>Baseline, set against the proposed plan</div>
+        <h2 class="serif-h2">What <em>changes</em>, and what it buys you.</h2>
+      </div>
+
+      <div class="compare-layout">
+        <div class="compare-card baseline">
+          <div class="tag">
+            <span>Baseline</span>
+            <span class="locked">Locked</span>
+          </div>
+          <div class="hero num" data-field="cmp-base-hero">R —</div>
+          <div class="hero-sub" data-field="cmp-base-sub">monthly income · — capital</div>
+          <div class="chart-wrap"><canvas id="chart-cmp-base"></canvas></div>
+          <div class="meta">
+            <div class="row"><span>Retirement /mo</span><span class="v" data-field="cmp-base-cret">R —</span></div>
+            <div class="row"><span>Discretionary /mo</span><span class="v" data-field="cmp-base-cdisc">R —</span></div>
+            <div class="row"><span>Return</span><span class="v" data-field="cmp-base-ret">—</span></div>
+            <div class="row"><span>Retire at</span><span class="v" data-field="cmp-base-age">—</span></div>
+          </div>
+        </div>
+
+        <div class="compare-card scenario">
+          <div class="tag">
+            <span>Plan</span>
+            <span class="delta-chip" data-field="cmp-chip">— / mo</span>
+          </div>
+          <div class="hero num" data-field="cmp-plan-hero">R —</div>
+          <div class="hero-sub" data-field="cmp-plan-sub">monthly income · — capital</div>
+          <div class="chart-wrap"><canvas id="chart-cmp-plan"></canvas></div>
+          <div class="meta">
+            <div class="row"><span>Retirement /mo</span><span class="v"><span data-field="cmp-plan-cret">R —</span><em data-field="cmp-plan-cret-d"></em></span></div>
+            <div class="row"><span>Discretionary /mo</span><span class="v"><span data-field="cmp-plan-cdisc">R —</span><em data-field="cmp-plan-cdisc-d"></em></span></div>
+            <div class="row"><span>Return</span><span class="v"><span data-field="cmp-plan-ret">—</span><em data-field="cmp-plan-ret-d"></em></span></div>
+            <div class="row"><span>Retire at</span><span class="v"><span data-field="cmp-plan-age">—</span><em data-field="cmp-plan-age-d"></em></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">VIII.</span> &nbsp; <span data-field="pagenum-cmp">08</span> / <span data-field="total-slides-7">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 8 · YEAR-BY-YEAR TABLE (every 5th) ══════ -->
+  <section class="slide" data-screen-label="08 Year by year">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Year by year</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-8">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-8">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 26px;">
+        <div class="eyebrow"><span class="rom">IX.</span>Every fifth year, plus the milestones</div>
+        <h2 class="serif-h2">The numbers, laid out <em>plainly</em>.</h2>
+      </div>
+
+      <div class="table-layout">
+        <table class="year-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Age A</th>
+              <th>Age B</th>
+              <th>Retirement</th>
+              <th>Discretionary</th>
+              <th>Total capital</th>
+              <th>Real (today's money)</th>
+            </tr>
+          </thead>
+          <tbody id="year-table-body">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">IX.</span> &nbsp; <span data-field="pagenum-year">09</span> / <span data-field="total-slides-8">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 9 · METHODOLOGY ══════ -->
+  <section class="slide" data-screen-label="09 Methodology">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Methodology</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-9">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-9">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 30px;">
+        <div class="eyebrow"><span class="rom">X.</span>How this projection was built</div>
+        <h2 class="serif-h2">Methodology, in <em>plain English</em>.</h2>
+      </div>
+
+      <div class="prose-layout">
+        <div class="prose-col">
+          <h3>How the capital grows</h3>
+          <p>Each month, contributions from both spouses are added to their retirement and discretionary pools. The combined balance compounds at the expected nominal return, applied monthly.</p>
+          <p>Contributions <strong>escalate annually</strong> at the assumed rate, mirroring how payroll-linked savings typically keep pace with salary growth.</p>
+
+          <h3>From future rands to today's money</h3>
+          <p>All headline figures — the monthly income, the capital at retirement — are shown in <strong>today's purchasing power</strong>. We deflate the nominal projection by CPI for each year of the horizon.</p>
+          <p>Where future (nominal) rands appear, they are labelled explicitly.</p>
+
+          <h3>The retirement income figure</h3>
+          <p>The monthly-income result applies a <strong>5% annual draw-down</strong> to the real capital at retirement, divided by twelve. It is a planning-level guide to sustainable income, not a guaranteed payout.</p>
+        </div>
+
+        <div class="prose-col">
+          <h3>The three-part breakdown</h3>
+          <p>We decompose the final capital into three components:</p>
+          <ul>
+            <li><strong>Starting capital, compounded.</strong> Today's combined balances left to grow for the full horizon.</li>
+            <li><strong>Cumulative contributions.</strong> Every rand paid in, summed across the horizon.</li>
+            <li><strong>Growth on contributions.</strong> The compounding return earned on those contributions, calculated as the residual once the first two components are subtracted from the total.</li>
+          </ul>
+
+          <h3>Capital events</h3>
+          <p data-field="m-events">No one-off inflows or outflows are modelled in this projection.</p>
+
+          <h3>What this projection is not</h3>
+          <p>It is not tax advice, not a forecast, and not a guarantee. Investment returns are uncertain and may differ materially from the assumptions used here.</p>
+          <p class="tiny">See the next page for full disclaimers and regulatory notes.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">X.</span> &nbsp; <span data-field="pagenum-method">10</span> / <span data-field="total-slides-9">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 10 · COMPLIANCE ══════ -->
+  <section class="slide" data-screen-label="10 Compliance">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Compliance &amp; disclaimers</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-10">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-10">——</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 30px;">
+        <div class="eyebrow"><span class="rom">XI.</span>Regulatory notices and risk language</div>
+        <h2 class="serif-h2">What you should <em>know</em>.</h2>
+      </div>
+
+      <div class="prose-layout">
+        <div class="prose-col">
+          <h3>Not advice, not a forecast</h3>
+          <p>This projection is illustrative. It has been prepared on the assumptions shown and is intended to support a conversation about your retirement plan, not to constitute financial, tax, or legal advice. <strong>Past performance is not a reliable indicator of future results.</strong></p>
+
+          <h3>Financial Services Provider</h3>
+          <p>Simple Wealth (Pty) Ltd is an authorised Financial Services Provider in terms of the Financial Advisory and Intermediary Services Act (FAIS), FSP number <strong>[FSP# — TBC]</strong>. A copy of the firm's conflict-of-interest and complaints policies is available on request.</p>
+
+          <h3>Scope of this document</h3>
+          <p>This document has been prepared exclusively for the household named on the cover page. It may not be redistributed, reproduced, or relied upon by any other party without the written permission of Simple Wealth.</p>
+        </div>
+
+        <div class="prose-col">
+          <h3>Risk &amp; market assumptions</h3>
+          <p>The expected return, inflation, and escalation figures used here are long-term planning assumptions for a diversified growth-oriented portfolio. Actual returns are volatile; sequence-of-returns risk is not modelled. The 5% draw-down rate is a widely-used planning heuristic, not a guaranteed sustainable rate.</p>
+
+          <h3>Tax treatment</h3>
+          <p>Figures are shown <strong>before tax</strong>. Retirement-fund contributions, investment growth within retirement funds, and income drawn in retirement are each subject to different tax rules. Your personal tax position may change the effective outcome materially.</p>
+
+          <h3>Review cadence</h3>
+          <p>We recommend reviewing this projection at least annually, or whenever household circumstances, contribution rates, or market conditions shift meaningfully.</p>
+          <p class="tiny">Simple Wealth (Pty) Ltd · FSP [FSP# — TBC] · Prepared <span data-field="compliance-date">——</span>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-foot">
+      <span>Simple Wealth · Retirement Projection</span>
+      <span><span class="rom">XI.</span> &nbsp; <span data-field="pagenum-comply">11</span> / <span data-field="total-slides-10">—</span></span>
+    </div>
+  </section>
+
+  <!-- ══════ SLIDE 11 · CLOSING ══════ -->
+  <section class="slide" data-screen-label="11 Next steps">
+    <div class="slide-frame">
+      <div class="slide-topbar">
+        <div class="slide-topbar-left">
+          <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" onerror="this.style.display='none'">
+          <div class="tag">Next steps</div>
+        </div>
+        <div class="meta">
+          <span data-field="topbar-family-11">the — family</span>
+          <span class="sep"></span>
+          <span data-field="topbar-date-11">——</span>
+        </div>
+      </div>
+
+      <div class="closing-layout">
+        <div>
+          <div class="eyebrow"><span class="rom">§</span>From projection to plan</div>
+          <h1 class="closing-title">
+            Let's turn this into<br>
+            <span class="gold-under"><em>your</em> plan</span>.
+          </h1>
+        </div>
+
+        <div class="closing-strip">
+          <div class="cell">
+            <div class="cap">Review &amp; refine</div>
+            <div class="val">Pressure-test the assumptions together; adjust contributions, target age, or asset mix.</div>
+          </div>
+          <div class="cell">
+            <div class="cap">Action</div>
+            <div class="val">Set up contribution escalations, rebalance existing portfolios, and close any product gaps.</div>
+          </div>
+          <div class="cell">
+            <div class="cap">Next review</div>
+            <div class="val" data-field="next-review">In twelve months, or sooner if anything changes materially.</div>
+            <div class="sub">Contact your adviser at any time between reviews.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 10px;">
+          <div>
+            <img class="sw-logo" src="assets/sw-logo.png" alt="Simple Wealth" style="height: 40px;" onerror="this.style.display='none'">
+          </div>
+          <div style="text-align: right; font-size: 13px; color: var(--mute); line-height: 1.7;">
+            Simple Wealth (Pty) Ltd &nbsp;·&nbsp; FSP [FSP# — TBC]<br>
+            <span class="num" data-field="closing-date">——</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script src="deck-stage.js?v=6"></script>
+<script src="report-data.js?v=6"></script>
+</body>
+</html>

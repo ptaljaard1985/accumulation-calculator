@@ -214,6 +214,42 @@ Both call `resizeChartsToWrap()`, which iterates every chart container (main + b
 
 Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common.
 
+## Export deck (A4 landscape, 12 pages)
+
+A separate, opt-in print mode producing a client-facing deliverable. Triggered by the plan-bar **Export report** button; coexists with the portrait print path without touching it.
+
+**Two print paths, two purposes.**
+
+- *Working copy* — canvas-foot "Print / PDF" or plain Cmd+P. Portrait. Client view on page 1, 3-accordion compliance appendix on pages 2+. Internal use, back-office.
+- *Client deliverable* — plan-bar "Export report". Landscape. 12-page deck, editorial voice, meant to be emailed or printed to hand over.
+
+They never collide: export mode gates are set only by `startExport()` and cleared on `afterprint`. Working-copy flows never touch them, so the existing portrait `@media print` rules remain authoritative there.
+
+**The deck.** 12 pages, two conditional (auto-hidden when inactive):
+
+1. **Cover** — `A plan for the [Family] family.` in Fraunces 300 / 82px with italic `family.` and a 2px gold underline on the family name. Foot strip: Prepared for / Prepared on / Adviser + FSP 50637 / page mark.
+2. **The Answer** — eyebrow + Fraunces 300 / 40px headline with `gold-under` on the monthly-income number. Full-width real-money stacked chart (gold discretionary / navy retirement). Outcome strip (navy-filled primary cell for monthly income). `describeCurrentPosition` narrative with gold vertical rule.
+3. **Household** — two-spouse editorial grid, 1px hairline divider down the middle. Each column: Fraunces 30px name + mono age, five label/value rows (retirement balance, discretionary balance, monthly retirement contribs, monthly discretionary contribs), and a navy-italic "Combined starting capital" total row above a 2px navy rule.
+4. **Assumptions** — 5-row editorial table (return / CPI / escalation / retirement trigger / drawdown) + aside on warm `--paper-2` with a 3px gold left-rule and three short paragraphs ("long-term planning assumptions, not forecasts", stress-test cadence, today's money framing).
+5. **Projection** — full-width nominal stacked chart at 90mm height + three-cell foot strip (starting capital today / at retirement real / at retirement nominal).
+6. **Breakdown** — two-column: 3-layer decomp chart on the left (starting-compounded grey + cumulative contributions darker grey + growth-on-contribs gold) + three slab cards on the right, each with a coloured swatch + mono value + one-line serif explanation.
+7. **Capital events** (conditional) — summary strip (count, total inflows in green `--pos`, total outflows in red `--neg`) + tabular list with kind badge, age, year, basis ("Today's money" or "Future rands"), amount. Out-of-horizon events are listed at 55% opacity with an "(outside horizon)" marker.
+8. **Compare** (conditional, baseline locked) — two side-by-side cards. Baseline on `--paper-2`, muted hero number in `--ink-2` / weight 300. Scenario on white with a 1px navy border + navy ring shadow, hero in `--navy`. Gold delta chip (or red-pale `.neg` chip) above the scenario hero. 60mm charts, shared y-ceiling. Meta rows at the bottom with inline gold deltas beside changed values.
+9. **Year-by-year** — full-width table, every 5th year plus the retirement row highlighted in navy with paper text. Columns: year label (serif) + Age A + Age B + Retirement (nominal) + Discretionary (nominal) + Total nominal + Total real. Monospace numerics.
+10. **Methodology** — two-column prose: how the capital grows / future-rands-to-today's-money / the 5% rule / the three-part breakdown / capital-events note (dynamic) / what this projection is not. h3 sub-heads in navy uppercase 10px, body in Fraunces 300 / 13px.
+11. **Compliance** — two-column prose: not advice + FSP 50637 + POPIA + scope, then risk assumptions + tax treatment (pre-tax) + review cadence. Ends with a tiny-mono footnote.
+12. **Next steps** — closing: eyebrow + Fraunces 300 / 72px headline `Let's turn this into your plan.` with italic `your` and gold-under on `your plan`. Three gold-left-ruled cells (Review & refine, Action, Next review). Foot with branded lockup and date.
+
+**Visual tokens.** No new tokens. The deck uses the existing `--paper`, `--navy`, `--gold`, `--gold-2`, `--ink`, `--ink-2`, `--mute`, `--hairline`, `--paper-2`, `--serif`, `--sans`, `--mono` vocabulary. The one new accent pattern is the Roman-numeral italic gold tag (`.export-rom` class) applied in page eyebrows, carrying the same editorial voice as the I./II./III. markers in the plan-bar drawer.
+
+**Page geometry.** `.export-page { width: 297mm; min-height: 210mm; padding: 14–16mm × 18–22mm; }`. On screen the pages are stacked vertically with a 14px hairline gap and a subtle box-shadow so the adviser can scroll-preview before printing. In print (`html.export-printing`), the shadow and gap are stripped; each page fills its printed sheet.
+
+**Conditional pages.** `.export-page[data-export-page-active="false"] { display: none; }`. Toggled by `buildExportDeck()` based on `eventsStore.length > 0` (events page) and `baseline !== null` (compare page). Pages renumber automatically so the document always reads as a coherent sequence: 10 pages default, 11 with events OR baseline, 12 with both.
+
+**Em-dash rule — strictly enforced in static copy.** Methodology, compliance, next-steps, and the assumptions aside were hand-written specifically to avoid em-dashes; placeholder slots (`R —`, `——` inside `<span data-bind="...">`) are allowed because they're overwritten at runtime by `setBindText` from em-dash-free sources. JS tests (`export: static prose copy has no em-dashes`) assert this invariant with zone-scoped regexes that strip `data-bind` spans before scanning.
+
+**When to update.** Any visual change to this deck goes through a print-preview review. The deck is the document the adviser hands to the client; a regression here is visible in a way a screen-only regression isn't.
+
 ## Don't
 
 - Don't use pure black or pure white. Both read as cold and out of character.
