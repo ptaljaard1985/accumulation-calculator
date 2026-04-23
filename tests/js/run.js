@@ -261,7 +261,7 @@ check('default scenario matches v1 baseline', () => {
 // ============================================================
 const narrativeBundle = [
   'fmtR', 'fmtShort', 'fmtPct', 'totalMonthlyContribs',
-  'eventsSentence', 'describeCurrentPosition',
+  'eventsSentence', 'goalSentence', 'describeCurrentPosition',
   'describeBaselinePosition', 'describePlannedScenario',
 ].map(n => extractFn(inline, n)).join('\n');
 const narrative = new Function(
@@ -441,6 +441,106 @@ check('export: assumptions aside + events list header are em-dash-free', () => {
   const head = html.match(headRe);
   assert.ok(head, 'events list head missing');
   assert.ok(head[1].indexOf(emDash) === -1, 'em-dash in events list head');
+});
+
+// ============================================================
+// Family-name title plate: static suffix lives outside the editable span
+// ============================================================
+check('family-name: static suffix lives outside editable span', () => {
+  // The span must no longer contain the word "family" (Session 9 bug fix).
+  // Match the #family-name span and check its inner text.
+  const spanRe = /<span[^>]*id="family-name"[^>]*>([\s\S]*?)<\/span>/;
+  const m = html.match(spanRe);
+  assert.ok(m, '#family-name span missing');
+  const inner = m[1];
+  assert.ok(!/family/i.test(inner),
+    'span still contains the word "family": ' + inner);
+  // The word "family." should appear AFTER the span in the same h1.
+  const h1Re = /<h1 class="empty-title">([\s\S]*?)<\/h1>/;
+  const h1 = html.match(h1Re);
+  assert.ok(h1, 'empty-title h1 missing');
+  const afterSpan = h1[1].split(/<\/span>/)[1] || '';
+  assert.ok(/family\./i.test(afterSpan),
+    'static "family." suffix missing after span: ' + afterSpan);
+  // And "for the" should appear BEFORE the span.
+  const beforeSpan = h1[1].split(/<span/)[0] || '';
+  assert.ok(/for the/i.test(beforeSpan),
+    'static "for the" prefix missing before span: ' + beforeSpan);
+});
+
+// ============================================================
+// Income-goal progress: data model + narrative sentence
+// ============================================================
+check('income-goal: canonical drawer input + State 1 sync wired', () => {
+  assert.ok(/id="income-goal"/.test(html), '#income-goal canonical input missing');
+  assert.ok(/data-sync-to="income-goal"/.test(html),
+    'State 1 shadow input with data-sync-to="income-goal" missing');
+  assert.ok(/id="fact-goal-cell"/.test(html), 'plan-bar fact-goal cell missing');
+  assert.ok(/id="sum-income-goal"/.test(html), 'outcome-strip goal sub-line missing');
+  assert.ok(/id="cmp-baseline-goal-row"/.test(html), 'baseline goal meta-row missing');
+  assert.ok(/id="cmp-scenario-goal-row"/.test(html), 'scenario goal meta-row missing');
+  assert.ok(/id="s-goal-row"/.test(html), 'print-summary goal row missing');
+  assert.ok(/data-bind="answer-goal"/.test(html), 'export deck answer-goal slot missing');
+});
+
+check('income-goal: readInputs returns incomeGoal field', () => {
+  assert.ok(/incomeGoal:\s*parseCurrency\(['"]income-goal['"]\)/.test(inline),
+    'readInputs should read #income-goal via parseCurrency');
+});
+
+// goalSentence is the shared narrative helper. Bundle fmtR + it.
+const goalBundle = ['fmtR', 'goalSentence'].map(n => extractFn(inline, n)).join('\n');
+const goalFns = new Function(goalBundle + '; return { fmtR, goalSentence };')();
+
+check('goal: goalSentence returns null when goal is zero or missing', () => {
+  assert.strictEqual(goalFns.goalSentence(50000, 0), null);
+  assert.strictEqual(goalFns.goalSentence(50000, -1), null);
+  assert.strictEqual(goalFns.goalSentence(50000, null), null);
+});
+
+check('goal: goalSentence describes overshoot, near-miss, shortfall', () => {
+  const over = goalFns.goalSentence(86400, 80000);
+  assert.ok(/ahead of/i.test(over), 'overshoot should say "ahead of": ' + over);
+  assert.ok(over.indexOf('—') === -1, 'em-dash in overshoot: ' + over);
+
+  const near = goalFns.goalSentence(76000, 80000);
+  assert.ok(/just short/i.test(near), 'near-miss should say "just short": ' + near);
+  assert.ok(near.indexOf('—') === -1, 'em-dash in near-miss: ' + near);
+
+  const far = goalFns.goalSentence(40000, 80000);
+  assert.ok(/50%/.test(far), 'shortfall should include percent: ' + far);
+  assert.ok(/gap of/i.test(far), 'shortfall should say "gap of": ' + far);
+  assert.ok(far.indexOf('—') === -1, 'em-dash in shortfall: ' + far);
+});
+
+check('narrative: describeCurrentPosition includes goal sentence when set', () => {
+  const p = projectFn({
+    ageA: 40, ageB: 40,
+    retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+    contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+    rNom: 0.10, cpi: 0.05, esc: 0.06,
+    anchor: 'youngest', retirementAge: 65,
+    incomeGoal: 80000,
+    events: [],
+  });
+  const out = narrative.describeCurrentPosition(p);
+  assert.ok(/goal/i.test(out), 'goal mentioned when set: ' + out);
+  assert.ok(out.indexOf(EM_DASH) === -1, 'em-dash in goal narrative: ' + out);
+});
+
+check('narrative: describeCurrentPosition omits goal sentence when blank', () => {
+  const p = projectFn({
+    ageA: 40, ageB: 40,
+    retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+    contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+    rNom: 0.10, cpi: 0.05, esc: 0.06,
+    anchor: 'youngest', retirementAge: 65,
+    incomeGoal: 0,
+    events: [],
+  });
+  const out = narrative.describeCurrentPosition(p);
+  assert.ok(!/goal/i.test(out),
+    'no goal sentence when blank: ' + out);
 });
 
 console.log();

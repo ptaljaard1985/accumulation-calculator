@@ -236,6 +236,7 @@
     color: var(--ink-2);
     min-width: 6em;
     display: inline-block;
+    white-space: nowrap;
   }
   .empty-family:hover { border-bottom-color: var(--navy-soft); }
   .empty-family:focus { background: var(--paper-2); border-bottom-color: var(--navy); }
@@ -381,6 +382,38 @@
     font-weight: 300; color: var(--ink-2);
     margin: 0 4px;
   }
+  /* Retirement-income goal row (State 1, full-width row below foot) */
+  .empty-foot-goal {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--hairline);
+    padding-top: 18px;
+    margin-top: 18px;
+  }
+  .empty-goal-input {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+    padding: 4px 10px;
+    background: transparent;
+    font-family: var(--mono);
+  }
+  .empty-goal-input .pfx {
+    font-family: var(--sans); font-size: 12px;
+    color: var(--mute); letter-spacing: 0.6px;
+  }
+  .empty-goal-input input {
+    border: 0; background: transparent; outline: none;
+    font-family: var(--mono); font-size: 16px;
+    color: var(--ink); width: 120px;
+    font-variant-numeric: tabular-nums;
+  }
+  .empty-goal-input:focus-within { border-color: var(--navy); border-style: solid; }
+
+  /* Goal progress visibility + accent (all states). When no goal is set,
+     any node with data-goal-active="false" collapses out of the layout. */
+  [data-goal-active="false"] { display: none !important; }
+  .goal-progress-on-track { color: var(--gold-2); font-weight: 500; }
+  .goal-progress-behind { color: var(--ink-2); }
 
   /* Market-assumption inline slider grid (State 1) */
   .empty-assump-grid {
@@ -1960,10 +1993,11 @@
     <div class="empty-titleplate">
       <div class="empty-eyebrow">Simple Wealth · Retirement projection</div>
       <h1 class="empty-title">
-        A plan for
+        A plan for the
         <span class="empty-family is-placeholder" id="family-name"
               contenteditable="plaintext-only" spellcheck="false"
-              role="textbox" aria-label="Edit family name">the _______ family</span>.
+              role="textbox" aria-label="Edit family name">_______</span>
+        family.
       </h1>
       <div class="empty-date" id="doc-date">Prepared —</div>
     </div>
@@ -2065,6 +2099,17 @@
           </label>
         </div>
       </div>
+      <div class="empty-foot-goal">
+        <div class="empty-foot-eyebrow">Retirement income goal</div>
+        <div class="empty-foot-value">
+          <span>Aim for</span>
+          <span class="empty-goal-input">
+            <span class="pfx">R</span>
+            <input data-sync-to="income-goal" placeholder="—" inputmode="numeric">
+          </span>
+          <span>per month, in today's money.</span>
+        </div>
+      </div>
     </div>
 
     <div class="empty-cta">
@@ -2102,6 +2147,10 @@
         <div class="fact">
           <span class="fact-label">Return · CPI</span>
           <span class="fact-val num" id="fact-market">—</span>
+        </div>
+        <div class="fact" id="fact-goal-cell" data-goal-active="false">
+          <span class="fact-label">Income goal</span>
+          <span class="fact-val num" id="fact-goal">R —</span>
         </div>
       </div>
       <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
@@ -2198,6 +2247,15 @@
         <div class="event-helper-note">One-off inflows or outflows. Ages are anchored to <span id="events-ref-spouse">Spouse A</span>'s age.</div>
         <div class="events-list" id="events-list"></div>
         <button class="add-btn" id="add-event-btn" type="button">+ Add an event</button>
+
+        <div class="plan-drawer-head" style="margin-top: 24px;">
+          <span class="rom">V.</span> Household goal
+          <span class="plan-drawer-meta" id="drawer-goal-meta">not set</span>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Monthly retirement income goal (today's money)</span></div>
+          <div class="field-input"><span class="pfx">R</span><input type="text" id="income-goal" placeholder="—" inputmode="numeric"></div>
+        </div>
       </div>
 
       <div class="plan-drawer-col">
@@ -2325,6 +2383,7 @@
         <div class="ocap">Monthly income</div>
         <div class="oval num" id="sum-income">R —</div>
         <div class="osub" id="sum-income-sub">today's money · 5% of combined capital, before tax</div>
+        <div class="osub" id="sum-income-goal" data-goal-active="false"></div>
       </div>
       <div class="outcome-cell">
         <div class="ocap">Household capital</div>
@@ -2382,6 +2441,7 @@
           <div class="row"><span class="label">Discretionary contrib.</span><span class="val" id="cmp-baseline-cont-disc">R —</span></div>
           <div class="row"><span class="label">Expected return</span><span class="val" id="cmp-baseline-return">—</span></div>
           <div class="row"><span class="label">Retire at</span><span class="val" id="cmp-baseline-retage">age —</span></div>
+          <div class="row" id="cmp-baseline-goal-row" data-goal-active="false"><span class="label">Goal progress</span><span class="val" id="cmp-baseline-goal">—</span></div>
         </div>
       </div>
 
@@ -2400,6 +2460,7 @@
           <div class="row"><span class="label">Discretionary contrib.</span><span class="val"><span id="cmp-scenario-cont-disc">R —</span><em id="cmp-scenario-cont-disc-delta"></em></span></div>
           <div class="row"><span class="label">Expected return</span><span class="val"><span id="cmp-scenario-return">—</span><em id="cmp-scenario-return-delta"></em></span></div>
           <div class="row"><span class="label">Retire at</span><span class="val"><span id="cmp-scenario-retage">age —</span><em id="cmp-scenario-retage-delta"></em></span></div>
+          <div class="row" id="cmp-scenario-goal-row" data-goal-active="false"><span class="label">Goal progress</span><span class="val"><span id="cmp-scenario-goal">—</span><em id="cmp-scenario-goal-delta"></em></span></div>
         </div>
       </div>
     </div>
@@ -2490,6 +2551,7 @@
           <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
           <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
           <tr><td>Projected monthly income at 5% draw (today's money, before tax)</td><td id="s-income">—</td></tr>
+          <tr id="s-goal-row" data-goal-active="false"><td>Monthly income goal · progress (today's money, before tax)</td><td id="s-goal">—</td></tr>
           <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
         </table>
 
@@ -2615,6 +2677,7 @@
           <div class="export-outcome-cap">Monthly income</div>
           <div class="export-outcome-val" data-bind="answer-income">R —</div>
           <div class="export-outcome-sub">today's money · before tax</div>
+          <div class="export-outcome-sub" data-bind="answer-goal" data-goal-active="false"></div>
         </div>
         <div class="export-outcome-cell">
           <div class="export-outcome-cap">Capital at retirement</div>
@@ -3685,6 +3748,7 @@
       esc: read('esc') / 100,
       anchor: anchor,
       retirementAge: retAge,
+      incomeGoal: parseCurrency('income-goal'),
       events: readEvents()
     };
   }
@@ -3693,6 +3757,28 @@
   // Outcome strip + State 2 headline numbers. Baseline-comparison numbers
   // live in the compare cards (see updateCompareCards) — not in the outcome
   // strip anymore, so updateSummary is unconditional.
+  // Goal progress helper. Returns null when no goal is set, otherwise
+  // { goal, projected, pct (integer), shortfall (positive = over goal) }.
+  // Every progress-rendering surface guards on the null return.
+  function computeGoalProgress(p){
+    var goal = (p && p.inputs && isFinite(p.inputs.incomeGoal)) ? p.inputs.incomeGoal : 0;
+    if (!(goal > 0)) return null;
+    var projected = p.monthlyIncomeReal;
+    var pct = Math.round((projected / goal) * 100);
+    return {
+      goal: goal,
+      projected: projected,
+      pct: pct,
+      shortfall: projected - goal
+    };
+  }
+
+  function setGoalActive(id, active){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute('data-goal-active', active ? 'true' : 'false');
+  }
+
   function updateSummary(p){
     set('sum-income', fmtR(p.monthlyIncomeReal));
     set('sum-capital', fmtShort(p.finalTotalReal));
@@ -3707,6 +3793,21 @@
     var anchorKey = resolveAnchorSpouseKey();
     var anchorNameEl = document.getElementById('headline-anchor-name');
     if (anchorNameEl) anchorNameEl.textContent = spouseNames[anchorKey];
+
+    // Goal progress sub-line inside the primary cell.
+    var gp = computeGoalProgress(p);
+    var goalEl = document.getElementById('sum-income-goal');
+    if (goalEl){
+      if (gp){
+        var cls = gp.pct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
+        var phrase = gp.pct >= 100 ? 'on track to' : 'covers';
+        goalEl.innerHTML = 'Goal ' + fmtR(gp.goal) + ' / mo · <span class="' + cls + '">' + phrase + ' ' + gp.pct + '% of target</span>';
+        setGoalActive('sum-income-goal', true);
+      } else {
+        goalEl.innerHTML = '';
+        setGoalActive('sum-income-goal', false);
+      }
+    }
   }
 
   // Individual button visibility — the State 3 compact head contains both
@@ -3932,6 +4033,14 @@
     set('s-income', fmtR(p.monthlyIncomeReal));
     set('s-total-contrib', fmtR(p.totalContribsOverHorizon));
 
+    var gp = computeGoalProgress(p);
+    if (gp){
+      set('s-goal', fmtR(gp.goal) + ' · ' + gp.pct + '% of target');
+      setGoalActive('s-goal-row', true);
+    } else {
+      setGoalActive('s-goal-row', false);
+    }
+
     // Capital events section in the print summary
     var evSec = document.getElementById('s-events-section');
     var evBody = document.getElementById('s-events-body');
@@ -3968,6 +4077,23 @@
   // Narrative copy rule: no em-dashes (U+2014) in any string below. Use
   // commas, full stops, or rephrase. The narrative is read aloud in client
   // meetings; em-dashes don't parse audibly and read as dashboard shorthand.
+  function goalSentence(projectedIncome, goal){
+    if (!(goal > 0)) return null;
+    var pct = Math.round(100 * projectedIncome / goal);
+    var shortfall = projectedIncome - goal;
+    var absAmt = fmtR(Math.abs(shortfall));
+    if (pct >= 100){
+      return 'This projects <strong>ahead of</strong> the household’s ' + fmtR(goal) +
+             ' monthly goal by ' + absAmt + ' a month, in today’s money.';
+    }
+    if (pct >= 90){
+      return 'This lands just short of the ' + fmtR(goal) +
+             ' monthly goal, by ' + absAmt + ' a month in today’s money.';
+    }
+    return 'This covers <strong>' + pct + '%</strong> of the ' + fmtR(goal) +
+           ' monthly goal, a gap of ' + absAmt + ' a month in today’s money.';
+  }
+
   function eventsSentence(events){
     var nIn = 0, nOut = 0;
     for (var i = 0; i < events.length; i++){
@@ -4007,6 +4133,8 @@
       'Drawn at 5% per year, the projected capital supports about <strong>' +
       fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement, in today’s money and before tax.'
     );
+    var gs = goalSentence(p.monthlyIncomeReal, inputs.incomeGoal);
+    if (gs) sentences.push(gs);
     if (p.events && p.events.length > 0){
       sentences.push(eventsSentence(p.events));
     }
@@ -4444,6 +4572,18 @@
     set('fact-retage', 'age ' + retAge);
     set('fact-market', fmtPct(read('return')) + ' · ' + fmtPct(read('cpi')));
 
+    // Income-goal fact cell + drawer meta — hidden until the adviser sets a goal.
+    var goalVal = parseCurrency('income-goal');
+    if (goalVal > 0){
+      set('fact-goal', fmtShort(goalVal) + '/mo');
+      setGoalActive('fact-goal-cell', true);
+      set('drawer-goal-meta', fmtShort(goalVal) + '/mo');
+    } else {
+      set('fact-goal', 'R —');
+      setGoalActive('fact-goal-cell', false);
+      set('drawer-goal-meta', 'not set');
+    }
+
     // Plan-bar "for" line: the stored client name, or a placeholder when empty.
     var forEl = document.getElementById('plan-bar-for');
     if (forEl){
@@ -4517,17 +4657,35 @@
       (ci.rNom - bi.rNom) * 100, 'pct');
     setMetaDelta('cmp-scenario-retage-delta',
       ci.retirementAge - bi.retirementAge, 'years');
+
+    // Goal-progress rows. Baseline uses the scenario's current goal (the goal
+    // is an adviser-level target, not frozen with the baseline lock) so both
+    // cards read against the same yardstick.
+    var goal = (ci.incomeGoal > 0) ? ci.incomeGoal : 0;
+    if (goal > 0){
+      var basePct = Math.round((bp.monthlyIncomeReal / goal) * 100);
+      var scenPct = Math.round((p.monthlyIncomeReal / goal) * 100);
+      set('cmp-baseline-goal', basePct + '% of ' + fmtShort(goal));
+      set('cmp-scenario-goal', scenPct + '% of ' + fmtShort(goal));
+      setMetaDelta('cmp-scenario-goal-delta', scenPct - basePct, 'pp');
+      setGoalActive('cmp-baseline-goal-row', true);
+      setGoalActive('cmp-scenario-goal-row', true);
+    } else {
+      setGoalActive('cmp-baseline-goal-row', false);
+      setGoalActive('cmp-scenario-goal-row', false);
+    }
   }
   function setMetaDelta(id, delta, kind){
     var el = document.getElementById(id);
     if (!el) return;
-    var threshold = kind === 'pct' ? 0.01 : (kind === 'years' ? 0.5 : 1);
+    var threshold = kind === 'pct' ? 0.01 : (kind === 'years' ? 0.5 : (kind === 'pp' ? 1 : 1));
     if (Math.abs(delta) < threshold){ el.textContent = ''; return; }
     var sign = delta > 0 ? '+' : '−';
     var abs = Math.abs(delta);
     var txt;
     if (kind === 'currency') txt = sign + fmtShort(abs);
     else if (kind === 'pct') txt = sign + abs.toFixed(2) + '%';
+    else if (kind === 'pp') txt = sign + Math.round(abs) + ' pp';
     else txt = sign + abs + 'y';
     el.textContent = txt;
   }
@@ -4633,6 +4791,18 @@
     refresh();
   });
 
+  (function wireIncomeGoal(){
+    var el = document.getElementById('income-goal');
+    if (!el) return;
+    el.addEventListener('input', refresh);
+    el.addEventListener('blur', function(){
+      var n = parseFloat((el.value || '').replace(/[^0-9.\-]/g, ''));
+      if (!isFinite(n) || n < 0) n = 0;
+      el.value = n > 0 ? Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' ') : '';
+      refresh();
+    });
+  })();
+
   // Scenario sliders
   document.getElementById('scenario-ret').addEventListener('input', function(){ applyScenarioContrib('ret'); });
   document.getElementById('scenario-disc').addEventListener('input', function(){ applyScenarioContrib('disc'); });
@@ -4711,8 +4881,9 @@
     });
   });
 
-  // Family-name inline edit (State 1 title plate). Writes to client-name on
-  // blur so the hidden field + print summary stay current.
+  // Family-name inline edit (State 1 title plate). The span holds ONLY the
+  // editable surname; the words "the" and "family." live in static text nodes
+  // outside the span so they survive focus-clear + type-over.
   (function wireFamilyName(){
     var el = document.getElementById('family-name');
     if (!el) return;
@@ -4725,15 +4896,14 @@
     el.addEventListener('blur', function(){
       var txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
       if (!txt){
-        el.textContent = 'the _______ family';
+        el.textContent = '_______';
         el.classList.add('is-placeholder');
         document.getElementById('client-name').value = '';
       } else {
         el.textContent = txt;
-        document.getElementById('client-name').value = txt.replace(/^the\s+/i, '').replace(/\s+family$/i, '');
-        // Mirror into the drawer edit field so the drawer stays in sync.
+        document.getElementById('client-name').value = txt;
         var drawerEdit = document.getElementById('client-name-edit');
-        if (drawerEdit) drawerEdit.value = document.getElementById('client-name').value;
+        if (drawerEdit) drawerEdit.value = txt;
       }
       refresh();
     });
@@ -4885,6 +5055,20 @@
     setBindText('answer-capital-sub', 'today&rsquo;s money (' + fmtShort(p.finalTotalNom) + ' in future rands)');
     setBindText('answer-years', p.years + ' years');
     setBindText('answer-years-sub', 'to ' + anchorName + '&rsquo;s age ' + p.retirementAge);
+
+    var gpAnswer = computeGoalProgress(p);
+    var goalNodes = document.querySelectorAll('.export-deck [data-bind="answer-goal"]');
+    for (var gi = 0; gi < goalNodes.length; gi++){
+      if (gpAnswer){
+        var phrase = gpAnswer.pct >= 100 ? 'on track to' : 'covers';
+        goalNodes[gi].textContent = 'Goal ' + fmtR(gpAnswer.goal) + ' / mo · ' + phrase + ' ' + gpAnswer.pct + '% of target';
+        goalNodes[gi].setAttribute('data-goal-active', 'true');
+      } else {
+        goalNodes[gi].textContent = '';
+        goalNodes[gi].setAttribute('data-goal-active', 'false');
+      }
+    }
+
     setBind('answer-narrative', describeCurrentPosition(p));
 
     // ---- Household ----
