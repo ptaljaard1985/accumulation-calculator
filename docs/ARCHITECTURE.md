@@ -157,7 +157,8 @@ Each pulls from the `project()` result and updates the DOM:
 - `updateCompareCards(p)` — populates the hero numbers, sub-lines, meta rows, and the delta chip on the scenario card. `setMetaDelta(id, delta, kind)` writes the inline `em` deltas beside changed meta values.
 - `updatePrintSummary(p)` — all the compliance-appendix tables. Unchanged from earlier sessions.
 - `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine.
-- `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`.
+- `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`. Templates currently supported: `header`, `summary-pos`, `summary-contrib`, `chip` (chip renders just the name, used by the State 1 retire-when row).
+- `updateAnchorChips()` — toggles `.is-on` on the two State 1 `.empty-name-chip` buttons from the current `anchor` rule plus the current ages (ties break to A, matching `resolveYoungerOlder`). Called once per `refresh()` next to `renderSpouseLabels()`, so chip selection stays correct regardless of whether the user clicked a chip, used the drawer Youngest/Oldest toggle, or changed an age field.
 - `updateBaselineControls()` — now a hook (kept for future use). Button visibility is driven by `data-view-only` on the two canvas-heads, so it has no work to do.
 
 ### 6. `refresh()`
@@ -183,6 +184,7 @@ updateCompareCards(p);
 updatePrintSummary(p);
 updateNarrative(p);
 renderSpouseLabels();
+updateAnchorChips();
 updateScenarioReadouts();
 ```
 
@@ -205,6 +207,10 @@ Unchanged logic from Session 3. `captureScenarioAnchors()` on lock. `configureSc
 Empty-state fields carry `data-sync-to="hp-ret-A"` etc. — on blur, their value (cleaned of non-digit chars) is written into the canonical drawer input, which fires its own `input` + `blur` events so the normal refresh pipeline kicks in. Spouse first-name inputs carry `data-sync-spouse-name="A"` and write into `spouseNames` directly.
 
 The family-name editable span (`#family-name`) is a `contenteditable` in the title plate. On focus, the placeholder class is stripped. On blur, if empty it reverts to the placeholder; otherwise it writes the trimmed text into the hidden `#client-name` (stripping a leading "the " and trailing " family" if present) and mirrors into the drawer's `#client-name-edit`.
+
+State 1 also hosts three "shadow" sliders (`#empty-return`, `#empty-cpi`, `#empty-esc`) that mirror the canonical `#return` / `#cpi` / `#esc` inputs. For range elements with `data-sync-to`, a second sync branch listens on `input` (not `blur`) and pipes the live value into the canonical input + dispatches `input` on the target — the canonical listener then fires `refresh()`. `updateSliderLabels()` writes the formatted percent into both the drawer readouts (`#return-out` / `#cpi-out` / `#esc-out`) AND the State 1 readouts (`#empty-return-out` / `#empty-cpi-out` / `#empty-esc-out`), and sets the shadow-thumb positions from the canonical values *unless* the shadow slider is currently focused (prevents a feedback fight while dragging).
+
+The two State 1 retire-when chips (`.empty-name-chip`) click-to-anchor. On click, the handler reads the current ages, determines whether the clicked spouse is younger-or-equal to the other, and calls `setAnchor('youngest')` or `setAnchor('oldest')` accordingly — delegating to the shared path the drawer Youngest/Oldest toggle already uses. `updateAnchorChips()` (called from `refresh()`) keeps the `.is-on` class in sync regardless of which surface drove the anchor change.
 
 ### 10. Drawer toggle
 

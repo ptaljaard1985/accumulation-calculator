@@ -132,6 +132,29 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 6 — 2026-04-23
+
+**Shipped (feat/session-6):** three State 1 refinements that emerged from real-meeting feedback on image 7.
+
+- **Field labels.** "Monthly retirement" → "Monthly retirement contributions" and "Monthly discretionary" → "Monthly discretionary contributions" in both spouse columns. Balance labels unchanged (they aren't contributions).
+- **Retire-when row.** The fixed `Retire when the youngest reaches [65]` copy is gone. The foot-band left now reads `Retire when [Sarah] · [Tom] reaches [65]`, where the two names are clickable `.empty-name-chip` buttons wired through `renderSpouseLabels()` (new `chip` template) and `spouseNames`. Clicking a chip resolves "which spouse did you click, and which is currently younger?" and delegates to the existing `setAnchor()` path, so the drawer's Youngest/Oldest toggle stays in sync. The internal anchor model stays `'youngest' | 'oldest'` — no ripple into Python or JS tests.
+- **Market-assumptions slider row.** The hardcoded `10% · 5% · 6%` readout is gone. The foot-band right now holds a 3-row grid of thin sliders (Return / CPI / Escalation), each with `data-sync-to="return|cpi|esc"` and a mono readout (`#empty-return-out`, `#empty-cpi-out`, `#empty-esc-out`). A new branch in the sync wiring listens for `input` on any `input[type="range"][data-sync-to]` and pipes the value through to the canonical input + dispatches `input` so the normal refresh pipeline fires. `updateSliderLabels()` mirrors the canonical values back into the three new readouts AND into the three shadow-slider thumbs (skipping whichever is currently focused, so dragging a drawer slider doesn't fight the user's drag on a State 1 slider).
+- **Defaults.** `#return` default 10 → 5. `#esc` default 6 → 5. CPI stays at 5. The plan-bar fact cell and all downstream projections pick this up automatically since they already read from the canonical inputs. No math changes in `project()`. Tests still pass because both suites build explicit inputs rather than reading DOM defaults.
+- **New CSS.** `.empty-name-chip` (+ `.is-on` with a 2px `--gold-2` text-underline and 6px offset, muted `--mute` when off), `.empty-foot-reaches` (serif "reaches" word between chips and age input), `.empty-assump-grid` / `.empty-assump-row` / `.empty-assump-label` / `.empty-assump-val` (3-col grid with `display: contents` on the row so the label, slider, and readout align directly in the outer grid).
+- **New JS.** `updateAnchorChips()` runs on every `refresh()` next to `renderSpouseLabels()` — reads the two ages, computes "who is younger today" (ties to A), and sets `.is-on` on whichever chip matches the current `anchor` rule.
+
+**Decisions (and why):**
+
+- **Keep `anchor` as `'youngest' | 'oldest'` internally rather than switching to `'A' | 'B'`.** Spouse A/B is simpler UI semantics, but it would have rewritten the Python `conftest.py` fixture (`anchor='youngest'`) and four anchor tests, plus reshaped the drawer Youngest/Oldest toggle. The rule-based anchor is still correct — the UI change is cosmetic (show the name, not the rule). The chip click derives the rule from the click + current ages. Zero test churn.
+- **`display: contents` on `.empty-assump-row` (a `<label>`).** Lets the label, slider, and readout participate as direct children of the outer 3-column grid without an extra wrapper box. Native `<label>` focus-on-click still works because that's a semantic relationship, not a visual-box one.
+- **All three assumptions default to 5%.** Requested explicitly. The adviser's instinct is that 10% nominal return makes the default projection land too optimistically for first-meeting framing. 5/5/5 forces a 0% real return before escalation — conservative enough that every number the adviser touches thereafter looks *better* than the default.
+- **Shadow-slider sync is bi-directional but position-only, not event-driven.** The State 1 slider's `input` event pushes into the canonical input and fires canonical-side listeners. `updateSliderLabels()` (called every refresh) reads the canonical value and writes it back into the shadow thumb *unless the shadow is focused* — preventing a feedback fight during drag. The canonical drawer slider similarly updates from `refresh()` reading its own value. Clean loop with no duplicate refreshes.
+- **Chip styling in serif, not sans.** The chips read like proper names in the "A plan for the ___ family" headline voice — editorial first, functional second. Switching the chips to a sans pill would break the title-plate feel.
+
+**Tests:** 14 JS + 37 Python, all green. No math changes — `project()` and its return shape are untouched.
+
+**Docs updated:** `CLAUDE.md` session log (this entry), `docs/ARCHITECTURE.md` (renderSpouseLabels templates + new updateAnchorChips + updateSliderLabels extension + range-input sync branch), `docs/DESIGN.md` (Empty-state section: retire-when chips and market-assumption slider grid).
+
 ### Session 5 — 2026-04-22
 
 **Shipped (feat/session-5):** State 1 → State 2 transition is now gated behind an explicit "See current projection" CTA. The old heuristic (non-default spouse name + positive balance + valid retirement age) fired as soon as the adviser typed a name and tabbed out, which was too eager for meeting flow.
