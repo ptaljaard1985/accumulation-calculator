@@ -543,6 +543,71 @@ check('narrative: describeCurrentPosition omits goal sentence when blank', () =>
     'no goal sentence when blank: ' + out);
 });
 
+// ============================================================
+// Session 10 · State 1 capital events panel + goal colors
+// ============================================================
+check('state-1 events: empty-events-list container + add-event button exist', () => {
+  assert.ok(/id="empty-events-list"/.test(html),
+    '#empty-events-list container missing from State 1');
+  assert.ok(/id="empty-add-event-btn"/.test(html),
+    '#empty-add-event-btn button missing from State 1');
+  assert.ok(/class="empty-events-panel"/.test(html),
+    '.empty-events-panel wrapper missing');
+});
+
+check('state-1 events: renderEvents paints both #events-list and #empty-events-list', () => {
+  // The refactored renderEvents iterates an array of container IDs.
+  assert.ok(/\[['"]events-list['"]\s*,\s*['"]empty-events-list['"]\]/.test(inline),
+    'renderEvents should iterate [events-list, empty-events-list]');
+});
+
+check('state-1 events: events-ref-spouse is a class shared by drawer + State 1', () => {
+  const matches = html.match(/class="events-ref-spouse"/g) || [];
+  assert.ok(matches.length >= 2,
+    'expected at least 2 .events-ref-spouse spans (drawer + State 1), got ' + matches.length);
+  assert.ok(!/id="events-ref-spouse"/.test(html),
+    'events-ref-spouse should no longer be an id (migrated to class)');
+  assert.ok(/querySelectorAll\(['"]\.events-ref-spouse['"]\)/.test(inline),
+    'lookup should be querySelectorAll on the class, not getElementById');
+});
+
+check('state-1 events: #empty-add-event-btn click pushes onto eventsStore', () => {
+  // Look for the handler — should push newEvent(), call renderEvents(), then refresh().
+  const re = /getElementById\(['"]empty-add-event-btn['"]\)\.addEventListener\(['"]click['"],\s*function\s*\(\)\s*\{([\s\S]*?)\}\)/;
+  const m = inline.match(re);
+  assert.ok(m, '#empty-add-event-btn click handler missing');
+  assert.ok(/eventsStore\.push\(newEvent\(\)\)/.test(m[1]),
+    'handler should push newEvent() onto eventsStore');
+  assert.ok(/renderEvents\(\)/.test(m[1]),
+    'handler should call renderEvents()');
+  assert.ok(/refresh\(\)/.test(m[1]),
+    'handler should call refresh()');
+});
+
+check('goal colors: on-track uses --pos, behind uses --neg', () => {
+  const onTrackRe = /\.goal-progress-on-track\s*\{[^}]*color:\s*var\(--pos\)/;
+  const behindRe  = /\.goal-progress-behind\s*\{[^}]*color:\s*var\(--neg\)/;
+  assert.ok(onTrackRe.test(html),
+    '.goal-progress-on-track should use var(--pos) (green)');
+  assert.ok(behindRe.test(html),
+    '.goal-progress-behind should use var(--neg) (red)');
+});
+
+check('goal colors: compare + print + export wrap the % in a progress span', () => {
+  // Compare-card scenario + baseline
+  assert.ok(/cmp-scenario-goal[\s\S]{0,200}goal-progress-on-track/.test(inline) ||
+            /goal-progress-on-track[\s\S]{0,200}cmp-scenario-goal/.test(inline),
+    'cmp-scenario-goal should wrap % in a goal-progress span');
+  // Print summary s-goal
+  assert.ok(/s-goal[\s\S]{0,200}goal-progress-on-track/.test(inline) ||
+            /goal-progress-on-track[\s\S]{0,200}s-goal/.test(inline),
+    's-goal print row should wrap % in a goal-progress span');
+  // Export deck answer-goal
+  assert.ok(/answer-goal[\s\S]{0,300}goal-progress-on-track/.test(inline) ||
+            /goal-progress-on-track[\s\S]{0,300}answer-goal/.test(inline),
+    'answer-goal export slot should wrap phrase in a goal-progress span');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);

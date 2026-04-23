@@ -389,6 +389,12 @@
     padding-top: 18px;
     margin-top: 18px;
   }
+  /* Capital events panel (State 1, full-width section below foot band) */
+  .empty-events-panel {
+    margin-bottom: 32px;
+  }
+  .empty-events-panel .empty-foot-eyebrow { margin-bottom: 10px; }
+  .empty-events-panel .events-list { margin-top: 10px; }
   .empty-goal-input {
     display: inline-flex; align-items: center; gap: 6px;
     border: 1px dashed var(--line);
@@ -412,8 +418,8 @@
   /* Goal progress visibility + accent (all states). When no goal is set,
      any node with data-goal-active="false" collapses out of the layout. */
   [data-goal-active="false"] { display: none !important; }
-  .goal-progress-on-track { color: var(--gold-2); font-weight: 500; }
-  .goal-progress-behind { color: var(--ink-2); }
+  .goal-progress-on-track { color: var(--pos); font-weight: 500; }
+  .goal-progress-behind { color: var(--neg); font-weight: 500; }
 
   /* Market-assumption inline slider grid (State 1) */
   .empty-assump-grid {
@@ -1456,7 +1462,7 @@
   .export-page[data-export-page="answer"] {
     padding-top: 14mm;
     display: grid;
-    grid-template-rows: auto auto 1fr auto auto;
+    grid-template-rows: auto auto auto 1fr auto auto;
     gap: 14px;
   }
   .export-answer-eyebrow {
@@ -1530,14 +1536,6 @@
     font-family: var(--sans); font-size: 11px; color: var(--mute); margin-top: 2px;
   }
   .export-outcome-cell.primary .export-outcome-sub { color: rgba(250,247,240,0.62); }
-
-  .export-narrative {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 14.5px; line-height: 1.55; color: var(--ink-2);
-    border-left: 2px solid var(--gold); padding-left: 14px;
-    max-width: 900px;
-  }
-  .export-narrative strong { color: var(--ink); font-weight: 500; }
 
   /* ---------- Page 3 · Household ---------- */
   .export-page[data-export-page="household"] {
@@ -2112,6 +2110,13 @@
       </div>
     </div>
 
+    <section class="empty-events-panel">
+      <div class="empty-foot-eyebrow">Capital events</div>
+      <div class="event-helper-note">One-off inflows or outflows. Ages are anchored to <span class="events-ref-spouse">Spouse A</span>'s age.</div>
+      <div class="events-list" id="empty-events-list"></div>
+      <button class="add-btn" id="empty-add-event-btn" type="button">+ Add an event</button>
+    </section>
+
     <div class="empty-cta">
       <button class="btn primary" id="btn-see-projection" type="button">See current projection</button>
     </div>
@@ -2244,7 +2249,7 @@
           <span class="rom">IV.</span> Capital events
           <span class="plan-drawer-meta" id="drawer-events-meta">none</span>
         </div>
-        <div class="event-helper-note">One-off inflows or outflows. Ages are anchored to <span id="events-ref-spouse">Spouse A</span>'s age.</div>
+        <div class="event-helper-note">One-off inflows or outflows. Ages are anchored to <span class="events-ref-spouse">Spouse A</span>'s age.</div>
         <div class="events-list" id="events-list"></div>
         <button class="add-btn" id="add-event-btn" type="button">+ Add an event</button>
 
@@ -2690,8 +2695,6 @@
           <div class="export-outcome-sub" data-bind="answer-years-sub">—</div>
         </div>
       </div>
-
-      <div class="export-narrative" data-bind="answer-narrative">—</div>
 
       <div class="export-page-foot">
         <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
@@ -3373,11 +3376,11 @@
         el.textContent = name;
       }
     }
-    // Events helper prose: resolve the anchor side to an actual name.
-    var refEl = document.getElementById('events-ref-spouse');
-    if (refEl){
-      refEl.textContent = anchor === 'youngest' ? yo.younger : yo.older;
-    }
+    // Events helper prose: resolve the anchor side to an actual name. The
+    // drawer and State 1 both carry a span.events-ref-spouse — paint every match.
+    var refName = anchor === 'youngest' ? yo.younger : yo.older;
+    var refEls = document.querySelectorAll('.events-ref-spouse');
+    for (var r = 0; r < refEls.length; r++) refEls[r].textContent = refName;
   }
 
   // Toggle .is-on on the State 1 retire-when chips from the current `anchor`
@@ -3433,27 +3436,31 @@
     };
   }
   function renderEvents(){
-    var list = document.getElementById('events-list');
-    if (!list) return;
+    var html;
     if (eventsStore.length === 0){
-      list.innerHTML = '<div class="events-empty">No capital events yet.</div>';
-      return;
+      html = '<div class="events-empty">No capital events yet.</div>';
+    } else {
+      html = '<div class="event-row head">' +
+        '<span>Kind</span>' +
+        '<span>Age</span>' +
+        '<span>Amount · basis · year</span>' +
+        '<span></span>' +
+      '</div>';
+      for (var i = 0; i < eventsStore.length; i++){
+        html += buildEventRow(eventsStore[i]);
+      }
     }
-    var html = '<div class="event-row head">' +
-      '<span>Kind</span>' +
-      '<span>Age</span>' +
-      '<span>Amount · basis · year</span>' +
-      '<span></span>' +
-    '</div>';
-    for (var i = 0; i < eventsStore.length; i++){
-      html += buildEventRow(eventsStore[i]);
-    }
-    list.innerHTML = html;
-    if (!list.dataset.wired){
-      list.dataset.wired = '1';
-      list.addEventListener('input', onEventInput);
-      list.addEventListener('change', onEventInput);
-      list.addEventListener('click', onEventClick);
+    var ids = ['events-list', 'empty-events-list'];
+    for (var j = 0; j < ids.length; j++){
+      var list = document.getElementById(ids[j]);
+      if (!list) continue;
+      list.innerHTML = html;
+      if (!list.dataset.wired){
+        list.dataset.wired = '1';
+        list.addEventListener('input', onEventInput);
+        list.addEventListener('change', onEventInput);
+        list.addEventListener('click', onEventClick);
+      }
     }
   }
   function buildEventRow(ev){
@@ -4035,7 +4042,9 @@
 
     var gp = computeGoalProgress(p);
     if (gp){
-      set('s-goal', fmtR(gp.goal) + ' · ' + gp.pct + '% of target');
+      var sGoalEl = document.getElementById('s-goal');
+      var sGoalCls = gp.pct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
+      if (sGoalEl) sGoalEl.innerHTML = fmtR(gp.goal) + ' · <span class="' + sGoalCls + '">' + gp.pct + '% of target</span>';
       setGoalActive('s-goal-row', true);
     } else {
       setGoalActive('s-goal-row', false);
@@ -4611,9 +4620,11 @@
       set('drawer-events-meta', eventsStore.length + ' event' + (eventsStore.length > 1 ? 's' : ''));
     }
 
-    // Events helper — keep the events-ref-spouse name fresh on anchor changes.
+    // Events helper — keep every events-ref-spouse name (drawer + State 1) fresh on anchor changes.
     var refYo = resolveYoungerOlder();
-    set('events-ref-spouse', anchor === 'youngest' ? refYo.younger : refYo.older);
+    var refNm = anchor === 'youngest' ? refYo.younger : refYo.older;
+    var refNodes = document.querySelectorAll('.events-ref-spouse');
+    for (var rr = 0; rr < refNodes.length; rr++) refNodes[rr].textContent = refNm;
   }
 
   // ===== Compare cards (State 3) =====
@@ -4665,8 +4676,12 @@
     if (goal > 0){
       var basePct = Math.round((bp.monthlyIncomeReal / goal) * 100);
       var scenPct = Math.round((p.monthlyIncomeReal / goal) * 100);
-      set('cmp-baseline-goal', basePct + '% of ' + fmtShort(goal));
-      set('cmp-scenario-goal', scenPct + '% of ' + fmtShort(goal));
+      var baseCls = basePct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
+      var scenCls = scenPct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
+      var cmpBaseEl = document.getElementById('cmp-baseline-goal');
+      var cmpScenEl = document.getElementById('cmp-scenario-goal');
+      if (cmpBaseEl) cmpBaseEl.innerHTML = '<span class="' + baseCls + '">' + basePct + '%</span> of ' + fmtShort(goal);
+      if (cmpScenEl) cmpScenEl.innerHTML = '<span class="' + scenCls + '">' + scenPct + '%</span> of ' + fmtShort(goal);
       setMetaDelta('cmp-scenario-goal-delta', scenPct - basePct, 'pp');
       setGoalActive('cmp-baseline-goal-row', true);
       setGoalActive('cmp-scenario-goal-row', true);
@@ -5061,15 +5076,14 @@
     for (var gi = 0; gi < goalNodes.length; gi++){
       if (gpAnswer){
         var phrase = gpAnswer.pct >= 100 ? 'on track to' : 'covers';
-        goalNodes[gi].textContent = 'Goal ' + fmtR(gpAnswer.goal) + ' / mo · ' + phrase + ' ' + gpAnswer.pct + '% of target';
+        var exportGoalCls = gpAnswer.pct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
+        goalNodes[gi].innerHTML = 'Goal ' + fmtR(gpAnswer.goal) + ' / mo &middot; <span class="' + exportGoalCls + '">' + phrase + ' ' + gpAnswer.pct + '% of target</span>';
         goalNodes[gi].setAttribute('data-goal-active', 'true');
       } else {
         goalNodes[gi].textContent = '';
         goalNodes[gi].setAttribute('data-goal-active', 'false');
       }
     }
-
-    setBind('answer-narrative', describeCurrentPosition(p));
 
     // ---- Household ----
     setBindText('hh-spA-name', names.A);
@@ -5576,6 +5590,8 @@
   document.getElementById('btn-export-report').addEventListener('click', startExport);
   document.getElementById('btn-see-projection').addEventListener('click', function(){
     projectionRequested = true;
+    // Refresh every events container so the drawer reflects any edits made in State 1.
+    renderEvents();
     refresh();
   });
   document.getElementById('add-event-btn').addEventListener('click', function(){
@@ -5586,6 +5602,11 @@
     if (bar && bar.getAttribute('data-open') !== 'true'){
       document.getElementById('btn-edit-plan').click();
     }
+    refresh();
+  });
+  document.getElementById('empty-add-event-btn').addEventListener('click', function(){
+    eventsStore.push(newEvent());
+    renderEvents();
     refresh();
   });
 
