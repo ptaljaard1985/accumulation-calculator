@@ -34,7 +34,7 @@ docs/
 tests/
   README.md                     how to run tests
   python/                       math audits (pytest, 37 tests)
-  js/                           JS tests against shipped HTML (node, 14 tests)
+  js/                           JS tests against shipped HTML (node, 21 tests)
 ```
 
 ## Running the tests
