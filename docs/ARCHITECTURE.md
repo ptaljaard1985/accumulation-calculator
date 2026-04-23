@@ -103,6 +103,15 @@ return 'empty';
       <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
     </div>
 
+    <!-- Export deck — hidden on screen + portrait-print; shown when
+         startExport() sets data-export-mode on #calc-root. 12 pages,
+         2 conditional (events, compare). See §13 for details. -->
+    <section class="export-deck">
+      <section class="export-page" data-export-page="cover">...</section>
+      <section class="export-page" data-export-page="answer">...</section>
+      ... 10 more pages ...
+    </section>
+
     <div class="footer-meta">Simple Wealth · Retirement Accumulation · {date}</div>
   </div>
 </div>
@@ -230,7 +239,53 @@ Called by the `beforeprint` / `afterprint` / `matchMedia('print') change` handle
 
 ### 12. Event wiring
 
-At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event. Everything ends by calling `refresh()`.
+At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event; **Export report** (`#btn-export-report` → `startExport()`). Everything ends by calling `refresh()`.
+
+### 13. Export deck (A4 landscape, 12 pages)
+
+An opt-in print mode that turns the calculator into a 12-page client-facing deliverable. Triggered by `#btn-export-report` in the plan-bar. The deck never appears in the normal portrait print path (canvas-foot Print/PDF or plain Cmd+P) — it's fully gated on two flags that only `startExport()` sets.
+
+**Gating model.** `startExport()` sets three things before calling `window.print()`:
+
+1. `#calc-root[data-export-mode="true"]` — CSS rule hides every `#calc-root > :not(.export-deck)` and reveals `.export-deck`. This is the on-screen visibility swap.
+2. `<html class="export-printing">` — used only to scope the `html.export-printing .export-page { ... }` print-size overrides.
+3. A dynamically-injected `<style id="export-page-sheet">@page { size: A4 landscape; margin: 0; }</style>` in `<head>`. `@page` rules can't live inside selector scopes, so this is the only reliable way to change page size per print pass.
+
+`afterprint` calls `teardownExport()`, which strips all three gates and destroys the export Chart.js instances. The existing portrait `@media print` rules at lines ~1143–1169 are unchanged and continue to win for non-export prints because none of these gates are set in that flow.
+
+**The 12 pages** (in `<section class="export-deck">`, a direct sibling of `.print-summary`):
+
+1. Cover — family name (derived by `deriveFamilyName()` from last whitespace token of `#client-name`), prepared-for, date, adviser (FSP 50637).
+2. The Answer — eyebrow + Fraunces headline with `gold-under` accent on the monthly-income number + real capital stacked chart + three-cell outcome strip + `describeCurrentPosition(p)` narrative.
+3. Household — two-column editorial grid (balances, contributions, combined total per spouse) divided by a 1px hairline.
+4. Assumptions — two-column layout: 5-row editorial table (return / CPI / escalation / retirement trigger / drawdown) + "Note to the household" aside.
+5. Projection — nominal stacked chart, full-width + three-cell foot strip (starting / real final / nominal final).
+6. Breakdown — two-column: 3-layer decomp chart + three slab cards (starting-compounded, cumulative contributions, growth on contributions), all in today's money.
+7. Capital events — **conditional on `eventsStore.length > 0`**. Summary strip (count, inflow total, outflow total) + itemised list (kind badge, age, year, basis, amount). Out-of-horizon events are muted but still listed for completeness.
+8. Compare — **conditional on `baseline !== null`**. Two side-by-side cards (baseline paper-2, scenario white with navy ring) with shared y-ceiling, gold delta chip on the scenario card, inline gold deltas on changed meta rows.
+9. Year-by-year — full-width table: year 0, every 5th year, and the retirement row (highlighted in navy). Columns: year label, Age A, Age B, retirement (nominal), discretionary (nominal), total (nominal), total (real).
+10. Methodology — two-column prose: how capital grows, PV conversion, the 5% rule, the three-part breakdown, capital events note (dynamic based on `eventsStore.length`), what the projection is not.
+11. Compliance — two-column prose: not-advice disclaimer, FSP 50637 + POPIA, scope of document, risk/market assumptions, tax treatment (pre-tax), review cadence.
+12. Next steps — closing page: "From projection to plan" eyebrow + `Let's turn this into your plan.` headline with gold-under + three cells (review / action / next review cadence) + branding foot.
+
+**Conditional-page logic.** Pages 7 and 8 carry `data-export-page-active="false"` in the markup. `buildExportDeck()` toggles that attribute based on `eventsStore.length` and `baseline`. CSS: `.export-page[data-export-page-active="false"] { display: none; }` hides them both on screen and in print. `renumberExportPages()` walks visible `.export-page` nodes, assigns lowercase roman numerals (`i.` `ii.` ...) and `NN / TT` page counts, so the document always reads as a coherent sequence (10, 11, 11, or 12 pages depending on state).
+
+**Dedicated export Chart.js instances.** Five new canvases (`export-chart-answer`, `export-chart-projection-nom`, `export-chart-breakdown`, `export-chart-compare-baseline`, `export-chart-compare-scenario`), held in module-scoped `exportCharts = { answer, proj, breakdown, cmpBase, cmpScen }`. Built in `buildExportCharts()` on button click against the (now visible, landscape-sized) DOM. Destroyed in `destroyExportCharts()` on `afterprint`. Chose dedicated canvases over reusing the screen charts because State 2/3 instances are sized for ~280–1000px card widths; landscape A4 content area is ~1588×1123px; `chart.resize()` on live screen instances is the fragile path that burned Sessions 2 and 3.
+
+**Shared y-ceiling on compare charts.** `padSeries(series, targetLen)` extends the shorter baseline-year series with its last value so the two compare charts line up on the x-axis. The y-axis ceiling is `max(peak(baseReal.total), peak(planReal.total)) * 1.05` shared across both.
+
+**JS entry points (all in the `Export deck` block in the script IIFE).**
+
+- `startExport()` — guard on `lastProjection`, ensure `<style id="export-page-sheet">`, set gates, `buildExportDeck(...)`, `buildExportCharts(...)`, double-rAF → `window.print()`.
+- `teardownExport()` — strip gates, remove `<style>`, `destroyExportCharts()`.
+- `buildExportDeck(p, baseline, events, names)` — populates every `[data-bind="..."]` slot. Calls `populateEventsPage`, `populateComparePage`, `populateYearTable` for the three data-heavy pages, then `renumberExportPages()`.
+- `buildExportCharts(p, baseline)` — 3 or 5 Chart.js instances depending on whether `baseline` is locked.
+- `setBind(name, html)` / `setBindText(name, txt)` — bulk-assign innerHTML/textContent to every `[data-bind="name"]` node inside `.export-deck`.
+- Helpers: `toRoman(n)`, `deriveFamilyName(full)`, `escapeHtml(s)`, `renumberExportPages()`, `padSeries`, `peak`, `fadedStackedDatasets`, `stackedDatasets`, `exportBarOptions`, `exportCompareOptions`, `setMetaWithDelta`, `ensureExportPageSheet`, `removeExportPageSheet`.
+
+**Refresh integration.** `refresh()` does NOT touch the export deck. The deck is populated only on button click; otherwise it holds placeholder text (`R —`, `——`, etc.) that never reaches print. This keeps per-keystroke cost unchanged.
+
+**Em-dash rule.** Static deck prose (methodology, compliance, next-steps, assumptions aside, events list header) is em-dash-free. Placeholder slots like `<span data-bind="compliance-date">——</span>` contain em-dashes but are guaranteed to be overwritten by `setBindText()` from an em-dash-free source before print. JS tests enforce the static-prose invariant with zone-scoped regexes that strip `data-bind` spans before scanning.
 
 ## Data flow on a user interaction
 

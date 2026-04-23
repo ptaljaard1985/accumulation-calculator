@@ -319,6 +319,130 @@ check('narrative: no em-dashes in baseline + planned-scenario output', () => {
 });
 
 
+// ============================================================
+// Export deck — helper + structural tests
+// ============================================================
+
+// extractFn's brace-scanner doesn't understand regex literals, so
+// functions containing /"/ will confuse it. toRoman + deriveFamilyName
+// are safe; skip escapeHtml and test its presence instead.
+const exportHelpers = [
+  'toRoman', 'deriveFamilyName',
+].map(n => extractFn(inline, n)).join('\n');
+const exportHelperFns = new Function(
+  exportHelpers + '; return { toRoman, deriveFamilyName };'
+)();
+
+check('export: toRoman maps key numerals correctly', () => {
+  assert.strictEqual(exportHelperFns.toRoman(1),  'I');
+  assert.strictEqual(exportHelperFns.toRoman(4),  'IV');
+  assert.strictEqual(exportHelperFns.toRoman(7),  'VII');
+  assert.strictEqual(exportHelperFns.toRoman(9),  'IX');
+  assert.strictEqual(exportHelperFns.toRoman(12), 'XII');
+  assert.strictEqual(exportHelperFns.toRoman(40), 'XL');
+});
+
+check('export: deriveFamilyName extracts last token', () => {
+  assert.strictEqual(exportHelperFns.deriveFamilyName('Thabo & Amara Nkosi'), 'Nkosi');
+  assert.strictEqual(exportHelperFns.deriveFamilyName('  Smith  '), 'Smith');
+  assert.strictEqual(exportHelperFns.deriveFamilyName(''), '——');
+  assert.strictEqual(exportHelperFns.deriveFamilyName(null), '——');
+});
+
+check('export: escapeHtml is defined and escapes the 5 HTML-special chars', () => {
+  // Presence check (full behaviour is evident from source).
+  assert.ok(/function escapeHtml/.test(inline), 'escapeHtml function missing');
+  assert.ok(/&amp;/.test(inline) && /&lt;/.test(inline) && /&gt;/.test(inline) &&
+            /&quot;/.test(inline) && /&#39;/.test(inline),
+            'escapeHtml should emit all 5 named entities');
+});
+
+check('export: deck contains 12 pages, 2 conditionals', () => {
+  // Scope to only <section> tags, not CSS selectors that also contain
+  // data-export-page="...".
+  const pageRe = /<section class="export-page"[^>]*data-export-page="([a-z-]+)"/g;
+  const pages = [];
+  let m;
+  while ((m = pageRe.exec(html)) !== null) pages.push(m[1]);
+  assert.strictEqual(pages.length, 12, 'page count: ' + pages.length);
+  const expected = ['cover','answer','household','assumptions','projection','breakdown','events','compare','year-by-year','methodology','compliance','next-steps'];
+  assert.deepStrictEqual(pages, expected);
+
+  // Conditional pages: only inside section tags, not CSS.
+  const condRe = /<section class="export-page"[^>]*data-export-page-active="false"/g;
+  const conditionals = (html.match(condRe) || []).length;
+  assert.strictEqual(conditionals, 2, 'conditional page count: ' + conditionals);
+});
+
+check('export: deck-mode gates (button, exportCharts, @page injection) are wired', () => {
+  assert.ok(/id="btn-export-report"/.test(html), 'button missing');
+  assert.ok(/id="calc-root"/.test(html), 'calc-root id missing');
+  // Canvas IDs for the 5 export charts
+  ['export-chart-answer','export-chart-projection-nom','export-chart-breakdown','export-chart-compare-baseline','export-chart-compare-scenario']
+    .forEach(id => {
+      assert.ok(new RegExp('id="' + id + '"').test(html), 'missing canvas: ' + id);
+    });
+  // JS entry points
+  assert.ok(/function startExport/.test(inline), 'startExport missing');
+  assert.ok(/function teardownExport/.test(inline), 'teardownExport missing');
+  assert.ok(/function buildExportDeck/.test(inline), 'buildExportDeck missing');
+  assert.ok(/function buildExportCharts/.test(inline), 'buildExportCharts missing');
+  assert.ok(/function destroyExportCharts/.test(inline), 'destroyExportCharts missing');
+  // @page injection (dynamic stylesheet)
+  assert.ok(/@page \{ size: A4 landscape/.test(inline), '@page landscape injection missing');
+  // afterprint handler teardown
+  assert.ok(/teardownExport\(\)/.test(inline), 'afterprint teardown call missing');
+});
+
+check('export: static prose copy has no em-dashes', () => {
+  // Check only the hand-written static-prose zones. Both topbar
+  // placeholders (e.g. "the — family") and inline data-bind spans
+  // (e.g. "Prepared ——" → overwritten with a real date) are stripped
+  // before scanning, since they're guaranteed to be replaced by
+  // em-dash-free content at runtime.
+  const emDash = '—';
+  const stripPlaceholders = s => s
+    .replace(/<span[^>]*data-bind="[^"]*"[^>]*>[\s\S]*?<\/span>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ');
+
+  // Prose cols contain no nested <div>, so the first </div> closes them.
+  const proseRe = /<div class="export-prose-col">([\s\S]*?)<\/div>/g;
+  let m, proseFound = 0;
+  while ((m = proseRe.exec(html)) !== null){
+    proseFound++;
+    const text = stripPlaceholders(m[1]);
+    assert.ok(text.indexOf(emDash) === -1,
+      'em-dash in prose column ' + proseFound + ': ' + text.slice(0, 200));
+  }
+  assert.ok(proseFound >= 4, 'expected at least 4 prose columns, got ' + proseFound);
+
+  // Closing strip cells
+  const stripRe = /<div class="export-closing-strip">([\s\S]*?)<\/div>\s*<div class="export-closing-foot">/;
+  const strip = html.match(stripRe);
+  assert.ok(strip, 'closing strip missing');
+  const stripText = stripPlaceholders(strip[1]);
+  assert.ok(stripText.indexOf(emDash) === -1,
+    'em-dash in closing strip: ' + stripText.slice(0, 200));
+});
+
+check('export: assumptions aside + events list header are em-dash-free', () => {
+  const emDash = '—';
+  // assumptions aside
+  const asideRe = /<aside class="export-assump-aside"[^>]*>([\s\S]*?)<\/aside>/;
+  const aside = html.match(asideRe);
+  assert.ok(aside, 'assumptions aside missing');
+  const asideText = aside[1].replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/gi, ' ');
+  assert.ok(asideText.indexOf(emDash) === -1,
+    'em-dash in assumptions aside: ' + asideText.slice(0, 200));
+
+  // events list header row (.export-events-list-head)
+  const headRe = /<div class="export-events-list-head">([\s\S]*?)<\/div>/;
+  const head = html.match(headRe);
+  assert.ok(head, 'events list head missing');
+  assert.ok(head[1].indexOf(emDash) === -1, 'em-dash in events list head');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);
