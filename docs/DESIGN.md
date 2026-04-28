@@ -19,8 +19,8 @@ The UI has three visual states driven by the user's progress through the flow. T
 State derivation (`deriveViewState()`): if a baseline is locked → `compare`; else if the adviser has clicked the "See current projection" CTA at the bottom of State 1 (setting the `projectionRequested` flag) → `filled`; else → `empty`. The gate is purely user-initiated — typing names and balances does NOT transition; only the CTA click does. Locking a baseline sets `baseline = scenario`; clearing sets it back to `null` (which returns to State 2, not State 1, because `projectionRequested` stays true for the session).
 
 - **Empty** — title-page setup: centred `A plan for the ___ family.` headline with the family name as an inline editable span, two-column spouse setup with dashed-border field pills, a foot band showing retirement-age + market defaults, and a centred "See current projection" primary CTA button at the bottom.
-- **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, editorial headline + Real/Nominal + Lock button on the canvas head, chart card with Capital / Breakdown / Table segmented control, three-cell outcome strip, narrative, canvas foot.
-- **Compare** — the hero interaction. Plan-inputs bar, compact head with "Scenario compare · baseline locked" eyebrow, two-up compare grid (muted baseline card + navy-ringed scenario card, each with their own chart), centred legend, Scenario Levers panel below.
+- **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, a plain `Retirement plan` h1 over a factual italic-serif sub-line (`[Name] retires at age 65 with R ___ per month starting retirement income, in today's money.`), Real/Nominal + Lock button on the canvas head, chart card with Capital / Breakdown / Table segmented control, three-cell outcome strip, narrative, canvas foot.
+- **Compare** — the hero interaction. Plan-inputs bar, compact head with `Scenario compare · baseline locked` eyebrow over a `Compare scenarios` h1 + sub-line `Baseline locked. Move the levers below to test alternatives.`, two-up compare grid (muted baseline card + navy-ringed scenario card, each with their own chart), centred legend, Scenario Levers panel below.
 
 ## Design tokens
 
@@ -78,7 +78,8 @@ Base body: 14px / 1.5 / Inter Tight. Never use weight 700.
 Scale:
 
 - Empty title: 44px serif 300, letter-spacing −0.6px
-- Filled headline: 44px serif 300, letter-spacing −0.6px (compact compare head: 42px / 1.08)
+- Filled / Compare headline: 44px serif 300, letter-spacing −0.6px (compact compare head: 42px / 1.08). Session 12 changed the copy to plain section titles (`Retirement plan`, `Compare scenarios`); the sentence detail now lives in the italic-serif sub-line below.
+- Headline sub-line: 16px italic serif 300 in `--mute`, 13px in print. Carries the factual sentence with mono-numeric spans for age + income (State 2) or instructional copy (State 3).
 - Compare hero value: 52px serif 400 (baseline muted to `--ink-2` 300; scenario in `--navy`)
 - Outcome-cell value: 28px serif 400 (primary navy cell: 34px)
 - Plan-bar fact value: 13px / 500
