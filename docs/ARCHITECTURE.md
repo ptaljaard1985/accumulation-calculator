@@ -59,13 +59,15 @@ return 'empty';
 
     <!-- STATE 2 canvas head -->
     <div class="canvas-head" data-view-only="filled">
-      eyebrow + serif headline "At 65, R ___ a month — comfortably" + sub
-      + Real/Nominal toggle + Lock as baseline button
+      eyebrow + serif headline "Retirement plan" + factual sub-line
+      ("[Name] retires at age 65 with R ___ per month starting retirement
+      income, in today's money.") + Real/Nominal toggle + Lock as baseline
     </div>
 
     <!-- STATE 3 canvas head (compact) -->
     <div class="canvas-head compact" data-view-only="compare">
-      eyebrow + one-line headline
+      eyebrow + serif headline "Compare scenarios"
+      + sub-line "Baseline locked. Move the levers below to test alternatives."
       + Real/Nominal toggle + Clear baseline + Re-lock
     </div>
 
@@ -166,7 +168,7 @@ The helper-prose span ("Ages anchored to {name}'s age.") uses `class="events-ref
 
 Each pulls from the `project()` result and updates the DOM:
 
-- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 headline numbers (`#headline-age`, `#headline-income`, `#headline-capital`), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`.
+- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line numbers (`#headline-age`, `#headline-income`, and the `#headline-anchor-name` reference-spouse span), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` itself is static ("Retirement plan") and carries no bound numbers — Session 12 moved age/income into the italic sub-line. The capital number is no longer rendered in this region; the outcome strip's `#sum-capital` cell remains the visible source.
 - `updatePlanBar(p)` — populates the 5 core plan-bar fact cells plus the 6th **Income goal** cell (`#fact-goal-cell` / `#fact-goal`), the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line.
 - `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
 - `buildCapitalChart(p)` — State 2 capital chart. Gold discretionary on bottom, navy retirement on top. No baseline-overlay line (State 3 replaces that entire idea).

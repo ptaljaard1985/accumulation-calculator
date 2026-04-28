@@ -2317,13 +2317,9 @@
   <div class="canvas-head" id="canvas-head-filled" data-view-only="filled">
     <div>
       <div class="canvas-head-eyebrow">Projected outcome at retirement</div>
-      <h1 class="headline">
-        At <span id="headline-anchor-name">Spouse A</span>'s age
-        <span class="num" id="headline-age">65</span>, projected starting retirement income of
-        <span class="gold-under"><span class="num" id="headline-income">R —</span></span> per month, in today's money.
-      </h1>
+      <h1 class="headline">Retirement plan</h1>
       <p class="headline-sub">
-        The household reaches retirement with <span class="num" id="headline-capital">R —</span> in combined capital, supporting a 5% drawdown before tax.
+        <span id="headline-anchor-name">Spouse A</span> retires at age <span class="num" id="headline-age">65</span> with <span class="num" id="headline-income">R —</span> per month starting retirement income, in today's money.
       </p>
     </div>
     <div class="canvas-actions no-print">
@@ -2338,9 +2334,8 @@
   <div class="canvas-head compact" id="canvas-head-compare" data-view-only="compare">
     <div>
       <div class="canvas-head-eyebrow">Scenario compare · baseline locked</div>
-      <h1 class="headline">
-        The <span class="gold-under"><em>adjusted scenario</em></span> vs. your baseline.
-      </h1>
+      <h1 class="headline">Compare scenarios</h1>
+      <p class="headline-sub">Baseline locked. Move the levers below to test alternatives.</p>
     </div>
     <div class="canvas-actions no-print">
       <div class="seg mini">
@@ -3794,10 +3789,10 @@
     set('sum-years', p.years);
     set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
 
-    // State 2 headline numbers
+    // State 2 sub-line numbers (h1 is static "Retirement plan"; the
+    // factual sentence under it carries name + age + income).
     set('headline-age', p.retirementAge);
     set('headline-income', fmtR(p.monthlyIncomeReal));
-    set('headline-capital', fmtShort(p.finalTotalReal));
     var anchorKey = resolveAnchorSpouseKey();
     var anchorNameEl = document.getElementById('headline-anchor-name');
     if (anchorNameEl) anchorNameEl.textContent = spouseNames[anchorKey];
