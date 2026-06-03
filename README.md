@@ -10,7 +10,7 @@ Given two spouses' current retirement-fund and discretionary balances, their mon
 - **Filled** — the working state once a plan is entered. Top plan-inputs bar summarises the whole plan at a glance; an `Edit plan ↓` drawer holds the full inputs. Editorial headline ("At 65, R 48 200 a month — comfortably, at today's prices."), chart card with an Income / Capital / Breakdown / Table segmented view (the default Income view plots starting monthly income against the age you retire, with a marker at the planned age), a three-cell outcome strip (monthly income · household capital · years to retirement), and a plain-English narrative.
 - **Compare** — after clicking "Lock as baseline", the view becomes a two-up: a muted baseline card next to a navy-ringed scenario card. Both hold mini-charts with a shared y-axis, hero numbers, and meta rows; a delta chip on the scenario card summarises the monthly-income change. A four-slider "Scenario levers" panel centred on the baseline lets the adviser nudge contributions, expected return, and retirement age to explore the shape of the decision.
 
-Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, and a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer.
+Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer, and **Save / Open plan** — file-based persistence that writes the client's inputs to a portable `.json` file and restores them later (opt-in restore only; a plain refresh always starts blank, so one client's numbers never leak into the next session).
 
 ## Running it
 
@@ -34,7 +34,7 @@ docs/
 tests/
   README.md                     how to run tests
   python/                       math audits (pytest, 42 tests)
-  js/                           JS tests against shipped HTML (node, 40 tests)
+  js/                           JS tests against shipped HTML (node, 45 tests)
 ```
 
 ## Running the tests
