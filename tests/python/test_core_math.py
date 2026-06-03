@@ -7,7 +7,7 @@ Core projection mechanics:
   - Growth breakdown sums to total every year
   - Income calc is exactly final_real × 5% / 12
 """
-from conftest import project, approx, base_inputs
+from conftest import project, approx, base_inputs, swr_for_age
 
 
 class TestNoContribCompoundGrowth:
@@ -145,10 +145,13 @@ class TestBreakdownDecomposition:
 
 
 class TestIncomeCalculation:
-    def test_monthly_income_is_exactly_5pct_div_12(self):
+    def test_monthly_income_uses_age_based_swr(self):
+        # base_inputs retires at age 65 (ages 40/40, anchor youngest), so the
+        # safe withdrawal rate is 4.8%, not the old flat 5%.
         p = project(base_inputs())
-        expected = p['finalTotalReal'] * 0.05 / 12
+        expected = p['finalTotalReal'] * swr_for_age(65) / 12
         assert approx(p['monthlyIncomeReal'], expected, 0.0001)
+        assert swr_for_age(65) == 0.048
 
 
 class TestLinearity:
@@ -181,5 +184,7 @@ class TestDefaultScenario:
         assert approx(p['finalTotalReal'], 23_313_210, 200)
 
     def test_monthly_income(self):
+        # finalTotalReal (~23.31m) at the age-65 SWR of 4.8%, divided by 12.
+        # Was 97_138 under the old flat 5% rule.
         p = project(base_inputs())
-        assert approx(p['monthlyIncomeReal'], 97_138, 5)
+        assert approx(p['monthlyIncomeReal'], 93_252, 10)
