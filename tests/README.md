@@ -30,7 +30,7 @@ Expected output: `42 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 40 tests.
+Location: `tests/js/`. 45 tests.
 
 These exercise the actual JS inside `retirement_accumulation.html` by extracting `project()` via brace-matching and running it under Node. No Jest dependency — just `node run.js` and the built-in `assert` module.
 
@@ -45,7 +45,7 @@ node run.js
 
 Exit code 0 = all pass. Any failure prints a stack trace and exits non-zero.
 
-Expected output: `40 passed, 0 failed`.
+Expected output: `45 passed, 0 failed`.
 
 ## When to add a test
 
