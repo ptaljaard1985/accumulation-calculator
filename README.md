@@ -33,8 +33,8 @@ docs/
   DESIGN.md                     visual system
 tests/
   README.md                     how to run tests
-  python/                       math audits (pytest, 41 tests)
-  js/                           JS tests against shipped HTML (node, 38 tests)
+  python/                       math audits (pytest, 42 tests)
+  js/                           JS tests against shipped HTML (node, 40 tests)
 ```
 
 ## Running the tests

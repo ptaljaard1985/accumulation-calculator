@@ -72,18 +72,33 @@ Note: capital events are absorbed into component C. A large inflow will show as 
 ## Monthly income at retirement
 
 ```
-monthly_income_today = final_real × 0.05 / 12
+monthly_income_today = final_real × swr(retirement_age) / 12
 ```
 
-A rule-of-thumb approximation of the sustainable retirement income. **Before tax.** **Not a drawdown simulation** — for that, the household graduates to the drawdown calculator at retirement.
+where `swr(age)` is an **age-based safe withdrawal rate**, not a flat 5%. The age is the reference spouse's age on retirement (`refAge + years`, which equals the configured retirement age in the normal case). **Before tax.** **Not a drawdown simulation** — for that, the household graduates to the drawdown calculator at retirement.
 
-5% is chosen because:
+### The SWR schedule
 
-- Applied to the combined pot (retirement + discretionary) it roughly matches what a two-pot living-annuity + discretionary strategy produces in the drawdown phase at moderate real returns.
-- It's conservative enough to land the adviser's conversation in reasonable territory.
-- It's simple enough to defend in a meeting ("5% of your pot, per year") without getting into SWR research debates.
+A shorter remaining horizon supports a higher sustainable draw, so the rate rises with the age at retirement. Tabulated for ages 55-100:
 
-The methodology note makes clear this is an approximation.
+| Age | SWR | Age | SWR | Age | SWR | Age | SWR |
+|----:|----:|----:|----:|----:|----:|----:|----:|
+| 55 | 4.2% | 67 | 5.0% | 79 | 7.2% | 91 | 14.4% |
+| 56 | 4.3% | 68 | 5.1% | 80 | 7.5% | 92 | 15.3% |
+| 57 | 4.3% | 69 | 5.2% | 81 | 8.0% | 93 | 16.2% |
+| 58 | 4.4% | 70 | 5.3% | 82 | 8.5% | 94 | 17.1% |
+| 59 | 4.4% | 71 | 5.5% | 83 | 9.0% | 95 | 18.0% |
+| 60 | 4.5% | 72 | 5.7% | 84 | 9.5% | 96 | 19.4% |
+| 61 | 4.6% | 73 | 5.8% | 85 | 10.0% | 97 | 20.8% |
+| 62 | 4.6% | 74 | 6.0% | 86 | 10.7% | 98 | 22.2% |
+| 63 | 4.7% | 75 | 6.2% | 87 | 11.4% | 99 | 23.6% |
+| 64 | 4.7% | 76 | 6.5% | 88 | 12.1% | 100 | 25.0% |
+| 65 | 4.8% | 77 | 6.7% | 89 | 12.8% | | |
+| 66 | 4.9% | 78 | 7.0% | 90 | 13.5% | | |
+
+**Out-of-range ages.** Below 55 the rate drops 0.1pp per year under 55 from the age-55 value (4.2%), floored at 3.5% (so age 48 and below all sit at 3.5%). Above 100 the rate is held at the age-100 value (25%). Ages are integers; no interpolation.
+
+Income at age 65 is now 4.8%, not the old flat 5%. The same `swr(age)` drives both the headline (at the configured retirement age) and the Income chart (at each candidate age), so the chart's marker value always equals the headline. The methodology note makes clear this is a planning approximation, not a guaranteed sustainable rate.
 
 ## Capital events
 

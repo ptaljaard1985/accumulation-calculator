@@ -15,6 +15,32 @@ suite in ../js/run.js, which exercises the actual shipped JS.
 """
 
 
+_SWR_TABLE = {
+    55: 4.2, 56: 4.3, 57: 4.3, 58: 4.4, 59: 4.4, 60: 4.5, 61: 4.6, 62: 4.6,
+    63: 4.7, 64: 4.7, 65: 4.8, 66: 4.9, 67: 5.0, 68: 5.1, 69: 5.2, 70: 5.3,
+    71: 5.5, 72: 5.7, 73: 5.8, 74: 6.0, 75: 6.2, 76: 6.5, 77: 6.7, 78: 7.0,
+    79: 7.2, 80: 7.5, 81: 8.0, 82: 8.5, 83: 9.0, 84: 9.5, 85: 10.0, 86: 10.7,
+    87: 11.4, 88: 12.1, 89: 12.8, 90: 13.5, 91: 14.4, 92: 15.3, 93: 16.2,
+    94: 17.1, 95: 18.0, 96: 19.4, 97: 20.8, 98: 22.2, 99: 23.6, 100: 25.0,
+}
+
+
+def swr_for_age(age):
+    """
+    Safe withdrawal rate (decimal fraction) by retirement age. Mirrors the JS
+    swrForAge(). Table covers 55-100. Below 55: drop 0.1pp per year under 55
+    from the age-55 rate (4.2%), floored at 3.5%. Above 100: held at 25%.
+    """
+    a = round(age)
+    if a < 55:
+        pct = max(3.5, 4.2 - 0.1 * (55 - a))
+    elif a > 100:
+        pct = 25.0
+    else:
+        pct = _SWR_TABLE[a]
+    return pct / 100
+
+
 def project(inputs):
     """
     Python port of the JS project() function in retirement_accumulation.html.
@@ -151,7 +177,7 @@ def project(inputs):
         br_nom=br_nom,
         finalTotalNom=totalNom[-1],
         finalTotalReal=totalReal[-1],
-        monthlyIncomeReal=totalReal[-1] * 0.05 / 12,
+        monthlyIncomeReal=totalReal[-1] * swr_for_age(ref + years) / 12,
         totalContribsOverHorizon=cumulContribs[-1],
     )
 
