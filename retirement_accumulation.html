@@ -447,7 +447,9 @@
   .empty-assump-grid input[type="range"].thin { width: 100%; }
   .empty-cta {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
     padding: 32px 0 8px;
   }
   .empty-cta .btn.primary {
@@ -2123,6 +2125,7 @@
 
     <div class="empty-cta">
       <button class="btn primary" id="btn-see-projection" type="button">See current projection</button>
+      <button class="btn ghost" id="btn-open-plan-empty" type="button">Open a saved plan</button>
     </div>
   </section>
 
@@ -2162,6 +2165,8 @@
           <span class="fact-val num" id="fact-goal">R —</span>
         </div>
       </div>
+      <button class="btn ghost no-print" id="btn-save-plan" type="button">Save plan</button>
+      <button class="btn ghost no-print" id="btn-open-plan" type="button">Open plan</button>
       <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
       <button class="btn ghost plan-bar-edit no-print" id="btn-edit-plan">Edit plan ↓</button>
     </div>
@@ -5153,6 +5158,229 @@
     return parts[parts.length - 1];
   }
 
+  // ===== Save / Open plan (file-based persistence) =====
+  // The file stores INPUTS, never the computed projection — outputs are
+  // re-derived on restore. Restore is opt-in (an explicit Open click); a plain
+  // page refresh always lands on the blank/default tool. No localStorage, so
+  // one client's numbers can never leak into the next session. See CLAUDE.md.
+  var PLAN_KIND = 'sw-accumulation-plan';
+  var PLAN_SCHEMA_VERSION = 1;
+  // Explicit allowlist of every DOM input id that holds client data. Checkboxes
+  // would save .checked; everything here saves .value. (There are no top-level
+  // checkboxes today — the events list's "today's money" flags live in the
+  // events store.) A JS test asserts this covers every id readInputs() reads.
+  var PLAN_INPUT_IDS = [
+    'hp-age-A', 'hp-age-B',
+    'hp-ret-A', 'hp-ret-B', 'hp-disc-A', 'hp-disc-B',
+    'hp-ret-contrib-A', 'hp-ret-contrib-B', 'hp-disc-contrib-A', 'hp-disc-contrib-B',
+    'return', 'cpi', 'esc',
+    'retirement-age', 'income-goal',
+    'client-name', 'client-date', 'adviser-name'
+  ];
+
+  function deepClone(x){ return JSON.parse(JSON.stringify(x)); }
+
+  function slugifyName(name){
+    var s = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || 'plan';
+  }
+
+  function suggestedPlanName(){
+    var fam = deriveFamilyName(document.getElementById('client-name').value);
+    if (fam === '——') fam = '';
+    var date = new Date().toISOString().slice(0, 10);  // YYYY-MM-DD
+    return slugifyName(fam) + '-' + date + '.json';
+  }
+
+  // Reads the allowlist + in-memory stores + top-level mode state and returns
+  // the plain object that gets serialised. Store arrays are deep-cloned so the
+  // snapshot can't be mutated by later edits in the app.
+  function buildPlanFile(){
+    var inputs = {};
+    PLAN_INPUT_IDS.forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      inputs[id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    var fam = deriveFamilyName(document.getElementById('client-name').value);
+    return {
+      schemaVersion: PLAN_SCHEMA_VERSION,
+      kind: PLAN_KIND,
+      savedAt: new Date().toISOString(),
+      familyName: fam === '——' ? '' : fam,
+      // Top-level non-input state.
+      spouseNames: { A: spouseNames.A, B: spouseNames.B },
+      anchor: anchor,
+      mode: mode,
+      chartView: chartView,
+      projectionRequested: projectionRequested,
+      // Baseline is stored as its raw INPUTS only; the projection snapshot is
+      // re-derived on restore (inputs, not outputs).
+      baselineInputs: baseline ? deepClone(baseline.inputs) : null,
+      inputs: inputs,
+      stores: { events: deepClone(eventsStore) }
+    };
+  }
+
+  // Restores a parsed plan object. Order matters — see the inline steps.
+  function applyPlanFile(obj){
+    // 1. Reject anything that isn't one of our plan files.
+    if (!obj || obj.kind !== PLAN_KIND){
+      window.alert('That file is not a Simple Wealth accumulation plan, so it was not opened.');
+      return false;
+    }
+    // (schemaVersion is tolerant; only branch here if we ever ship a v2 with a
+    // breaking shape change. Additive changes stay at v1 — see restore-below.)
+
+    // 2. Top-level mode state FIRST (drives view derivation + scenario sliders).
+    if (obj.anchor === 'youngest' || obj.anchor === 'oldest') anchor = obj.anchor;
+    if (obj.mode === 'pv' || obj.mode === 'fv') mode = obj.mode;
+    if (typeof obj.chartView === 'string') chartView = obj.chartView;
+    projectionRequested = obj.projectionRequested !== false;  // opening implies a projection
+
+    // 3. Non-input state: spouse names + the title-plate family-name span.
+    if (obj.spouseNames && typeof obj.spouseNames === 'object'){
+      spouseNames.A = obj.spouseNames.A || 'Spouse A';
+      spouseNames.B = obj.spouseNames.B || 'Spouse B';
+    }
+    var famEl = document.getElementById('family-name');
+    if (famEl){
+      if (obj.familyName){
+        famEl.textContent = obj.familyName;
+        famEl.classList.remove('is-placeholder');
+      }
+    }
+
+    // 4. Write each input onto the matching element. Skip ids not in the DOM.
+    var inputs = obj.inputs || {};
+    Object.keys(inputs).forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!inputs[id];
+      else el.value = inputs[id];
+    });
+    // Mirror the meeting hidden fields into their drawer edit fields.
+    var cnEdit = document.getElementById('client-name-edit');
+    if (cnEdit) cnEdit.value = document.getElementById('client-name').value;
+    var cdEdit = document.getElementById('client-date-edit');
+    if (cdEdit) cdEdit.value = document.getElementById('client-date').value;
+
+    // 5. Replace each store via deep clone (so later edits don't mutate the
+    //    parsed file). Always-assign with an empty default: an old file that
+    //    omits a key restores as EMPTY, not as stale in-memory state.
+    var s = obj.stores || {};
+    eventsStore = Array.isArray(s.events) ? deepClone(s.events) : [];
+    // Keep the id sequence ahead of any restored ids.
+    eventSeq = 1;
+    eventsStore.forEach(function(e){
+      var n = parseInt(String(e && e.id).replace(/[^0-9]/g, ''), 10);
+      if (isFinite(n) && n >= eventSeq) eventSeq = n + 1;
+    });
+
+    // 6. Re-render every ledger from its new store.
+    renderEvents();
+
+    // 7. Rebuild the baseline (from stored inputs) + re-sync derived UI.
+    if (obj.baselineInputs){
+      var bp = project(obj.baselineInputs);
+      baseline = {
+        inputs: deepClone(obj.baselineInputs), p: bp,
+        monthlyIncomeReal: bp.monthlyIncomeReal, finalTotalReal: bp.finalTotalReal
+      };
+      captureScenarioAnchors();
+      configureScenarioSliders();
+      showScenarioRow(true);
+    } else {
+      baseline = null;
+      scenarioAnchors = null;
+      showScenarioRow(false);
+    }
+    updateBaselineControls();
+    updateSliderLabels();
+    renderSpouseLabels();
+    updateAnchorChips();
+    // Sync the mode / anchor / view toggle button + slot states. Each of these
+    // also calls refresh(); the intermediate refreshes are harmless because the
+    // final refresh() below re-runs everything against the fully-applied state.
+    setAnchor(anchor);
+    setMode(mode);
+    setView(chartView);
+
+    // 8. Re-run the engine + all renderers LAST.
+    refresh();
+    return true;
+  }
+
+  function handlePlanText(text){
+    var obj;
+    try { obj = JSON.parse(text); }
+    catch (e){ window.alert('That file is not valid JSON, so it could not be opened.'); return; }
+    applyPlanFile(obj);
+  }
+
+  // Save: native Save As where available (Chrome/Edge), Blob download otherwise.
+  function savePlan(){
+    var json = JSON.stringify(buildPlanFile(), null, 2);
+    var name = suggestedPlanName();
+    if ('showSaveFilePicker' in window){
+      window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{ description: 'Plan file', accept: { 'application/json': ['.json'] } }]
+      }).then(function(handle){
+        return handle.createWritable().then(function(w){
+          return w.write(json).then(function(){ return w.close(); });
+        });
+      }).catch(function(e){
+        if (e && e.name === 'AbortError') return;  // user cancelled — no-op
+        window.alert('Could not save the plan: ' + ((e && e.message) || e));
+      });
+      return;
+    }
+    // Fallback: anchor-download a Blob.
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 0);
+  }
+
+  // Open: native open picker where available, hidden file input otherwise.
+  function openPlan(){
+    if ('showOpenFilePicker' in window){
+      window.showOpenFilePicker({
+        multiple: false,
+        types: [{ description: 'Plan file', accept: { 'application/json': ['.json'] } }]
+      }).then(function(handles){
+        return handles[0].getFile();
+      }).then(function(file){
+        return file.text();
+      }).then(function(text){
+        handlePlanText(text);
+      }).catch(function(e){
+        if (e && e.name === 'AbortError') return;  // user cancelled — no-op
+        window.alert('Could not open the plan: ' + ((e && e.message) || e));
+      });
+      return;
+    }
+    // Fallback: hidden file input.
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.addEventListener('change', function(){
+      var f = input.files && input.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ handlePlanText(String(reader.result)); };
+      reader.onerror = function(){ window.alert('Could not read that file.'); };
+      reader.readAsText(f);
+    });
+    input.click();
+  }
+
   function toRoman(num){
     if (!(num > 0 && num < 4000)) return String(num);
     var map = [
@@ -5754,6 +5982,9 @@
   document.getElementById('btn-relock').addEventListener('click', lockBaseline);
   document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
   document.getElementById('btn-export-report').addEventListener('click', startExport);
+  document.getElementById('btn-save-plan').addEventListener('click', savePlan);
+  document.getElementById('btn-open-plan').addEventListener('click', openPlan);
+  document.getElementById('btn-open-plan-empty').addEventListener('click', openPlan);
   document.getElementById('btn-see-projection').addEventListener('click', function(){
     projectionRequested = true;
     // Refresh every events container so the drawer reflects any edits made in State 1.

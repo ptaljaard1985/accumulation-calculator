@@ -97,7 +97,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 40 tests
+# JS tests (actual shipped JS) — 45 tests
 cd tests/js
 node run.js
 ```
@@ -113,7 +113,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (42 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (40 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (45 tests).
 
 ## What not to do
 
@@ -131,6 +131,30 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 14 — 2026-06-03
+
+**Shipped (save-open-plan):** file-based **Save plan** / **Open plan** — write the current client's inputs to a portable `.json` on disk and restore them later. For accidental-refresh recovery and multi-client filing (drop the files in iCloud/Dropbox and the roster syncs for free). Full detail in `docs/ARCHITECTURE.md` §14.
+
+- **Buttons.** `Save plan` + `Open plan` ghost buttons in the plan-bar nav (next to Export report), matching the existing `.btn.ghost.no-print` vocabulary. The plan-bar is hidden in State 1, so the empty-state `.empty-cta` also carries an `Open a saved plan` ghost button beneath the primary CTA — otherwise a fresh page (the landing screen) couldn't restore anything. `.empty-cta` switched to a centred vertical stack to hold both.
+- **Safety property — opt-in restore only.** A plain refresh still lands on the blank/default tool. No `localStorage`/`sessionStorage`/auto-rehydrate; files are the transport precisely because Open is a deliberate click. This is what stops one client's numbers leaking into the next session. A JS test asserts the persistence layer never touches web storage (matching actual usage, not the word in a comment).
+- **Stores inputs, not outputs.** `buildPlanFile()` serialises the `PLAN_INPUT_IDS` allowlist (15 canonical input ids + the 3 hidden meeting fields) + the `eventsStore` (deep-cloned) + top-level state (`spouseNames`, `anchor`, `mode`, `chartView`, `projectionRequested`, and `baseline.inputs` if a baseline is locked). The projection is re-derived on restore, so the file is small and forward-compatible with engine changes (e.g. the Session-13 SWR schedule). Schema `{ schemaVersion: 1, kind: "sw-accumulation-plan", savedAt, familyName, ...state, inputs, stores }`.
+- **`applyPlanFile(obj)` order** (matters): reject wrong `kind` → set mode state → write spouseNames + family-name span → write `inputs[id]` onto elements (+ mirror meeting hidden fields into drawer edit fields) → replace `eventsStore` via deep clone with **empty default** + advance `eventSeq` past restored ids → `renderEvents()` → rebuild `baseline` from `baselineInputs` (re-run `project()` for `baseline.p`) + scenario sliders → re-sync `setAnchor`/`setMode`/`setView` → `refresh()` LAST.
+- **`kind` guard.** Open refuses any file whose `kind !== 'sw-accumulation-plan'` with a clear alert. `schemaVersion` stays 1; restore is tolerant both directions (additive stores use the `Array.isArray(s.x) ? deepClone(s.x) : []` pattern so an old file missing a key restores **empty**, not stale).
+- **IO with fallback.** `savePlan()`/`openPlan()` use the File System Access API (`showSaveFilePicker`/`showOpenFilePicker`, native dialogs, `suggestedName = <family-slug>-<YYYY-MM-DD>.json` via `slugifyName`) on Chrome/Edge, and degrade to a `Blob` anchor-download / hidden `<input type="file">` on Safari/Firefox. `AbortError` (cancelled dialog) is swallowed; other errors alert. Malformed JSON is caught and alerted.
+
+**Decisions (and why):**
+
+- **Open affordance in State 1, not just the plan-bar.** The task said "top nav," but the plan-bar is hidden on the landing screen — so Open had to also live in the empty state or a fresh session could never restore. Save stays plan-bar-only (nothing to save before data is entered). Opening from State 1 sets `projectionRequested` from the file and transitions straight to the projection.
+- **Restore the locked baseline by re-deriving, not by storing the projection.** A saved compare-state stores only `baseline.inputs`; `applyPlanFile` re-runs `project()` to rebuild `baseline.p`. Keeps the "inputs not outputs" rule intact and stays correct across engine changes.
+- **Async is quarantined.** The File System Access API is promise-based, which is the one async corner in an otherwise-synchronous file. The engine/render path stays synchronous; only the two IO handlers use promise chains. `docs/ARCHITECTURE.md` "What not to add" updated to carve this out (and to ban auto-rehydrating storage explicitly).
+- **`.value` for everything, `.checked` reserved for checkboxes.** No top-level checkboxes exist today (the events "today's money" flags live in the store), but `buildPlanFile`/`applyPlanFile` branch on `el.type === 'checkbox'` so the allowlist is forward-safe.
+
+**Tests:** 45 JS (40 + 5 new) + 42 Python (unchanged — no math change), all green. New JS tests: `slugifyName` cleaning + fallback; `PLAN_INPUT_IDS` covers every id `readInputs()` reads (drift guard) + includes the 3 meeting ids; `kind` guard + empty-default store restore + `refresh()`-last in `applyPlanFile`; no `localStorage`/`sessionStorage`; Save/Open buttons wired in nav + State 1 + FS-Access feature-detect + `AbortError` handling.
+
+**Docs updated:** `docs/ARCHITECTURE.md` (new §14, "What not to add" async + persistence carve-outs, page-structure schematic), `docs/DESIGN.md` (plan-bar buttons + empty-state Open), `README.md` (features), `tests/README.md` + counts, `CLAUDE.md` (this entry + JS count 40 → 45).
+
+**Known caveat:** No browser/jsdom available here, so the round-trip is covered by code review + structural/unit tests rather than an end-to-end DOM test. Eyeball in a browser: (a) plain refresh → blank State 1 (no auto-restore); (b) enter a plan, Save → readable pretty-printed JSON named `<family>-<date>.json`; (c) refresh, Open the file → every input, the events ledger, names, mode/view/anchor toggles, and (if saved) the locked baseline all restore and the projection re-runs to match; (d) Open a non-matching JSON → refused with the alert; (e) cancel a picker → no error; (f) Safari/Firefox use the download + file-input fallback.
 
 ### Session 13 — 2026-06-03
 
