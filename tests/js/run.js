@@ -686,6 +686,69 @@ check('income view: markup + wiring present', () => {
     "refresh() should branch on chartView === 'income'");
 });
 
+// ============================================================
+// Save / Open plan — file-based persistence
+// ============================================================
+const slugifyName = new Function(
+  extractFn(inline, 'slugifyName') + '; return slugifyName;')();
+
+const planIdsMatch = inline.match(/var PLAN_INPUT_IDS = (\[[\s\S]*?\]);/);
+const PLAN_INPUT_IDS = planIdsMatch ? new Function('return ' + planIdsMatch[1])() : null;
+
+check('plan: slugifyName cleans family names for filenames', () => {
+  assert.strictEqual(slugifyName('Nkosi'), 'nkosi');
+  assert.strictEqual(slugifyName('van der Merwe'), 'van-der-merwe');
+  assert.strictEqual(slugifyName("O'Brien & Sons!"), 'o-brien-sons');
+  assert.strictEqual(slugifyName(''), 'plan');       // empty -> fallback
+  assert.strictEqual(slugifyName('——'), 'plan');     // unsluggable -> fallback
+});
+
+check('plan: PLAN_INPUT_IDS covers every id readInputs() reads', () => {
+  assert.ok(Array.isArray(PLAN_INPUT_IDS), 'PLAN_INPUT_IDS not found');
+  const readInputsSrc = extractFn(inline, 'readInputs');
+  const tokens = (readInputsSrc.match(/'[a-z][a-z0-9-]+'/g) || [])
+    .map(t => t.slice(1, -1));
+  tokens.forEach(id => {
+    assert.ok(PLAN_INPUT_IDS.includes(id),
+      `readInputs reads '${id}' but it is not in PLAN_INPUT_IDS`);
+  });
+  // The three meeting meta ids are persisted too (not read by readInputs).
+  ['client-name', 'client-date', 'adviser-name'].forEach(id => {
+    assert.ok(PLAN_INPUT_IDS.includes(id), `${id} missing from PLAN_INPUT_IDS`);
+  });
+});
+
+check('plan: kind guard + schema constants present', () => {
+  assert.ok(/var PLAN_KIND = 'sw-accumulation-plan'/.test(inline), 'PLAN_KIND missing');
+  assert.ok(/var PLAN_SCHEMA_VERSION = 1\b/.test(inline), 'PLAN_SCHEMA_VERSION missing');
+  // applyPlanFile rejects a wrong/absent kind.
+  const applySrc = extractFn(inline, 'applyPlanFile');
+  assert.ok(/obj\.kind !== PLAN_KIND/.test(applySrc),
+    'applyPlanFile should reject files whose kind !== PLAN_KIND');
+  // Stores always-assign with an empty default (no stale-state inheritance).
+  assert.ok(/Array\.isArray\(s\.events\) \? deepClone\(s\.events\) : \[\]/.test(applySrc),
+    'events store should restore as [] when the key is absent');
+  // refresh() is the last engine call.
+  assert.ok(/refresh\(\);\s*return true;/.test(applySrc),
+    'applyPlanFile should call refresh() last');
+});
+
+check('plan: no localStorage/sessionStorage (opt-in restore only)', () => {
+  // Design principle #1: never auto-rehydrate. A plain refresh must land on the
+  // blank/default tool, so the persistence layer must not touch web storage.
+  // Match actual usage (property access / indexing), not the word in a comment.
+  assert.ok(!/(local|session)Storage\s*[.\[]/.test(inline),
+    'plan persistence must not use localStorage/sessionStorage');
+});
+
+check('plan: Save/Open buttons wired in nav + State 1', () => {
+  assert.ok(/id="btn-save-plan"/.test(html), 'Save plan button missing');
+  assert.ok(/id="btn-open-plan"/.test(html), 'Open plan button missing');
+  assert.ok(/id="btn-open-plan-empty"/.test(html), 'State 1 Open button missing');
+  assert.ok(/showSaveFilePicker' in window/.test(inline), 'no FS Access feature-detect');
+  assert.ok(/AbortError/.test(inline), 'cancel (AbortError) should be swallowed');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);

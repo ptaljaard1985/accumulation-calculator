@@ -48,7 +48,7 @@ return 'empty';
     <!-- STATE 2 & 3 shared · Plan-inputs bar -->
     <div class="plan-bar" data-view-only="filled+compare" data-open="false">
       <div class="plan-bar-row">
-        logo + client name + 5 fact cells + Edit plan toggle
+        logo + client name + 5 fact cells + Save plan + Open plan + Export report + Edit plan toggle
       </div>
       <div class="plan-bar-drawer">
         col I: household (both spouses with editable names + ages + 4 fields)
@@ -306,6 +306,40 @@ An opt-in print mode that turns the calculator into a 12-page client-facing deli
 
 **Em-dash rule.** Static deck prose (methodology, compliance, next-steps, assumptions aside, events list header) is em-dash-free. Placeholder slots like `<span data-bind="compliance-date">——</span>` contain em-dashes but are guaranteed to be overwritten by `setBindText()` from an em-dash-free source before print. JS tests enforce the static-prose invariant with zone-scoped regexes that strip `data-bind` spans before scanning.
 
+### 14. Save / Open plan (file-based persistence)
+
+Lets the adviser save the current client's **inputs** to a `.json` file on disk and restore them later (accidental-refresh recovery; multi-client filing; drop the files in iCloud/Dropbox and the roster syncs for free). Buttons: **Save plan** + **Open plan** in the plan-bar nav (next to Export report), plus an **Open a saved plan** ghost button in the State 1 `.empty-cta` so a fresh page (where the plan-bar is hidden) can still restore.
+
+**Safety property — opt-in restore only.** A plain page refresh always lands on the blank/default tool. Nothing is auto-rehydrated; restoring is an explicit Open click. There is **no** `localStorage`/`sessionStorage` — files are the transport precisely because loading one is a deliberate user action, which is what stops one client's numbers leaking into the next session. A JS test asserts the persistence layer never touches web storage. Each tab is its own sandbox (no shared state across tabs).
+
+**The file stores INPUTS, not OUTPUTS.** The projection is re-derived on restore, so the file is small, portable, and forward-compatible with engine changes (e.g. the SWR schedule). Schema:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "sw-accumulation-plan",
+  "savedAt": "2026-06-03T10:30:00.000Z",
+  "familyName": "Nkosi",
+  "spouseNames": { "A": "Thabo", "B": "Amara" },
+  "anchor": "youngest", "mode": "pv", "chartView": "income",
+  "projectionRequested": true,
+  "baselineInputs": null,
+  "inputs": { "hp-age-A": "40", ... },
+  "stores": { "events": [ { "id": "ev-1", "age": 55, ... } ] }
+}
+```
+
+- `kind` is a guard: Open refuses any file whose `kind` !== `sw-accumulation-plan` with a clear alert.
+- `schemaVersion` starts at 1 and the restorer is tolerant in both directions; only bump it for a breaking shape change (and branch on it). Additive stores restore with an **empty default** (`Array.isArray(s.x) ? deepClone(s.x) : []`) so an old file that omits a key restores empty rather than inheriting stale in-memory state.
+
+**Allowlist.** `PLAN_INPUT_IDS` is an explicit array of every client-data input id (the 15 ids `readInputs()` reads + the 3 hidden meeting fields `client-name`/`client-date`/`adviser-name`). Checkboxes would save `.checked`; everything else saves `.value`. A JS test asserts the allowlist covers every id `readInputs()` reads, so it can't silently drift.
+
+**`buildPlanFile()`** reads the allowlist + the `eventsStore` (deep-cloned) + top-level state (`spouseNames`, `anchor`, `mode`, `chartView`, `projectionRequested`, and `baseline.inputs` if locked).
+
+**`applyPlanFile(obj)`** restores in this order: (1) reject wrong `kind`; (2) set `anchor`/`mode`/`chartView`/`projectionRequested`; (3) write `spouseNames` + the family-name span; (4) write each `inputs[id]` onto its element (skip absent ids) + mirror the meeting hidden fields into their drawer edit fields; (5) replace `eventsStore` via deep clone (empty default) and advance `eventSeq` past the restored ids; (6) `renderEvents()`; (7) rebuild `baseline` from `baselineInputs` (re-running `project()` to re-derive `baseline.p`) + `captureScenarioAnchors`/`configureScenarioSliders`/`showScenarioRow`, then re-sync derived UI and the `setAnchor`/`setMode`/`setView` toggle states; (8) `refresh()` LAST.
+
+**IO with graceful fallback.** `savePlan()` uses `window.showSaveFilePicker` (Chrome/Edge native Save As, remembers folder, `suggestedName = <family-slug>-<YYYY-MM-DD>.json`) when present, else anchor-downloads a `Blob`. `openPlan()` uses `window.showOpenFilePicker` when present, else a hidden `<input type="file">`; either path reads the text, `JSON.parse`es inside a try/catch that alerts on malformed input, and hands to `applyPlanFile`. Feature-detected with `'showSaveFilePicker' in window`. `AbortError` (user cancelled the dialog) is swallowed silently; any other error alerts. These promise chains are the sole async code in the file (see "What not to add").
+
 ## Data flow on a user interaction
 
 1. User moves a slider or changes an input.
@@ -331,7 +365,7 @@ No caching, no debouncing, no animation.
 
 - **State management libraries.** Global mutable state with `refresh()` is fine for a single-page tool.
 - **Component frameworks.** Rendering is under 300 lines total.
-- **Async/promises.** Nothing here is async. Keep it that way.
+- **Async/promises.** The projection, rendering, and all UI wiring are synchronous — keep them that way. The **one** exception is the Save/Open plan IO (§14), which uses the inherently promise-based File System Access API. Async stays quarantined to those handlers; nothing in the engine or render path awaits.
 - **TypeScript.** Would fight the no-build rule.
-- **Persistence.** Calculator is session-only by design. Anything that needs to persist goes to the CRM.
+- **Auto-rehydrating persistence (localStorage/sessionStorage/IndexedDB/cookies).** Banned by the safety property in §14: a plain refresh must land on the blank/default tool so one client's numbers can never leak into the next session. File-based Save/Open (§14) is the sanctioned persistence — restore is always an explicit user action. Anything that needs a shared/synced datastore goes to the CRM, not here.
 - **A fourth view state.** Three is the contract. If a new flow is needed, fold it into one of the existing three.
