@@ -2389,7 +2389,7 @@
       <div class="outcome-cell primary">
         <div class="ocap">Monthly income</div>
         <div class="oval num" id="sum-income">R —</div>
-        <div class="osub" id="sum-income-sub">today's money · 5% of combined capital, before tax</div>
+        <div class="osub" id="sum-income-sub">today's money · safe withdrawal rate, before tax</div>
         <div class="osub" id="sum-income-goal" data-goal-active="false"></div>
       </div>
       <div class="outcome-cell">
@@ -2557,7 +2557,8 @@
         <table class="summary-table">
           <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
           <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
-          <tr><td>Projected monthly income at 5% draw (today's money, before tax)</td><td id="s-income">—</td></tr>
+          <tr><td>Projected monthly income (today's money, before tax)</td><td id="s-income">—</td></tr>
+          <tr><td>Safe withdrawal rate applied</td><td id="s-swr">—</td></tr>
           <tr id="s-goal-row" data-goal-active="false"><td>Monthly income goal · progress (today's money, before tax)</td><td id="s-goal">—</td></tr>
           <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
         </table>
@@ -2586,7 +2587,7 @@
       <div class="accordion-body">
         <div class="assumptions">
           <strong style="color: var(--ink);">Notes on methodology.</strong>
-          Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income is a simple approximation: 5% of the combined capital (retirement fund plus discretionary) divided by twelve, shown in today's money and before tax. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
+          Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income applies an age-based safe withdrawal rate to the combined capital (retirement fund plus discretionary), divided by twelve, shown in today's money and before tax. The rate is read from a schedule that rises with the age at retirement (a shorter remaining horizon supports a higher sustainable draw), ranging from about 4.2% at age 55 to 4.8% at age 65 and higher at older ages. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
         </div>
       </div>
     </details>
@@ -2829,9 +2830,9 @@
             <td class="note" data-bind="a-anchor-note">Anchored to the reference spouse reaching the retirement age.</td>
           </tr>
           <tr>
-            <td class="lbl">Drawdown rate</td>
-            <td class="val">5.0%</td>
-            <td class="note">Applied to real capital at retirement to derive a sustainable monthly income in today's money, before tax.</td>
+            <td class="lbl">Safe withdrawal rate</td>
+            <td class="val" data-bind="a-drawrate">—</td>
+            <td class="note">Age-based rate applied to real capital at retirement to derive a sustainable monthly income in today's money, before tax. Rises with the retirement age.</td>
           </tr>
         </table>
 
@@ -3155,7 +3156,7 @@
           <p>Where future nominal rands appear, they are labelled explicitly.</p>
 
           <h3>The retirement income figure</h3>
-          <p>The monthly-income result applies a <strong>5% annual drawdown</strong> to the real capital at retirement, divided by twelve. It is a planning-level guide to sustainable income, not a guaranteed payout.</p>
+          <p>The monthly-income result applies an <strong>age-based safe withdrawal rate</strong> to the real capital at retirement, divided by twelve. A shorter remaining horizon supports a higher sustainable draw, so the rate rises with the retirement age (about 4.2% at age 55, <span data-bind="method-swr">—</span> here). It is a planning-level guide to sustainable income, not a guaranteed payout.</p>
         </div>
 
         <div class="export-prose-col">
@@ -3215,7 +3216,7 @@
 
         <div class="export-prose-col">
           <h3>Risk and market assumptions</h3>
-          <p>The expected return, inflation, and escalation figures used here are long-term planning assumptions for a diversified growth-oriented portfolio. Actual returns are volatile; sequence-of-returns risk is not modelled. The 5% drawdown rate is a widely-used planning heuristic, not a guaranteed sustainable rate.</p>
+          <p>The expected return, inflation, and escalation figures used here are long-term planning assumptions for a diversified growth-oriented portfolio. Actual returns are volatile; sequence-of-returns risk is not modelled. The safe withdrawal rates used here are age-based planning heuristics, not guaranteed sustainable rates.</p>
 
           <h3>Tax treatment</h3>
           <p>Figures are shown <strong>before tax</strong>. Retirement-fund contributions, investment growth within retirement funds, and income drawn in retirement are each subject to different tax rules. Your personal tax position may change the effective outcome materially.</p>
@@ -3325,6 +3326,34 @@
     var n = parseInt(document.getElementById(id).value, 10);
     return isFinite(n) ? n : fallback;
   }
+
+  // Safe withdrawal rate (decimal fraction) by retirement age. The table is
+  // age-specific: a shorter remaining horizon supports a higher sustainable
+  // draw, so the rate rises with age. Replaces the old flat 5% rule
+  // everywhere monthly income is derived. Still BEFORE TAX — no tax modelling.
+  // Range 55-100 is tabulated. Below 55: drop 0.1pp per year under 55 from the
+  // age-55 rate (4.2%), floored at 3.5%. Above 100: held at the age-100 rate
+  // (25%). The table lives inside the function so the Node test harness picks
+  // it up when it extracts swrForAge alongside project().
+  function swrForAge(age){
+    var T = {
+      55: 4.2, 56: 4.3, 57: 4.3, 58: 4.4, 59: 4.4, 60: 4.5, 61: 4.6, 62: 4.6,
+      63: 4.7, 64: 4.7, 65: 4.8, 66: 4.9, 67: 5.0, 68: 5.1, 69: 5.2, 70: 5.3,
+      71: 5.5, 72: 5.7, 73: 5.8, 74: 6.0, 75: 6.2, 76: 6.5, 77: 6.7, 78: 7.0,
+      79: 7.2, 80: 7.5, 81: 8.0, 82: 8.5, 83: 9.0, 84: 9.5, 85: 10.0, 86: 10.7,
+      87: 11.4, 88: 12.1, 89: 12.8, 90: 13.5, 91: 14.4, 92: 15.3, 93: 16.2,
+      94: 17.1, 95: 18.0, 96: 19.4, 97: 20.8, 98: 22.2, 99: 23.6, 100: 25.0
+    };
+    var a = Math.round(age);
+    var pct;
+    if (a < 55) pct = Math.max(3.5, 4.2 - 0.1 * (55 - a));
+    else if (a > 100) pct = 25.0;
+    else pct = T[a];
+    return pct / 100;
+  }
+
+  // SWR formatted as a one-decimal percent string for display labels.
+  function fmtSwr(age){ return (swrForAge(age) * 100).toFixed(1) + '%'; }
 
   // ===== State =====
   var mode = 'pv';            // 'pv' | 'fv'
@@ -3701,7 +3730,9 @@
 
     var finalTotalReal = totalReal[totalReal.length - 1];
     var finalTotalNom = totalNom[totalNom.length - 1];
-    var monthlyIncomeReal = finalTotalReal * 0.05 / 12;
+    // Income uses the age-based safe withdrawal rate at the reference spouse's
+    // age on retirement (refAge + years == retirementAge in the normal case).
+    var monthlyIncomeReal = finalTotalReal * swrForAge(refAge + years) / 12;
 
     return {
       inputs: inputs,
@@ -3787,7 +3818,10 @@
   }
 
   function updateSummary(p){
+    var swrAge = p.refAge + p.years;
     set('sum-income', fmtR(p.monthlyIncomeReal));
+    set('sum-income-sub', 'today’s money · ' + fmtSwr(swrAge) +
+      ' safe withdrawal at age ' + swrAge + ', before tax');
     set('sum-capital', fmtShort(p.finalTotalReal));
     set('sum-capital-sub', 'at retirement · today’s money · ' + fmtShort(p.finalTotalNom) + ' nominal');
     set('sum-years', p.years);
@@ -3830,11 +3864,12 @@
   // Income-by-retirement-age curve. project() computes each position
   // independently of the horizon length, so one extended run to
   // retirementAge + 10 yields the today's-money starting income for every
-  // candidate retirement age at once: real.total[i] * 0.05 / 12. The value at
+  // candidate retirement age at once. Each age uses its OWN safe withdrawal
+  // rate: income[i] = real.total[i] * swrForAge(age[i]) / 12. The value at
   // markerIndex (= configured retirementAge - refAge) equals the headline
   // monthlyIncomeReal exactly, because positions 0..years are identical to the
-  // base run. Always real — no nominal variant (future-rand income at a future
-  // age is a misleading number).
+  // base run and the marker age equals the reference age there. Always real —
+  // no nominal variant (future-rand income at a future age is misleading).
   function incomeCurveData(inputs){
     var refAge = inputs.anchor === 'youngest'
       ? Math.min(inputs.ageA, inputs.ageB)
@@ -3844,7 +3879,9 @@
     var pe = project(ext);
     return {
       ages: pe.refAgeSeries.slice(),
-      incomeReal: pe.real.total.map(function(t){ return t * 0.05 / 12; }),
+      incomeReal: pe.real.total.map(function(t, i){
+        return t * swrForAge(pe.refAgeSeries[i]) / 12;
+      }),
       markerIndex: Math.max(0, inputs.retirementAge - refAge),
       markerAge: inputs.retirementAge
     };
@@ -3920,7 +3957,10 @@
           tooltip: {
             callbacks: {
               title: function(items){ return items.length ? 'Age ' + items[0].label : ''; },
-              label: function(ctx){ return fmtR(ctx.parsed.y) + ' / month'; }
+              label: function(ctx){
+                return fmtR(ctx.parsed.y) + ' / month · ' +
+                  fmtSwr(parseInt(ctx.label, 10)) + ' safe withdrawal rate';
+              }
             }
           }
         },
@@ -4153,6 +4193,7 @@
     set('s-cap-real', fmtR(p.finalTotalReal));
     set('s-cap-nom', fmtR(p.finalTotalNom));
     set('s-income', fmtR(p.monthlyIncomeReal));
+    set('s-swr', fmtSwr(p.refAge + p.years) + ' at age ' + (p.refAge + p.years));
     set('s-total-contrib', fmtR(p.totalContribsOverHorizon));
 
     var gp = computeGoalProgress(p);
@@ -4254,7 +4295,8 @@
       );
     }
     sentences.push(
-      'Drawn at 5% per year, the projected capital supports about <strong>' +
+      'Drawn at ' + fmtSwr(p.refAge + p.years) + ' per year, the safe withdrawal rate for retiring at age ' +
+      (p.refAge + p.years) + ', the projected capital supports about <strong>' +
       fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement, in today’s money and before tax.'
     );
     var gs = goalSentence(p.monthlyIncomeReal, inputs.incomeGoal);
@@ -5226,6 +5268,9 @@
     setBindText('a-cpi', fmtPct(inputs.cpi * 100));
     setBindText('a-esc', fmtPct(inputs.esc * 100));
     setBindText('a-retage', 'Age ' + p.retirementAge);
+    var exSwrLabel = fmtSwr(p.refAge + p.years) + ' at age ' + (p.refAge + p.years);
+    setBindText('a-drawrate', exSwrLabel);
+    setBindText('method-swr', exSwrLabel);
     setBindText('a-anchor-note',
       'Anchored to the ' + anchorRuleWord + ' spouse (' + anchorName +
       ') reaching the retirement age; the projection stops there.'

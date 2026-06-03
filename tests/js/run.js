@@ -48,8 +48,10 @@ function extractFn(src, name) {
   return src.substring(m.index, i);
 }
 
+const swrSrc = extractFn(inline, 'swrForAge');
 const projectSrc = extractFn(inline, 'project');
-const projectFn = new Function(projectSrc + '; return project;')();
+const projectFn = new Function(swrSrc + projectSrc + '; return project;')();
+const swrForAge = new Function(swrSrc + '; return swrForAge;')();
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -252,7 +254,8 @@ check('default scenario matches v1 baseline', () => {
     anchor: 'youngest', retirementAge: 65, events: [],
   });
   assert.ok(approx(p.finalTotalReal, 23_313_210, 200));
-  assert.ok(approx(p.monthlyIncomeReal, 97_138, 5));
+  // Income now uses the age-65 SWR (4.8%), not the old flat 5% (was 97_138).
+  assert.ok(approx(p.monthlyIncomeReal, 93_252, 10));
 });
 
 // ============================================================
@@ -260,7 +263,7 @@ check('default scenario matches v1 baseline', () => {
 // return non-empty strings that mention the pertinent numbers.
 // ============================================================
 const narrativeBundle = [
-  'fmtR', 'fmtShort', 'fmtPct', 'totalMonthlyContribs',
+  'fmtR', 'fmtShort', 'fmtPct', 'swrForAge', 'fmtSwr', 'totalMonthlyContribs',
   'eventsSentence', 'goalSentence', 'describeCurrentPosition',
   'describeBaselinePosition', 'describePlannedScenario',
 ].map(n => extractFn(inline, n)).join('\n');
@@ -612,6 +615,7 @@ check('goal colors: compare + print + export wrap the % in a progress span', () 
 // Income-by-retirement-age curve (State 2 "Income" chart)
 // ============================================================
 const incomeCurveFn = new Function(
+  swrSrc + '\n' +
   extractFn(inline, 'project') + '\n' +
   extractFn(inline, 'incomeCurveData') +
   '; return incomeCurveData;')();
@@ -645,12 +649,29 @@ check('incomeCurveData: ages span refAge .. retirementAge+10', () => {
 check('incomeCurveData: per-age income matches a dedicated projection', () => {
   const d = incomeCurveFn(incomeBaseInputs);
   const refAge = Math.min(incomeBaseInputs.ageA, incomeBaseInputs.ageB);
-  [50, 60, 72].forEach(age => {
+  [50, 60, 65, 72].forEach(age => {
+    // A dedicated run retiring at `age` applies that age's SWR internally, so
+    // its monthlyIncomeReal is the per-age income the extended run should read.
     const dedicated = projectFn(Object.assign({}, incomeBaseInputs, { retirementAge: age }));
-    const expected = dedicated.finalTotalReal * 0.05 / 12;
-    assert.ok(approx(d.incomeReal[age - refAge], expected, 1),
-      `age ${age}: curve=${d.incomeReal[age - refAge]} dedicated=${expected}`);
+    assert.ok(approx(d.incomeReal[age - refAge], dedicated.monthlyIncomeReal, 1),
+      `age ${age}: curve=${d.incomeReal[age - refAge]} dedicated=${dedicated.monthlyIncomeReal}`);
   });
+});
+
+check('swrForAge: table values, below-55 floor, above-100 clamp', () => {
+  assert.strictEqual(swrForAge(55), 0.042);
+  assert.strictEqual(swrForAge(65), 0.048);
+  assert.strictEqual(swrForAge(100), 0.25);
+  assert.ok(approx(swrForAge(54) * 100, 4.1, 1e-9));
+  assert.strictEqual(swrForAge(48), 0.035);   // floor reached
+  assert.strictEqual(swrForAge(40), 0.035);   // held at floor
+  assert.strictEqual(swrForAge(110), 0.25);   // held at age-100 rate
+});
+
+check('income: project applies the age-based SWR (4.8% at age 65)', () => {
+  const p = projectFn(incomeBaseInputs);  // retires at 65
+  assert.ok(approx(p.monthlyIncomeReal, p.finalTotalReal * 0.048 / 12, 1),
+    `income=${p.monthlyIncomeReal} expected=${p.finalTotalReal * 0.048 / 12}`);
 });
 
 check('income view: markup + wiring present', () => {

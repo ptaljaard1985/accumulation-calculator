@@ -4,7 +4,7 @@ Two separate test suites, both of which must pass before any change ships.
 
 ## Python tests — math audits
 
-Location: `tests/python/`. 41 tests.
+Location: `tests/python/`. 42 tests.
 
 These implement the accumulation projection from scratch in Python and assert that specific inputs produce specific outputs, checked against closed-form financial formulas where possible (FV of lump sum, ordinary annuity FV, geometric series for escalating contributions, real-rate compounding, CPI deflation).
 
@@ -16,7 +16,7 @@ Structure:
 - `test_core_math.py` — compounding, annuity FV, escalation, CPI deflation, starting-balance compounding, breakdown decomposition, income calculation, linearity, default scenario (17 tests).
 - `test_retirement_age.py` — retirement age flexibility, anchor toggle, minimum horizon (9 tests).
 - `test_events.py` — capital events: inflow, outflow, currency mode, horizon filtering, cancellation, multi-event composition (11 tests).
-- `test_income_curve.py` — income-by-retirement-age curve: single extended run matches per-age dedicated projections, marker equals headline income, events beyond the planned age, closed-form cross-check (4 tests).
+- `test_income_curve.py` — income-by-retirement-age curve + age-based SWR: single extended run matches per-age dedicated projections, marker equals headline income, events beyond the planned age, the `swr_for_age` table/floor/clamp, closed-form SWR cross-check (5 tests).
 
 Run them with:
 
@@ -26,11 +26,11 @@ pip install pytest       # one-time
 pytest                   # or `pytest -v` for verbose output
 ```
 
-Expected output: `41 passed`.
+Expected output: `42 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 38 tests.
+Location: `tests/js/`. 40 tests.
 
 These exercise the actual JS inside `retirement_accumulation.html` by extracting `project()` via brace-matching and running it under Node. No Jest dependency — just `node run.js` and the built-in `assert` module.
 
@@ -45,7 +45,7 @@ node run.js
 
 Exit code 0 = all pass. Any failure prints a stack trace and exits non-zero.
 
-Expected output: `38 passed, 0 failed`.
+Expected output: `40 passed, 0 failed`.
 
 ## When to add a test
 

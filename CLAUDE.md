@@ -6,7 +6,7 @@ This file is read first by Claude Code on every session. It tells you what this 
 
 A standalone HTML retirement accumulation calculator for Simple Wealth (Pty) Ltd, a South African authorised financial services provider (FSP 50637). One file, `retirement_accumulation.html`, opens by double-click, prints to PDF cleanly, and is used by the adviser (Pierre) with pre-retiree clients in real meetings.
 
-The calculator projects household capital from today to a configurable retirement age, for a two-spouse household with both retirement-fund and discretionary portfolios. Primary output is projected monthly income in today's money, computed as 5% of the combined capital at retirement divided by twelve, before tax. Secondary outputs: capital at retirement (real and nominal), cumulative contributions, year-by-year trajectory, "lock as baseline" comparison, and an optional capital-events mechanism for one-off inflows and outflows.
+The calculator projects household capital from today to a configurable retirement age, for a two-spouse household with both retirement-fund and discretionary portfolios. Primary output is projected monthly income in today's money, computed by applying an age-based safe withdrawal rate (a schedule that rises with the retirement age, e.g. 4.8% at 65) to the combined capital at retirement, divided by twelve, before tax. Secondary outputs: capital at retirement (real and nominal), cumulative contributions, year-by-year trajectory, "lock as baseline" comparison, and an optional capital-events mechanism for one-off inflows and outflows.
 
 This calculator is a **sibling** of the drawdown calculator (in a separate repo). The two are conceptually linked: the accumulation calculator's output is what the drawdown calculator takes as input when the client retires. They do not share code — the adviser moves the retirement-capital number across manually at the handoff, which is deliberate (forces attention at a point where details like "did we include her preservation fund?" tend to come up).
 
@@ -20,7 +20,7 @@ These are not preferences. Breaking any of them is a regression:
 2. **Prints to PDF cleanly.** Browser print dialog produces a compliance-ready document with inputs, outputs, methodology, and FSP disclaimer. Never break `@media print`.
 3. **Math is auditable.** Any change to a calculation must come with a Python test in `tests/python/` that implements the same logic from scratch and agrees to within R1 with the JS. If you cannot write a closed-form or manual trace that matches, the change is unsafe.
 4. **Warm paper aesthetic, not SaaS.** Background `--paper: #faf7f0`, primary accent `--navy: #1f2d3d`, accent `--gold: #b8893c`, hairline borders, serif editorial headlines (Fraunces), no gradients, no shadows beyond the scenario card's navy ring, no animations, no emoji, no em-dashes in narrative prose. Details in `docs/DESIGN.md`.
-5. **South African context.** Rands with space separators (`R6 000 000`), no tax modelling during accumulation, FSP 50637 disclaimer in the print summary. The "5% rule" is before-tax by design — don't add tax assumptions.
+5. **South African context.** Rands with space separators (`R6 000 000`), no tax modelling during accumulation, FSP 50637 disclaimer in the print summary. The income figure uses an **age-based safe withdrawal rate** (the `swrForAge()` schedule, replacing the former flat 5% rule in Session 13) and is before-tax by design — don't add tax assumptions.
 6. **Three states, one tree.** The UI is a single component tree (`<div class="calc" data-view="empty|filled|compare">`) with `[data-view-only]` flags on state-specific nodes, not three separate pages. View is derived, not manually set. Don't add a fourth state; fold new flows into the existing three.
 
 ## How the code is organised
@@ -53,7 +53,7 @@ The print layout has two conceptual zones: page 1 is client-facing (header, clie
 - **Contribution escalation** happens at the start of each 12-month block (year 1 uses the base amount; year 2 uses base × (1+esc); etc). This matches the drawdown calculator's convention.
 - **PV conversion**: `real[i] = nominal[i] / (1 + cpi)^i`, applied to final values and to series. Position 0 is unscaled.
 - **Starting-balance breakdown**: the starting capital line in the growth-breakdown chart compounds at the nominal return with no contributions applied to it. The three breakdown components (starting-compounded, cumulative contributions, growth-on-contributions) sum to the total every year.
-- **Income calculation**: `monthly_income_today = final_real × 0.05 / 12`. Before tax. This is a rule-of-thumb, not a drawdown simulation — the methodology note says so explicitly.
+- **Income calculation**: `monthly_income_today = final_real × swrForAge(retirement_age) / 12`. The safe withdrawal rate is age-based (4.2% at 55 rising to 25% at 100; below 55 drops 0.1pp/yr from 4.2% floored at 3.5%; above 100 held at 25%) — see `docs/CALCULATIONS.md` for the full schedule. Before tax. This is a rule-of-thumb, not a drawdown simulation — the methodology note says so explicitly.
 
 ## Capital events
 
@@ -93,11 +93,11 @@ Run through this checklist:
 ## Running tests
 
 ```bash
-# Python tests (math audits) — 41 tests
+# Python tests (math audits) — 42 tests
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 38 tests
+# JS tests (actual shipped JS) — 40 tests
 cd tests/js
 node run.js
 ```
@@ -112,8 +112,8 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/ARCHITECTURE.md` — code structure in detail.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
-- `tests/python/` — math audits in Python (41 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (38 tests).
+- `tests/python/` — math audits in Python (42 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (40 tests).
 
 ## What not to do
 
@@ -121,7 +121,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - **Don't add dependencies beyond Chart.js + Google Fonts.** No plugins, no lodash, no moment. If a new external dep is genuinely needed, it's a conversation, not a commit.
 - **Don't introduce a backend.** The calculator is stateless and client-side. Anything that needs persistence goes somewhere else.
 - **Don't add analytics, tracking, or telemetry.** Client financial data must stay in the browser.
-- **Don't add tax modelling.** The income calculation is 5% before tax by design. If the adviser wants tax, they use the drawdown calculator after retirement.
+- **Don't add tax modelling.** The income calculation applies an age-based safe withdrawal rate, before tax, by design. If the adviser wants tax, they use the drawdown calculator after retirement.
 - **Don't rename `retirement_accumulation.html`.** The file might be linked from elsewhere.
 - **Don't reformat the whole file in one commit.** Diff review is how regressions get caught; a 1300-line whitespace change defeats that.
 - **Don't try to share code with the drawdown calculator.** They are deliberately separate repos. Revisit if a third calculator appears and shared infrastructure becomes worth the overhead.
@@ -136,8 +136,9 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 **Shipped (factual-headlines):** a new **Income** chart added as the default first view of the State 2 chart card. The card now toggles Income / Capital / Breakdown / Table. Income answers the question advisers actually field in meetings — "what would my starting income be if I retired earlier or later?" — which the three bar charts (all capital-over-time) never did.
 
-- **The chart.** A single `type: 'line'` chart (navy line, faint navy fill, no point markers). X-axis is the reference spouse's age, from their current age to the configured retirement age + 10. Y-axis is the starting monthly retirement income, in today's money, the household would draw if they retired at that age (the 5% rule applied to projected real capital at each candidate age). A dashed navy vertical marker sits at the configured retirement age with a "Planned age NN" mono label.
-- **One extended projection, not N.** `project()` computes each year position independently of the horizon length, so a single run to `retirementAge + 10` yields the income for every candidate age at once: `incomeReal[i] = real.total[i] * 0.05 / 12`, `age[i] = refAgeSeries[i]`. The value at the marker (`markerIndex = retirementAge − refAge`) equals the base run's `monthlyIncomeReal` exactly — so the chart and the outcome-strip headline never disagree. Capital events anchored after the planned retirement age naturally lift only the later candidate ages (correct for the "retire later" reading) and leave the marker untouched.
+- **The chart.** A single `type: 'line'` chart (navy line, faint navy fill, no point markers). X-axis is the reference spouse's age, from their current age to the configured retirement age + 10. Y-axis is the starting monthly retirement income, in today's money, the household would draw if they retired at that age (the age-based safe withdrawal rate applied to projected real capital at each candidate age). A dashed navy vertical marker sits at the configured retirement age with a "Planned age NN" mono label.
+- **One extended projection, not N.** `project()` computes each year position independently of the horizon length, so a single run to `retirementAge + 10` yields the income for every candidate age at once: `incomeReal[i] = real.total[i] * swrForAge(age[i]) / 12`, `age[i] = refAgeSeries[i]`. The value at the marker (`markerIndex = retirementAge − refAge`) equals the base run's `monthlyIncomeReal` exactly — so the chart and the outcome-strip headline never disagree. Capital events anchored after the planned retirement age naturally lift only the later candidate ages (correct for the "retire later" reading) and leave the marker untouched.
+- **Age-based SWR replaces the flat 5% rule everywhere (mid-PR addition).** Real-meeting feedback: a single 5% draw is wrong across ages. Added `swrForAge(age)` — a schedule (table inside the function so the Node harness extracts it with `project`): 4.2% at 55 rising to 25% at 100; below 55 drops 0.1pp/yr from 4.2% floored at 3.5%; above 100 held at 25%. `project()`'s `monthlyIncomeReal` now uses `swrForAge(refAge + years)`; the Income chart uses `swrForAge(age[i])` per candidate age; the marker stays equal to the headline because both key off the same age. Replaced across all income surfaces: outcome-strip sub-line (`#sum-income-sub`, dynamic), narrative drawdown sentence, print summary (income row reworded + new "Safe withdrawal rate applied" `#s-swr` row + methodology paragraph), and the export deck (Assumptions "Safe withdrawal rate" row, methodology + compliance prose). The Income-chart tooltip now shows the per-age rate. Income at 65 is 4.8% (was 5%); default-scenario monthly income moved 97 138 → 93 252. Still before-tax — no tax modelling added.
 - **Always real.** The Income view ignores the Real/Nominal toggle. Nominal future-rand income at a future age is a misleading number; "income in today's money" is the only meaningful framing and matches the headline. Capital/Breakdown/Table still respond to the toggle.
 - **New JS.** `incomeCurveData(inputs)` (pure helper — clones inputs, extends the horizon, runs `project()`, returns `{ ages, incomeReal, markerIndex, markerAge }`) and `buildIncomeCurveChart(p)`. The dashed marker is drawn by `retAgeMarkerPlugin`, a **chart-local inline plugin** (a plain hook object in the config's `plugins: [...]` array, reading `chart.$markerIndex`/`chart.$markerAge` in `afterDatasetsDraw`) — NOT chartjs-plugin-annotation, so the no-external-plugin rule stands. Global `chartIncome`. `chartView` default flipped to `'income'`. Wired into `setView` (4-way button/slot/legend toggles + destroy-on-switch), `refresh()` (first branch), `resizeChartsToWrap` (added to the `.chart-wrap` pair), and the seg-button click listener.
 - **Legend.** Each legend key now carries a `chart-legend-<view>` class and shows only in its own view (income / capital / breakdown); the two plain Retirement/Discretionary keys became `chart-legend-capital`. Income's key reads "Starting monthly income, today's money".
@@ -148,11 +149,11 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 - **X-axis current age → retirement + 10.** User pick. The left edge ("retire today") and 10 years past the plan give context on both sides of the marker without an unbounded right tail.
 - **Inline draw hook over a thin vertical dataset or the annotation plugin.** The annotation plugin is an external dependency (banned). A vertical "dataset" on a category axis is awkward and fights the line interpolation. An `afterDatasetsDraw` hook scoped to this one chart is the idiomatic vanilla-Chart.js way and adds nothing to the dependency surface.
 - **First-build redraw.** `new Chart(...)` draws once synchronously before `$markerIndex` is assigned, so the marker would miss the first paint; `buildIncomeCurveChart` calls `chartIncome.update('none')` after setting the props. The reuse path sets the props before its own `update('none')`, so it's already covered.
-- **Math test despite "no change to `project()`."** The chart leans on a real property — that a single extended run equals N dedicated per-age runs — so it gets audited. `tests/python/test_income_curve.py` (4 tests) proves the extended-run-vs-dedicated equivalence, the marker-equals-headline identity, the events-beyond-retirement behaviour, and a closed-form cross-check for a stripped no-contribution scenario. JS suite extracts `incomeCurveData` (composed with `project`) and adds the same identity checks plus markup/wiring structural assertions.
+- **Math tests.** The chart leans on a real property — that a single extended run equals N dedicated per-age runs — so it gets audited, and the SWR change is a math change. `tests/python/test_income_curve.py` (5 tests) proves the extended-run-vs-dedicated equivalence (now via `monthlyIncomeReal`, which carries the per-age SWR), the marker-equals-headline identity, events-beyond-retirement, the `swr_for_age` table/floor/clamp, and a closed-form SWR cross-check. `conftest.py` gained a `swr_for_age` port and its `monthlyIncomeReal` now uses it; `test_core_math` income asserts switched from flat 5% to SWR(65). The JS suite composes `swrForAge` into the `project`/`incomeCurveData`/narrative extractions, asserts `swrForAge` values + that income at 65 is 4.8%, and updates the v1-baseline income expectation.
 
-**Tests:** 38 JS (34 + 4 new) + 41 Python (37 + 4 new), all green.
+**Tests:** 40 JS (34 + 6 new) + 42 Python (37 + 5 new), all green.
 
-**Docs updated:** `CLAUDE.md` session log (this entry) + test counts, `docs/ARCHITECTURE.md` (state vars, `incomeCurveData` + `buildIncomeCurveChart` in the rendering list, `refresh()` snippet, `resizeChartsToWrap`, chart-card schematic, event-wiring view switcher), `docs/DESIGN.md` (Chart section — four views + the Income line chart and marker; Filled-state intro), `README.md` + `tests/README.md` (view list + counts + new module).
+**Docs updated:** `CLAUDE.md` (session log + non-negotiable #5 + core income convention + "don't add tax" + intro), `docs/CALCULATIONS.md` (income section rewritten with the full SWR schedule table), `docs/ARCHITECTURE.md` (state vars, `incomeCurveData` + `buildIncomeCurveChart`, `refresh()` snippet, `resizeChartsToWrap`, chart-card schematic, event-wiring view switcher), `docs/DESIGN.md` (Chart section — four views + Income line chart and marker; Filled-state intro), `README.md` + `tests/README.md` (view list + counts + new module).
 
 **Known caveat:** Visual verification needs a browser (no headless screenshot taken). Eyeball: (a) Income is the default view on entering State 2, line rises with age, dashed marker sits at the planned retirement age and its hover income matches the outcome-strip headline; (b) changing retirement age in the drawer moves the marker and shifts the right edge (+10); (c) Real/Nominal leaves Income unchanged but still moves Capital/Breakdown; (d) Cmd+P with Income selected renders the curve + marker at print width.
 
