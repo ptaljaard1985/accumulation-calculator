@@ -93,11 +93,11 @@ Run through this checklist:
 ## Running tests
 
 ```bash
-# Python tests (math audits) — 37 tests
+# Python tests (math audits) — 41 tests
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 34 tests
+# JS tests (actual shipped JS) — 38 tests
 cd tests/js
 node run.js
 ```
@@ -112,8 +112,8 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/ARCHITECTURE.md` — code structure in detail.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
-- `tests/python/` — math audits in Python (37 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (34 tests).
+- `tests/python/` — math audits in Python (41 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (38 tests).
 
 ## What not to do
 
@@ -131,6 +131,30 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 13 — 2026-06-03
+
+**Shipped (factual-headlines):** a new **Income** chart added as the default first view of the State 2 chart card. The card now toggles Income / Capital / Breakdown / Table. Income answers the question advisers actually field in meetings — "what would my starting income be if I retired earlier or later?" — which the three bar charts (all capital-over-time) never did.
+
+- **The chart.** A single `type: 'line'` chart (navy line, faint navy fill, no point markers). X-axis is the reference spouse's age, from their current age to the configured retirement age + 10. Y-axis is the starting monthly retirement income, in today's money, the household would draw if they retired at that age (the 5% rule applied to projected real capital at each candidate age). A dashed navy vertical marker sits at the configured retirement age with a "Planned age NN" mono label.
+- **One extended projection, not N.** `project()` computes each year position independently of the horizon length, so a single run to `retirementAge + 10` yields the income for every candidate age at once: `incomeReal[i] = real.total[i] * 0.05 / 12`, `age[i] = refAgeSeries[i]`. The value at the marker (`markerIndex = retirementAge − refAge`) equals the base run's `monthlyIncomeReal` exactly — so the chart and the outcome-strip headline never disagree. Capital events anchored after the planned retirement age naturally lift only the later candidate ages (correct for the "retire later" reading) and leave the marker untouched.
+- **Always real.** The Income view ignores the Real/Nominal toggle. Nominal future-rand income at a future age is a misleading number; "income in today's money" is the only meaningful framing and matches the headline. Capital/Breakdown/Table still respond to the toggle.
+- **New JS.** `incomeCurveData(inputs)` (pure helper — clones inputs, extends the horizon, runs `project()`, returns `{ ages, incomeReal, markerIndex, markerAge }`) and `buildIncomeCurveChart(p)`. The dashed marker is drawn by `retAgeMarkerPlugin`, a **chart-local inline plugin** (a plain hook object in the config's `plugins: [...]` array, reading `chart.$markerIndex`/`chart.$markerAge` in `afterDatasetsDraw`) — NOT chartjs-plugin-annotation, so the no-external-plugin rule stands. Global `chartIncome`. `chartView` default flipped to `'income'`. Wired into `setView` (4-way button/slot/legend toggles + destroy-on-switch), `refresh()` (first branch), `resizeChartsToWrap` (added to the `.chart-wrap` pair), and the seg-button click listener.
+- **Legend.** Each legend key now carries a `chart-legend-<view>` class and shows only in its own view (income / capital / breakdown); the two plain Retirement/Discretionary keys became `chart-legend-capital`. Income's key reads "Starting monthly income, today's money".
+
+**Decisions (and why):**
+
+- **Added as a 4th view, Capital kept (not a replacement).** User pick. The Capital accumulation chart is still the right answer for "how does the pot grow"; Income answers a different question. Income leads because it's the meeting-opening question.
+- **X-axis current age → retirement + 10.** User pick. The left edge ("retire today") and 10 years past the plan give context on both sides of the marker without an unbounded right tail.
+- **Inline draw hook over a thin vertical dataset or the annotation plugin.** The annotation plugin is an external dependency (banned). A vertical "dataset" on a category axis is awkward and fights the line interpolation. An `afterDatasetsDraw` hook scoped to this one chart is the idiomatic vanilla-Chart.js way and adds nothing to the dependency surface.
+- **First-build redraw.** `new Chart(...)` draws once synchronously before `$markerIndex` is assigned, so the marker would miss the first paint; `buildIncomeCurveChart` calls `chartIncome.update('none')` after setting the props. The reuse path sets the props before its own `update('none')`, so it's already covered.
+- **Math test despite "no change to `project()`."** The chart leans on a real property — that a single extended run equals N dedicated per-age runs — so it gets audited. `tests/python/test_income_curve.py` (4 tests) proves the extended-run-vs-dedicated equivalence, the marker-equals-headline identity, the events-beyond-retirement behaviour, and a closed-form cross-check for a stripped no-contribution scenario. JS suite extracts `incomeCurveData` (composed with `project`) and adds the same identity checks plus markup/wiring structural assertions.
+
+**Tests:** 38 JS (34 + 4 new) + 41 Python (37 + 4 new), all green.
+
+**Docs updated:** `CLAUDE.md` session log (this entry) + test counts, `docs/ARCHITECTURE.md` (state vars, `incomeCurveData` + `buildIncomeCurveChart` in the rendering list, `refresh()` snippet, `resizeChartsToWrap`, chart-card schematic, event-wiring view switcher), `docs/DESIGN.md` (Chart section — four views + the Income line chart and marker; Filled-state intro), `README.md` + `tests/README.md` (view list + counts + new module).
+
+**Known caveat:** Visual verification needs a browser (no headless screenshot taken). Eyeball: (a) Income is the default view on entering State 2, line rises with age, dashed marker sits at the planned retirement age and its hover income matches the outcome-strip headline; (b) changing retirement age in the drawer moves the marker and shifts the right edge (+10); (c) Real/Nominal leaves Income unchanged but still moves Capital/Breakdown; (d) Cmd+P with Income selected renders the curve + marker at print width.
 
 ### Session 12 — 2026-04-28
 

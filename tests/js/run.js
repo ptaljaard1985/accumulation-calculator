@@ -608,6 +608,63 @@ check('goal colors: compare + print + export wrap the % in a progress span', () 
     'answer-goal export slot should wrap phrase in a goal-progress span');
 });
 
+// ============================================================
+// Income-by-retirement-age curve (State 2 "Income" chart)
+// ============================================================
+const incomeCurveFn = new Function(
+  extractFn(inline, 'project') + '\n' +
+  extractFn(inline, 'incomeCurveData') +
+  '; return incomeCurveData;')();
+
+const incomeBaseInputs = {
+  ageA: 40, ageB: 40,
+  retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+  contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+  rNom: 0.10, cpi: 0.05, esc: 0.06,
+  anchor: 'youngest', retirementAge: 65, events: [],
+};
+
+check('incomeCurveData: marker income equals headline monthlyIncomeReal', () => {
+  const d = incomeCurveFn(incomeBaseInputs);
+  const base = projectFn(incomeBaseInputs);
+  assert.ok(approx(d.incomeReal[d.markerIndex], base.monthlyIncomeReal, 1),
+    `marker=${d.incomeReal[d.markerIndex]} headline=${base.monthlyIncomeReal}`);
+});
+
+check('incomeCurveData: ages span refAge .. retirementAge+10', () => {
+  const d = incomeCurveFn(incomeBaseInputs);
+  const refAge = Math.min(incomeBaseInputs.ageA, incomeBaseInputs.ageB);
+  assert.strictEqual(d.ages[0], refAge);
+  assert.strictEqual(d.ages[d.ages.length - 1], incomeBaseInputs.retirementAge + 10);
+  assert.strictEqual(d.ages.length,
+    incomeBaseInputs.retirementAge + 10 - refAge + 1);
+  assert.strictEqual(d.incomeReal.length, d.ages.length);
+  assert.strictEqual(d.markerAge, incomeBaseInputs.retirementAge);
+});
+
+check('incomeCurveData: per-age income matches a dedicated projection', () => {
+  const d = incomeCurveFn(incomeBaseInputs);
+  const refAge = Math.min(incomeBaseInputs.ageA, incomeBaseInputs.ageB);
+  [50, 60, 72].forEach(age => {
+    const dedicated = projectFn(Object.assign({}, incomeBaseInputs, { retirementAge: age }));
+    const expected = dedicated.finalTotalReal * 0.05 / 12;
+    assert.ok(approx(d.incomeReal[age - refAge], expected, 1),
+      `age ${age}: curve=${d.incomeReal[age - refAge]} dedicated=${expected}`);
+  });
+});
+
+check('income view: markup + wiring present', () => {
+  assert.ok(/id="chart-income"/.test(html), '#chart-income canvas missing');
+  assert.ok(/id="btn-view-income"/.test(html), '#btn-view-income button missing');
+  assert.ok(/chart-legend-income/.test(html), 'income legend key missing');
+  // chartIncome is registered for print/resize.
+  assert.ok(/charts:\s*\[\s*chartIncome\b/.test(inline),
+    'chartIncome not registered in resizeChartsToWrap');
+  // refresh() builds the income view first.
+  assert.ok(/chartView === 'income'\)\s*buildIncomeCurveChart/.test(inline),
+    "refresh() should branch on chartView === 'income'");
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);

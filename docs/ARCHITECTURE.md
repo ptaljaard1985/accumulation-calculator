@@ -74,7 +74,7 @@ return 'empty';
     <!-- STATE 2 body -->
     <div data-view-only="filled">
       <div class="chart-card">
-        legend + Capital/Breakdown/Table seg + #chart-capital / #chart-breakdown / #year-table
+        legend + Income/Capital/Breakdown/Table seg + #chart-income / #chart-capital / #chart-breakdown / #year-table
       </div>
       <div class="outcome-strip">
         primary (Monthly income) + Household capital + Years to retirement
@@ -131,9 +131,10 @@ The `<script>` block contains one IIFE. Inside it, in roughly this order:
 
 ```js
 var mode = 'pv';             // 'pv' | 'fv' — real vs nominal display (internal name kept for JS-test stability)
-var chartView = 'capital';   // 'capital' | 'breakdown' | 'table'
+var chartView = 'income';    // 'income' | 'capital' | 'breakdown' | 'table' (Income is the default first view)
 var anchor = 'youngest';     // 'youngest' | 'oldest'
 var baseline = null;         // { inputs, p, monthlyIncomeReal, finalTotalReal } snapshot when locked
+var chartIncome = null;
 var chartCapital = null;
 var chartBreakdown = null;
 var chartCompareBaseline = null;
@@ -171,6 +172,8 @@ Each pulls from the `project()` result and updates the DOM:
 - `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line numbers (`#headline-age`, `#headline-income`, and the `#headline-anchor-name` reference-spouse span), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` itself is static ("Retirement plan") and carries no bound numbers — Session 12 moved age/income into the italic sub-line. The capital number is no longer rendered in this region; the outcome strip's `#sum-capital` cell remains the visible source.
 - `updatePlanBar(p)` — populates the 5 core plan-bar fact cells plus the 6th **Income goal** cell (`#fact-goal-cell` / `#fact-goal`), the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line.
 - `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
+- `incomeCurveData(inputs)` — pure helper for the Income view. Clones `inputs`, sets `retirementAge` to `retirementAge + 10`, runs `project()` once, and returns `{ ages, incomeReal, markerIndex, markerAge }` where `incomeReal[i] = real.total[i] * 0.05 / 12` (today's-money starting income if retiring at year `i`) and `markerIndex = retirementAge − refAge`. Because `project()` positions are independent of horizon length, `incomeReal[markerIndex]` equals the base run's `monthlyIncomeReal` exactly. Pure (given `project`), so the Node test harness extracts and exercises it directly.
+- `buildIncomeCurveChart(p)` — State 2 **Income** chart (the default first view). A single `type: 'line'` dataset (navy line, faint navy fill) of `incomeCurveData(p.inputs).incomeReal` vs candidate age. **Always real** — ignores `mode` (nominal future-rand income at a future age is misleading). The dashed vertical "planned retirement age" marker is drawn by `retAgeMarkerPlugin`, a chart-local inline plugin (a plain hook object in the config's `plugins: [...]` array — NOT chartjs-plugin-annotation) reading `chart.$markerIndex` / `chart.$markerAge` in `afterDatasetsDraw`. On first build it calls `chartIncome.update('none')` so the marker paints (the initial `new Chart` draw runs before the marker props are set).
 - `buildCapitalChart(p)` — State 2 capital chart. Gold discretionary on bottom, navy retirement on top. No baseline-overlay line (State 3 replaces that entire idea).
 - `buildBreakdownChart(p)` — three-layer stacked bars (greys + gold).
 - `buildYearTable(p)` — HTML table inside the chart-card slot, sticky year column.
@@ -195,7 +198,8 @@ updateSummary(p);
 updatePlanBar(p);
 updateViewVisibility();
 if (!baseline) {
-  if (chartView === 'capital') buildCapitalChart(p);
+  if (chartView === 'income') buildIncomeCurveChart(p);
+  else if (chartView === 'capital') buildCapitalChart(p);
   else if (chartView === 'breakdown') buildBreakdownChart(p);
   else if (chartView === 'table') buildYearTable(p);
 } else {
@@ -247,13 +251,13 @@ A small IIFE at the bottom wires `#btn-edit-plan` to toggle `data-open` on the p
 
 ### 11. Chart resize (print)
 
-`resizeChartsToWrap()` now iterates three chart containers: the main `.chart-wrap`, `#chart-compare-baseline`'s parent, and `#chart-compare-scenario`'s parent. For each, it reads `clientWidth`/`clientHeight` and calls `chart.resize(w, h)` with explicit dimensions — inside `requestAnimationFrame` so the browser has flushed the `@media print` layout before Chart.js measures. Null-safe on every chart variable (they can be null in the state that's not active).
+`resizeChartsToWrap()` iterates three chart containers: the main `.chart-wrap` (holding `chartIncome`, `chartCapital`, `chartBreakdown`), `#chart-compare-baseline`'s parent, and `#chart-compare-scenario`'s parent. For each, it reads `clientWidth`/`clientHeight` and calls `chart.resize(w, h)` with explicit dimensions — inside `requestAnimationFrame` so the browser has flushed the `@media print` layout before Chart.js measures. Null-safe on every chart variable (they can be null in the state that's not active).
 
 Called by the `beforeprint` / `afterprint` / `matchMedia('print') change` handlers. The matchMedia path is what catches headless `--print-to-pdf` flows, which do not fire `beforeprint`.
 
 ### 12. Event wiring
 
-At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event; **Export report** (`#btn-export-report` → `startExport()`). Everything ends by calling `refresh()`.
+At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-income/capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event; **Export report** (`#btn-export-report` → `startExport()`). Everything ends by calling `refresh()`.
 
 ### 13. Export deck (A4 landscape, 12 pages)
 
