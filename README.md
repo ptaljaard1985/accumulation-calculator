@@ -7,7 +7,7 @@ An interactive retirement projection tool for two-spouse pre-retiree South Afric
 Given two spouses' current retirement-fund and discretionary balances, their monthly contribution levels, and a handful of market assumptions, the calculator projects household capital year-by-year from today to a configurable retirement age. The UI has three states:
 
 - **Empty** — a title-page setup for a fresh plan: family-name editable inline, two-column spouse setup, retirement-age and market-assumption defaults, dashed preview placeholder.
-- **Filled** — the working state once a plan is entered. Top plan-inputs bar summarises the whole plan at a glance; an `Edit plan ↓` drawer holds the full inputs. Editorial headline ("At 65, R 48 200 a month — comfortably, at today's prices."), chart card with an Income / Capital / Breakdown / Table segmented view (the default Income view plots starting monthly income against the age you retire, with a marker at the planned age), a three-cell outcome strip (monthly income · household capital · years to retirement), and a plain-English narrative.
+- **Filled** — the working state once a plan is entered. Top plan-inputs bar summarises the whole plan at a glance; an `Edit plan ↓` drawer holds the full inputs. Editorial headline ("At 65, R 48 200 a month — comfortably, at today's prices."), chart card with an Income / Capital / Breakdown / Table segmented view (the default Income view plots starting monthly income against the age you retire, with a marker at the planned age), a three-cell outcome strip (monthly income · household capital · years to retirement), a "closing the gap" card that turns an income goal into action (how much more to contribute, or how many more years, to hit it, plus what each extra R1 000/month buys), and a plain-English narrative.
 - **Compare** — after clicking "Lock as baseline", the view becomes a two-up: a muted baseline card next to a navy-ringed scenario card. Both hold mini-charts with a shared y-axis, hero numbers, and meta rows; a delta chip on the scenario card summarises the monthly-income change. A four-slider "Scenario levers" panel centred on the baseline lets the adviser nudge contributions, expected return, and retirement age to explore the shape of the decision.
 
 Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer, and **Save / Open plan** — file-based persistence that writes the client's inputs to a portable `.json` file and restores them later (opt-in restore only; a plain refresh always starts blank, so one client's numbers never leak into the next session).
@@ -33,8 +33,8 @@ docs/
   DESIGN.md                     visual system
 tests/
   README.md                     how to run tests
-  python/                       math audits (pytest, 42 tests)
-  js/                           JS tests against shipped HTML (node, 45 tests)
+  python/                       math audits (pytest, 47 tests)
+  js/                           JS tests against shipped HTML (node, 52 tests)
 ```
 
 ## Running the tests

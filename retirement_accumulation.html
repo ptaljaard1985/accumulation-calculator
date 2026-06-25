@@ -985,6 +985,17 @@
     margin: 0 0 6px;
   }
 
+  /* ─── Closing-the-gap card (reuses .narrative shell) ─── */
+  .gap-route-list { list-style: none; margin: 4px 0 0; padding: 0; }
+  .gap-route-list li { margin: 0 0 6px; padding-left: 16px; position: relative; }
+  .gap-route-list li:last-child { margin-bottom: 0; }
+  .gap-route-list li::before {
+    content: '·'; position: absolute; left: 4px; top: -1px;
+    color: var(--gold-2); font-weight: 600;
+  }
+  .gap-leverage { margin-top: 12px; color: var(--mute); }
+  .gap-solver .gap-routes + .gap-leverage { margin-top: 14px; }
+
   /* ─── Canvas foot ───────────────────────── */
   .canvas-foot {
     display: flex; justify-content: space-between; align-items: center;
@@ -2126,6 +2137,7 @@
     <div class="empty-cta">
       <button class="btn primary" id="btn-see-projection" type="button">See current projection</button>
       <button class="btn ghost" id="btn-open-plan-empty" type="button">Open a saved plan</button>
+      <button class="btn ghost" id="btn-load-sample" type="button">Load sample data (test)</button>
     </div>
   </section>
 
@@ -2408,6 +2420,21 @@
         <div class="osub" id="sum-years-sub">retiring in —</div>
       </div>
     </div>
+
+    <section class="narrative gap-solver" id="gap-solver" data-goal-active="false">
+      <div class="narrative-eyebrow" id="gap-eyebrow">Closing the gap</div>
+      <div class="narrative-body">
+        <div class="gap-routes" id="gap-routes" data-goal-active="false">
+          <p id="gap-routes-intro"></p>
+          <ul class="gap-route-list">
+            <li id="gap-route-contrib" data-goal-active="false"></li>
+            <li id="gap-route-retage" data-goal-active="false"></li>
+            <li id="gap-route-none" data-goal-active="false"></li>
+          </ul>
+        </div>
+        <p class="gap-leverage" id="gap-leverage"></p>
+      </div>
+    </section>
 
     <section class="narrative" id="narrative-summary">
       <div class="narrative-eyebrow">In plain terms</div>
@@ -3856,6 +3883,58 @@
     }
   }
 
+  // Closing-the-gap card. Always shows the contribution-leverage line when the
+  // horizon is valid; adds the two single-lever routes when a goal is set and
+  // there is a shortfall. Hidden entirely on a degenerate horizon. State 2 only
+  // (the card lives inside the data-view-only="filled" block).
+  function updateGapSolver(p){
+    if (!document.getElementById('gap-solver')) return;
+    var marginal = (p.years >= 1) ? marginalIncomePer1000(p.inputs) : 0;
+    if (!(p.years >= 1) || !isFinite(marginal) || marginal <= 0){
+      setGoalActive('gap-solver', false);
+      return;
+    }
+    setGoalActive('gap-solver', true);
+
+    var routes = solveGapRoutes(p.inputs);
+    if (routes){
+      set('gap-eyebrow', 'Closing the gap');
+      setGoalActive('gap-routes', true);
+      var goalStr = fmtR(p.inputs.incomeGoal);
+      var anyRoute = routes.contribReachable || routes.retReachable;
+      document.getElementById('gap-routes-intro').innerHTML = anyRoute
+        ? 'To reach the ' + goalStr + ' monthly goal, in today’s money, either:'
+        : 'The ' + goalStr + ' monthly goal is out of reach by saving more or retiring later on their own:';
+
+      var liC = document.getElementById('gap-route-contrib');
+      if (routes.contribReachable){
+        liC.innerHTML = 'Increase contributions by <strong>' + fmtR(routes.contribPerMonth) + ' a month</strong>.';
+        setGoalActive('gap-route-contrib', true);
+      } else { setGoalActive('gap-route-contrib', false); }
+
+      var liR = document.getElementById('gap-route-retage');
+      if (routes.retReachable){
+        var yr = routes.retYears;
+        liR.innerHTML = 'Or retire <strong>' + yr + ' year' + (yr === 1 ? '' : 's') +
+          ' later</strong>, at age ' + routes.retAge + '.';
+        setGoalActive('gap-route-retage', true);
+      } else { setGoalActive('gap-route-retage', false); }
+
+      var liN = document.getElementById('gap-route-none');
+      if (!anyRoute){
+        liN.innerHTML = 'Closing it will take a change to the household’s assumptions, not one lever on its own.';
+        setGoalActive('gap-route-none', true);
+      } else { setGoalActive('gap-route-none', false); }
+    } else {
+      set('gap-eyebrow', 'Contribution leverage');
+      setGoalActive('gap-routes', false);
+    }
+
+    document.getElementById('gap-leverage').innerHTML =
+      'Each extra <strong>R1 000 a month</strong> in contributions adds about <strong>' +
+      fmtR(marginal) + ' a month</strong> to retirement income, in today’s money.';
+  }
+
   // Individual button visibility — the State 3 compact head contains both
   // clear/relock; the State 2 head contains lock. View-visibility already
   // hides the wrong canvas-head, so we just ensure the lock button is always
@@ -3875,11 +3954,12 @@
   // monthlyIncomeReal exactly, because positions 0..years are identical to the
   // base run and the marker age equals the reference age there. Always real —
   // no nominal variant (future-rand income at a future age is misleading).
-  function incomeCurveData(inputs){
+  function incomeCurveData(inputs, extraYears){
+    if (!isFinite(extraYears)) extraYears = 10;
     var refAge = inputs.anchor === 'youngest'
       ? Math.min(inputs.ageA, inputs.ageB)
       : Math.max(inputs.ageA, inputs.ageB);
-    var maxAge = inputs.retirementAge + 10;
+    var maxAge = inputs.retirementAge + extraYears;
     var ext = Object.assign({}, inputs, { retirementAge: maxAge });
     var pe = project(ext);
     return {
@@ -3889,6 +3969,88 @@
       }),
       markerIndex: Math.max(0, inputs.retirementAge - refAge),
       markerAge: inputs.retirementAge
+    };
+  }
+
+  // ===== Closing-the-gap solver (Feature 1) + contribution leverage (Feature 2) =====
+  // Projected monthly income is AFFINE in the total monthly contribution:
+  // I(c) = I0 + k*Δc. Contributed capital, growth on it, CPI deflation, and the
+  // fixed-age SWR are all linear in the contribution amount, and every pot shares
+  // one return/escalation/CPI, so the slope k is independent of how the increase
+  // is split across the four legs. (The one corner that is not exactly affine is
+  // an outflow capital event large enough to be CAPPED at the available
+  // discretionary balance — raising contributions can lift that cap. In practice
+  // discretionary is positive and the error is sub-R100; the round-up-to-R100 on
+  // the contribution route absorbs it.) This lets us solve in closed form rather
+  // than by binary search.
+
+  // Return a clone of inputs with total monthly contribution raised by deltaTotal,
+  // preserving the household's existing split (even split if the base total is 0).
+  function bumpContribs(inputs, deltaTotal){
+    var T = totalMonthlyContribs(inputs);
+    var out = Object.assign({}, inputs);
+    if (T > 0){
+      var f = (T + deltaTotal) / T;
+      out.contribRetA = inputs.contribRetA * f;
+      out.contribRetB = inputs.contribRetB * f;
+      out.contribDiscA = inputs.contribDiscA * f;
+      out.contribDiscB = inputs.contribDiscB * f;
+    } else {
+      var each = deltaTotal / 4;
+      out.contribRetA = each; out.contribRetB = each;
+      out.contribDiscA = each; out.contribDiscB = each;
+    }
+    return out;
+  }
+
+  // Feature 2: today's-money monthly income added per extra R1 000/month of total
+  // contribution. Two project() runs; pure given project().
+  function marginalIncomePer1000(inputs){
+    var i0 = project(inputs).monthlyIncomeReal;
+    var i1 = project(bumpContribs(inputs, 1000)).monthlyIncomeReal;
+    return i1 - i0;
+  }
+
+  // Feature 1: the single-lever routes to the income goal. Returns null when no
+  // goal is set, when the goal is already met, or when the horizon is degenerate.
+  // Pure given project() + incomeCurveData().
+  function solveGapRoutes(inputs){
+    var goal = (inputs && isFinite(inputs.incomeGoal)) ? inputs.incomeGoal : 0;
+    if (!(goal > 0)) return null;
+    var p0 = project(inputs);
+    if (!(p0.years >= 1)) return null;
+    var i0 = p0.monthlyIncomeReal;
+    if (i0 >= goal) return null;                 // no shortfall
+    var shortfall = goal - i0;
+
+    // Contribution route: closed form from the affine slope.
+    var kPerRand = marginalIncomePer1000(inputs) / 1000;
+    var contribPerMonth = null, contribReachable = false;
+    if (kPerRand > 1e-9){
+      contribPerMonth = Math.ceil((shortfall / kPerRand) / 100) * 100; // round up to R100
+      contribReachable = true;
+    }
+
+    // Retire-later route: first age beyond the planned retirement age whose
+    // today's-money starting income clears the goal. Scan out to +20 years.
+    var curve = incomeCurveData(inputs, 20);
+    var retAge = null, retYears = null, retReachable = false;
+    for (var i = 0; i < curve.ages.length; i++){
+      if (curve.ages[i] > inputs.retirementAge && curve.incomeReal[i] >= goal){
+        retAge = curve.ages[i];
+        retYears = curve.ages[i] - inputs.retirementAge;
+        retReachable = true;
+        break;
+      }
+    }
+
+    return {
+      shortfall: shortfall,
+      contribPerMonth: contribPerMonth,
+      contribReachable: contribReachable,
+      retAge: retAge,
+      retYears: retYears,
+      retReachable: retReachable
     };
   }
 
@@ -4581,6 +4743,44 @@
     el.value = v.toLocaleString('en-ZA').replace(/,/g, ' ');
   }
 
+  // Test-only convenience: populate a representative household and jump straight
+  // to the projection, so the tool can be exercised without re-typing inputs.
+  // Wired to the "Load sample data (test)" button on the empty screen.
+  function loadSampleData(){
+    spouseNames.A = 'David';
+    spouseNames.B = 'Sarah';
+    // Mirror the names into the State 1 first-name inputs (cosmetic; State 1 is
+    // about to be left) and set the family/client name everywhere it's read.
+    document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
+      el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
+    });
+    var fam = document.getElementById('family-name');
+    if (fam){ fam.textContent = 'Bennett'; fam.classList.remove('is-placeholder'); }
+    var cn = document.getElementById('client-name');
+    if (cn) cn.value = 'David & Sarah Bennett';
+    var cne = document.getElementById('client-name-edit');
+    if (cne) cne.value = 'David & Sarah Bennett';
+
+    document.getElementById('hp-age-A').value = '48';
+    document.getElementById('hp-age-B').value = '46';
+    setHpFormatted('hp-ret-A', 2000000);
+    setHpFormatted('hp-ret-B', 2000000);
+    setHpFormatted('hp-disc-A', 500000);
+    setHpFormatted('hp-disc-B', 500000);
+    setHpFormatted('hp-ret-contrib-A', 15000);
+    setHpFormatted('hp-ret-contrib-B', 15000);
+    setHpFormatted('hp-disc-contrib-A', 3000);
+    setHpFormatted('hp-disc-contrib-B', 3000);
+    document.getElementById('retirement-age').value = '65';
+    document.getElementById('return').value = '9';
+    document.getElementById('cpi').value = '5';
+    document.getElementById('esc').value = '5';
+    setHpFormatted('income-goal', 100000);
+
+    projectionRequested = true;
+    refresh();
+  }
+
   function applyScenarioContrib(kind){
     if (!scenarioAnchors) return;
     var anchor = kind === 'ret' ? scenarioAnchors.retContrib : scenarioAnchors.discContrib;
@@ -4691,6 +4891,7 @@
     var p = project(inputs);
     lastProjection = p;
     updateSummary(p);
+    updateGapSolver(p);
     updatePlanBar(p);
     updateViewVisibility();
     // Main chart card only renders in State 2 (no baseline); State 3 uses
@@ -5991,6 +6192,7 @@
     renderEvents();
     refresh();
   });
+  document.getElementById('btn-load-sample').addEventListener('click', loadSampleData);
   document.getElementById('add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());
     renderEvents();

@@ -749,6 +749,97 @@ check('plan: Save/Open buttons wired in nav + State 1', () => {
   assert.ok(/AbortError/.test(inline), 'cancel (AbortError) should be swallowed');
 });
 
+// ============================================================
+// Closing-the-gap solver + contribution leverage (Features 1 & 2)
+// ============================================================
+const gapBundle = [
+  'totalMonthlyContribs', 'swrForAge', 'project', 'incomeCurveData',
+  'bumpContribs', 'marginalIncomePer1000', 'solveGapRoutes',
+].map(n => extractFn(inline, n)).join('\n');
+const gap = new Function(gapBundle +
+  '; return { marginalIncomePer1000, solveGapRoutes };')();
+
+const gapBase = {
+  ageA: 48, ageB: 46,
+  retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+  contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+  rNom: 0.09, cpi: 0.05, esc: 0.05,
+  anchor: 'youngest', retirementAge: 65, incomeGoal: 0, events: [],
+};
+const gapT = 8_000 + 7_000 + 3_000 + 2_000;  // base total monthly contribution
+const bump = (inp, delta) => {
+  const f = (gapT + delta) / gapT;
+  return Object.assign({}, inp, {
+    contribRetA: 8_000 * f, contribRetB: 7_000 * f,
+    contribDiscA: 3_000 * f, contribDiscB: 2_000 * f,
+  });
+};
+
+check('gap: marginalIncomePer1000 equals the income delta for +R1000/mo total', () => {
+  const k = gap.marginalIncomePer1000(gapBase);
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const i1 = projectFn(bump(gapBase, 1000)).monthlyIncomeReal;
+  assert.ok(approx(k, i1 - i0, 0.5), `k=${k} expected=${i1 - i0}`);
+  assert.ok(k > 0, 'marginal income should be positive');
+});
+
+check('gap: income is affine in total contribution (constant slope)', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const slope = d => (projectFn(bump(gapBase, d)).monthlyIncomeReal - i0) / d;
+  assert.ok(approx(slope(1000), slope(50000), 1e-3),
+    `slope1000=${slope(1000)} slope50000=${slope(50000)}`);
+});
+
+check('gap: solved contribution closes the goal; one R100 less misses', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const goal = i0 + 15000;
+  const inp = Object.assign({}, gapBase, { incomeGoal: goal });
+  const r = gap.solveGapRoutes(inp);
+  assert.ok(r && r.contribReachable, 'should find a contribution route');
+  assert.ok(projectFn(bump(inp, r.contribPerMonth)).monthlyIncomeReal >= goal - 0.5,
+    'solved contribution should reach the goal');
+  assert.ok(projectFn(bump(inp, r.contribPerMonth - 100)).monthlyIncomeReal < goal,
+    'R100 less should miss the goal');
+});
+
+check('gap: retire-later route is the first later age that clears the goal', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const goal = i0 + 8000;
+  const inp = Object.assign({}, gapBase, { incomeGoal: goal });
+  const r = gap.solveGapRoutes(inp);
+  assert.ok(r && r.retReachable, 'should find a retire-later age');
+  let first = null;
+  for (let age = inp.retirementAge + 1; age <= inp.retirementAge + 20; age++){
+    if (projectFn(Object.assign({}, inp, { retirementAge: age })).monthlyIncomeReal >= goal){
+      first = age; break;
+    }
+  }
+  assert.strictEqual(r.retAge, first, `route=${r.retAge} scan=${first}`);
+  assert.strictEqual(r.retYears, first - inp.retirementAge);
+});
+
+check('gap: solveGapRoutes returns null with no goal or a goal already met', () => {
+  assert.strictEqual(gap.solveGapRoutes(gapBase), null);  // incomeGoal 0
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const met = Object.assign({}, gapBase, { incomeGoal: i0 - 5000 });
+  assert.strictEqual(gap.solveGapRoutes(met), null);
+});
+
+check('gap: card markup + refresh wiring present', () => {
+  assert.ok(/id="gap-solver"/.test(html), '#gap-solver card missing');
+  assert.ok(/id="gap-routes"/.test(html), '#gap-routes block missing');
+  assert.ok(/id="gap-leverage"/.test(html), '#gap-leverage line missing');
+  assert.ok(/id="gap-route-contrib"/.test(html) && /id="gap-route-retage"/.test(html),
+    'route list items missing');
+  assert.ok(/function updateGapSolver/.test(inline), 'updateGapSolver missing');
+  assert.ok(/updateGapSolver\(p\)/.test(inline), 'updateGapSolver not called in refresh()');
+});
+
+check('gap: updateGapSolver copy has no em-dashes', () => {
+  const src = extractFn(inline, 'updateGapSolver');
+  assert.ok(src.indexOf('—') === -1, 'em-dash found in updateGapSolver copy');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);
