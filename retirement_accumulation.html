@@ -495,30 +495,13 @@
     font-weight: 500;
   }
   .plan-bar-for.is-placeholder { color: var(--faint); font-style: italic; text-transform: none; letter-spacing: 0; }
-  .plan-bar-facts {
+  .plan-bar-actions {
     flex: 1;
     display: flex;
-    gap: 22px;
     align-items: center;
-    overflow: hidden;
+    justify-content: flex-end;
+    gap: 8px;
   }
-  .plan-bar-facts .fact {
-    display: flex; flex-direction: column; gap: 2px;
-    min-width: 0;
-  }
-  .plan-bar-facts .fact-label {
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--mute);
-    font-weight: 500;
-  }
-  .plan-bar-facts .fact-val {
-    font-size: 13px;
-    color: var(--ink);
-    font-weight: 500;
-  }
-  .plan-bar-facts .fact-val.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .plan-bar-edit { flex-shrink: 0; }
 
   .plan-bar-drawer {
@@ -1985,7 +1968,6 @@
     .compare { grid-template-columns: 1fr; }
     .scenario-grid { grid-template-columns: repeat(2, 1fr); }
     .plan-bar-drawer { grid-template-columns: 1fr; }
-    .plan-bar-facts { flex-wrap: wrap; gap: 14px; }
     .empty-setup { grid-template-columns: 1fr; gap: 24px; }
     .empty-setup-divider { display: none; }
     .empty-foot { grid-template-columns: 1fr; }
@@ -2152,36 +2134,12 @@
           <div class="plan-bar-for is-placeholder" id="plan-bar-for">Client name</div>
         </div>
       </div>
-      <div class="plan-bar-facts">
-        <div class="fact">
-          <span class="fact-label">Household</span>
-          <span class="fact-val" id="fact-household">—</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Combined starting capital</span>
-          <span class="fact-val num" id="fact-capital">R —</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Monthly contributions</span>
-          <span class="fact-val num" id="fact-contrib">R —</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Retire at</span>
-          <span class="fact-val" id="fact-retage">—</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Return · CPI</span>
-          <span class="fact-val num" id="fact-market">—</span>
-        </div>
-        <div class="fact" id="fact-goal-cell" data-goal-active="false">
-          <span class="fact-label">Income goal</span>
-          <span class="fact-val num" id="fact-goal">R —</span>
-        </div>
+      <div class="plan-bar-actions">
+        <button class="btn ghost no-print" id="btn-save-plan" type="button">Save plan</button>
+        <button class="btn ghost no-print" id="btn-open-plan" type="button">Open plan</button>
+        <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
+        <button class="btn primary plan-bar-edit no-print" id="btn-edit-plan">Edit plan ↓</button>
       </div>
-      <button class="btn ghost no-print" id="btn-save-plan" type="button">Save plan</button>
-      <button class="btn ghost no-print" id="btn-open-plan" type="button">Open plan</button>
-      <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
-      <button class="btn ghost plan-bar-edit no-print" id="btn-edit-plan">Edit plan ↓</button>
     </div>
 
     <div class="plan-bar-drawer">
