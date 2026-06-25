@@ -19,7 +19,7 @@ The UI has three visual states driven by the user's progress through the flow. T
 State derivation (`deriveViewState()`): if a baseline is locked → `compare`; else if the adviser has clicked the "See current projection" CTA at the bottom of State 1 (setting the `projectionRequested` flag) → `filled`; else → `empty`. The gate is purely user-initiated — typing names and balances does NOT transition; only the CTA click does. Locking a baseline sets `baseline = scenario`; clearing sets it back to `null` (which returns to State 2, not State 1, because `projectionRequested` stays true for the session).
 
 - **Empty** — title-page setup: centred `A plan for the ___ family.` headline with the family name as an inline editable span, two-column spouse setup with dashed-border field pills, a foot band showing retirement-age + market defaults, and a centred "See current projection" primary CTA button at the bottom.
-- **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, a plain `Retirement plan` h1 over a factual italic-serif sub-line (`[Name] retires at age 65 with R ___ per month starting retirement income, in today's money.`), Real/Nominal + Lock button on the canvas head, chart card with Income / Capital / Breakdown / Table segmented control (Income is the default view), three-cell outcome strip, narrative, canvas foot.
+- **Filled** — the working single-scenario view. Plan-inputs bar (collapsed) on top, a plain `Retirement plan` h1 over a short italic-serif sub-line (`[Name] retires at age 65.` — Session 16 trimmed the income figure out of it, since the outcome strip carries that number loudly right below), Real/Nominal + Lock button on the canvas head, chart card with Income / Capital / Breakdown / Table segmented control (Income is the default view), three-cell outcome strip, the closing-the-gap card, a one-line narrative, canvas foot, and a single collapsed compliance toggle. Session 16 deliberately thinned this screen: the appendix is one closed line and the narrative is one sentence, so the chart + outcome strip + gap card carry the meeting.
 - **Compare** — the hero interaction. Plan-inputs bar, compact head with `Scenario compare · baseline locked` eyebrow over a `Compare scenarios` h1 + sub-line `Baseline locked. Move the levers below to test alternatives.`, two-up compare grid (muted baseline card + navy-ringed scenario card, each with their own chart), centred legend, Scenario Levers panel below.
 
 ## Design tokens
@@ -144,6 +144,8 @@ Moving a slider writes back into the underlying `#hp-*`, `#return`, or `#retirem
 
 Below the outcome strip. Card styling matches the others, with a 2px gold vertical rule (`.narrative::before`) down the left edge. Eyebrow `IN PLAIN TERMS` in 10px uppercase mute. Body is 15.5px serif 300 in `--ink-2`, max-width 680px, with `<strong>` set in `--ink` medium. In State 3 the narrative is hidden entirely — the compare cards ARE the narrative visually.
 
+Session 16 cut the State 2 current-position narrative to a **single sentence** (`Projected R x a month in today's money, before tax, covering y% of the R z monthly goal.`, goal clause only when a goal is set) — the outcome strip, gap card, and plan-bar already carry the numbers, so the long paragraph was mostly restatement. The State 3 baseline/scenario narratives (hidden in State 2) keep their fuller prose.
+
 **No em-dashes** (U+2014) anywhere in the narrative copy. They read as dashboard shorthand, don't parse well when read aloud in a client meeting, and make the prose feel clipped. Use commas, full stops, or rephrase. Two JS tests enforce this by asserting the U+2014 character does not appear in any `describe*()` output.
 
 ### Closing-the-gap card (State 2 only)
@@ -225,7 +227,7 @@ Input fields in the empty state are shadow inputs — they carry `data-sync-to="
 Two-zone PDF.
 
 - **Page 1** is the client-facing view: plan-bar (collapsed, drawer hidden), canvas head (headline or compact compare head), the chart card (State 2) or the compare grid (State 3), outcome strip (State 2) or centred compare legend (State 3), narrative (State 2 only). Scenario levers and canvas-foot actions are hidden.
-- **Pages 2+** are the compliance appendix: three `<details class="accordion">` blocks (detail tables, methodology, disclaimer) forced open and flattened. `page-break-before: always` on `.print-summary` starts it on a fresh page.
+- **Pages 2+** are the compliance appendix: the three `<details class="accordion">` blocks (detail tables, methodology, disclaimer) forced open and flattened. `page-break-before: always` on `.print-summary` starts it on a fresh page. On screen (Session 16) these three sit inside one outer `<details class="accordion" id="appendix-toggle">` ("Methodology & disclaimer") so the working view shows a single closed line; the print path forces *all* `details.accordion` open (outer included) and `.accordion > summary { display:none }` flattens every level, so the printed appendix is unchanged.
 
 Hidden in print via `.no-print` / explicit rules: the `Edit plan ↓` button, the `.canvas-actions` cluster (Real/Nominal, Lock, Clear, Re-lock), the `.canvas-foot-actions` (Table view, Print/PDF), the scenario levers panel.
 

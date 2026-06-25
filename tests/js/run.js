@@ -264,7 +264,7 @@ check('default scenario matches v1 baseline', () => {
 // ============================================================
 const narrativeBundle = [
   'fmtR', 'fmtShort', 'fmtPct', 'swrForAge', 'fmtSwr', 'totalMonthlyContribs',
-  'eventsSentence', 'goalSentence', 'describeCurrentPosition',
+  'eventsSentence', 'describeCurrentPosition',
   'describeBaselinePosition', 'describePlannedScenario',
 ].map(n => extractFn(inline, n)).join('\n');
 const narrative = new Function(
@@ -284,10 +284,11 @@ check('narrative: no em-dashes in current-position output', () => {
     events: [{ age: 50, amount: 500_000, todaysMoney: true, kind: 'inflow' }],
   });
   const out = narrative.describeCurrentPosition(p);
-  assert.ok(out.length > 100, 'narrative too short: ' + out);
+  // Now a single plain-English sentence, not the old multi-sentence prose.
+  assert.ok(/^Projected/.test(out.replace(/<[^>]+>/g, '')),
+    'should open with "Projected": ' + out);
+  assert.ok(/R\s?\d/.test(out), 'should state the monthly income figure: ' + out);
   assert.ok(out.indexOf(EM_DASH) === -1, 'em-dash found: ' + out);
-  assert.ok(/retirement/i.test(out) && /inflation/i.test(out),
-    'missing pertinent terms: ' + out);
 });
 
 check('narrative: no em-dashes in baseline + planned-scenario output', () => {
@@ -489,31 +490,6 @@ check('income-goal: canonical drawer input + State 1 sync wired', () => {
 check('income-goal: readInputs returns incomeGoal field', () => {
   assert.ok(/incomeGoal:\s*parseCurrency\(['"]income-goal['"]\)/.test(inline),
     'readInputs should read #income-goal via parseCurrency');
-});
-
-// goalSentence is the shared narrative helper. Bundle fmtR + it.
-const goalBundle = ['fmtR', 'goalSentence'].map(n => extractFn(inline, n)).join('\n');
-const goalFns = new Function(goalBundle + '; return { fmtR, goalSentence };')();
-
-check('goal: goalSentence returns null when goal is zero or missing', () => {
-  assert.strictEqual(goalFns.goalSentence(50000, 0), null);
-  assert.strictEqual(goalFns.goalSentence(50000, -1), null);
-  assert.strictEqual(goalFns.goalSentence(50000, null), null);
-});
-
-check('goal: goalSentence describes overshoot, near-miss, shortfall', () => {
-  const over = goalFns.goalSentence(86400, 80000);
-  assert.ok(/ahead of/i.test(over), 'overshoot should say "ahead of": ' + over);
-  assert.ok(over.indexOf('—') === -1, 'em-dash in overshoot: ' + over);
-
-  const near = goalFns.goalSentence(76000, 80000);
-  assert.ok(/just short/i.test(near), 'near-miss should say "just short": ' + near);
-  assert.ok(near.indexOf('—') === -1, 'em-dash in near-miss: ' + near);
-
-  const far = goalFns.goalSentence(40000, 80000);
-  assert.ok(/50%/.test(far), 'shortfall should include percent: ' + far);
-  assert.ok(/gap of/i.test(far), 'shortfall should say "gap of": ' + far);
-  assert.ok(far.indexOf('—') === -1, 'em-dash in shortfall: ' + far);
 });
 
 check('narrative: describeCurrentPosition includes goal sentence when set', () => {

@@ -1116,13 +1116,14 @@
   }
 
   /* ─── Print summary appendix ─────────────── */
+  /* On screen the appendix collapses to a single accordion line (the outer
+     #appendix-toggle provides its own card/border), so the wrapper carries no
+     chrome of its own. Print restores nothing here — the @media print rule
+     below already zeroes border/padding and flattens the nested accordions. */
   .print-summary {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-lg);
-    padding: 28px 32px;
     margin-top: 18px;
   }
+  /* Shown only inside the expanded appendix body and in print. */
   .print-summary h2 {
     font-family: var(--serif);
     font-size: 20px; font-weight: 500; margin: 0 0 16px;
@@ -2336,7 +2337,7 @@
       <div class="canvas-head-eyebrow">Projected outcome at retirement</div>
       <h1 class="headline">Retirement plan</h1>
       <p class="headline-sub">
-        <span id="headline-anchor-name">Spouse A</span> retires at age <span class="num" id="headline-age">65</span> with <span class="num" id="headline-income">R —</span> per month starting retirement income, in today's money.
+        <span id="headline-anchor-name">Spouse A</span> retires at age <span class="num" id="headline-age">65</span>.
       </p>
     </div>
     <div class="canvas-actions no-print">
@@ -2555,6 +2556,9 @@
   </div>
 
   <div class="print-summary" id="print-summary" data-view-only="filled+compare">
+   <details class="accordion appendix-toggle" id="appendix-toggle">
+    <summary>Methodology &amp; disclaimer</summary>
+    <div class="accordion-body">
     <h2>Summary of assumptions and outcome</h2>
 
     <details class="accordion" data-accordion="tables">
@@ -2632,6 +2636,8 @@
         </div>
       </div>
     </details>
+    </div>
+   </details>
   </div>
 
   <!-- ========================================================
@@ -3859,10 +3865,10 @@
     set('sum-years', p.years);
     set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
 
-    // State 2 sub-line numbers (h1 is static "Retirement plan"; the
-    // factual sentence under it carries name + age + income).
+    // State 2 sub-line (h1 is static "Retirement plan"; the factual sentence
+    // under it carries name + age only — the income figure lives in the
+    // outcome strip, the single loud source, so it isn't repeated here).
     set('headline-age', p.retirementAge);
-    set('headline-income', fmtR(p.monthlyIncomeReal));
     var anchorKey = resolveAnchorSpouseKey();
     var anchorNameEl = document.getElementById('headline-anchor-name');
     if (anchorNameEl) anchorNameEl.textContent = spouseNames[anchorKey];
@@ -4409,23 +4415,6 @@
   // Narrative copy rule: no em-dashes (U+2014) in any string below. Use
   // commas, full stops, or rephrase. The narrative is read aloud in client
   // meetings; em-dashes don't parse audibly and read as dashboard shorthand.
-  function goalSentence(projectedIncome, goal){
-    if (!(goal > 0)) return null;
-    var pct = Math.round(100 * projectedIncome / goal);
-    var shortfall = projectedIncome - goal;
-    var absAmt = fmtR(Math.abs(shortfall));
-    if (pct >= 100){
-      return 'This projects <strong>ahead of</strong> the household’s ' + fmtR(goal) +
-             ' monthly goal by ' + absAmt + ' a month, in today’s money.';
-    }
-    if (pct >= 90){
-      return 'This lands just short of the ' + fmtR(goal) +
-             ' monthly goal, by ' + absAmt + ' a month in today’s money.';
-    }
-    return 'This covers <strong>' + pct + '%</strong> of the ' + fmtR(goal) +
-           ' monthly goal, a gap of ' + absAmt + ' a month in today’s money.';
-  }
-
   function eventsSentence(events){
     var nIn = 0, nOut = 0;
     for (var i = 0; i < events.length; i++){
@@ -4438,40 +4427,18 @@
            ' to the discretionary portfolio along the way.';
   }
 
+  // One-line plain-English summary for State 2. Kept deliberately short — the
+  // outcome strip, gap card, and plan-bar already carry the numbers; this gives
+  // the spoken framing without restating every assumption. Em-dash-free.
   function describeCurrentPosition(p){
-    var inputs = p.inputs;
-    var hhMonthly = totalMonthlyContribs(inputs);
-    var last = p.real.total.length - 1;
-    var retShare = p.real.total[last] > 0
-      ? Math.round(100 * p.real.ret[last] / p.real.total[last])
-      : 0;
-    var discShare = Math.max(0, 100 - retShare);
-
-    var sentences = [];
-    sentences.push(
-      'At a <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and <strong>' +
-      fmtPct(inputs.cpi * 100) + '</strong> inflation, with combined monthly contributions of <strong>' +
-      fmtR(hhMonthly) + '</strong> escalating at ' + fmtPct(inputs.esc * 100) + ' per year, ' +
-      'the household is projected to accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> in today’s money by ' +
-      p.retirementYearCalendar + ' (about ' + fmtShort(p.finalTotalNom) + ' in future rands).'
-    );
-    if (p.real.total[last] > 0){
-      sentences.push(
-        'Roughly ' + retShare + '% of that sits in retirement-fund savings and ' +
-        discShare + '% in discretionary.'
-      );
+    var goal = p.inputs.incomeGoal;
+    var s = 'Projected <strong>' + fmtR(p.monthlyIncomeReal) +
+      '</strong> a month in today’s money, before tax';
+    if (goal > 0){
+      var pct = Math.round(100 * p.monthlyIncomeReal / goal);
+      s += ', covering <strong>' + pct + '%</strong> of the ' + fmtR(goal) + ' monthly goal';
     }
-    sentences.push(
-      'Drawn at ' + fmtSwr(p.refAge + p.years) + ' per year, the safe withdrawal rate for retiring at age ' +
-      (p.refAge + p.years) + ', the projected capital supports about <strong>' +
-      fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement, in today’s money and before tax.'
-    );
-    var gs = goalSentence(p.monthlyIncomeReal, inputs.incomeGoal);
-    if (gs) sentences.push(gs);
-    if (p.events && p.events.length > 0){
-      sentences.push(eventsSentence(p.events));
-    }
-    return sentences.join(' ');
+    return s + '.';
   }
 
   function describeBaselinePosition(bline){

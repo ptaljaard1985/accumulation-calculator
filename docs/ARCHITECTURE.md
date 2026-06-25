@@ -98,11 +98,19 @@ return 'empty';
       <div class="canvas-foot">illustrative line + Print/PDF</div>
     </div>
 
-    <!-- Compliance appendix — same for all states -->
+    <!-- Compliance appendix — same for all states. On screen it collapses to
+         ONE outer accordion (Session 16); the three sub-accordions live inside
+         its body. Print forces every details.accordion open and flattens them. -->
     <div class="print-summary">
-      <details class="accordion" data-accordion="tables">Detail tables ...</details>
-      <details class="accordion" data-accordion="methodology">Methodology ...</details>
-      <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+     <details class="accordion appendix-toggle" id="appendix-toggle">
+      <summary>Methodology & disclaimer</summary>
+      <div class="accordion-body">
+        <h2>Summary of assumptions and outcome</h2>
+        <details class="accordion" data-accordion="tables">Detail tables ...</details>
+        <details class="accordion" data-accordion="methodology">Methodology ...</details>
+        <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+      </div>
+     </details>
     </div>
 
     <!-- Export deck — hidden on screen + portrait-print; shown when
@@ -169,7 +177,7 @@ The helper-prose span ("Ages anchored to {name}'s age.") uses `class="events-ref
 
 Each pulls from the `project()` result and updates the DOM:
 
-- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line numbers (`#headline-age`, `#headline-income`, and the `#headline-anchor-name` reference-spouse span), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` itself is static ("Retirement plan") and carries no bound numbers — Session 12 moved age/income into the italic sub-line. The capital number is no longer rendered in this region; the outcome strip's `#sum-capital` cell remains the visible source.
+- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line (`#headline-age` and the `#headline-anchor-name` reference-spouse span — Session 16 trimmed the income figure out of the sub-line, so `#headline-income` no longer exists), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` is static ("Retirement plan"). The income and capital numbers are rendered only in the outcome strip (`#sum-income` / `#sum-capital`), the single loud source.
 - `updatePlanBar(p)` — populates the 5 core plan-bar fact cells plus the 6th **Income goal** cell (`#fact-goal-cell` / `#fact-goal`), the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line.
 - `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
 - `swrForAge(age)` — age-based safe withdrawal rate (decimal fraction), replacing the former flat 5% income rule (Session 13). Table (held inside the function so the Node harness extracts it alongside `project`) covers ages 55-100; below 55 drops 0.1pp/yr from 4.2% floored at 3.5%; above 100 held at 25%. `fmtSwr(age)` formats it as a one-decimal percent for labels. Used by `project()` (headline `monthlyIncomeReal = finalTotalReal * swrForAge(refAge + years) / 12`), `incomeCurveData` (per candidate age), and the income display surfaces.
@@ -183,7 +191,7 @@ Each pulls from the `project()` result and updates the DOM:
 - `buildCompareCharts(p)` → `ensureCompareChart(...)` — State 3's two independent Chart.js instances. Both share the same y-ceiling (`max(baseline.total, scenario.total) × 1.05`) so bars line up visually. Baseline chart renders at 0.35 opacity (alpha applied to the rgba fills, not via a CSS filter — filter would wreck Chart.js hover).
 - `updateCompareCards(p)` — populates the hero numbers, sub-lines, meta rows, and the delta chip on the scenario card. `setMetaDelta(id, delta, kind)` writes the inline `em` deltas beside changed meta values; `kind` supports `currency`, `pct`, `years`, and `pp` (percentage-point delta used by the goal-progress row). A fifth meta-row on each card (`#cmp-baseline-goal-row` / `#cmp-scenario-goal-row`) renders `Goal progress · N% of R X` when the adviser-level `incomeGoal` is set; both cards read against the same current goal, not a baseline-frozen snapshot. The N% is wrapped in a `goal-progress-on-track` (green) or `goal-progress-behind` (red) span so the traffic-light tone matches the outcome strip.
 - `updatePrintSummary(p)` — compliance-appendix tables plus the conditional goal row (`#s-goal-row`) gated on `computeGoalProgress(p)`. The print cell wraps the % in the same `goal-progress-*` class span so printed PDFs carry the green/red signal.
-- `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine. `describeCurrentPosition` calls the shared `goalSentence(projectedIncome, goal)` helper after the safe-withdrawal-rate income sentence; it returns null (no sentence) when the goal is blank and one of three variants (overshoot / near-miss / shortfall) when set. The helper is em-dash-free by construction and must stay that way (two JS tests enforce this).
+- `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine. Session 16 shortened `describeCurrentPosition(p)` to a single em-dash-free sentence ("Projected R x a month in today's money, before tax[, covering y% of the R z monthly goal]") with the goal clause appended only when `incomeGoal > 0` — the outcome strip, gap card, and plan-bar already carry the numbers. `describeBaselinePosition` / `describePlannedScenario` (State 3, still multi-sentence) are unchanged and still use `eventsSentence`. The former `goalSentence` helper was removed when the short narrative dropped its only caller.
 - `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`. Templates currently supported: `header`, `summary-pos`, `summary-contrib`, `chip` (chip renders just the name, used by the State 1 retire-when row).
 - `updateAnchorChips()` — toggles `.is-on` on the two State 1 `.empty-name-chip` buttons from the current `anchor` rule plus the current ages (ties break to A, matching `resolveYoungerOlder`). Called once per `refresh()` next to `renderSpouseLabels()`, so chip selection stays correct regardless of whether the user clicked a chip, used the drawer Youngest/Oldest toggle, or changed an age field.
 - `updateBaselineControls()` — now a hook (kept for future use). Button visibility is driven by `data-view-only` on the two canvas-heads, so it has no work to do.
