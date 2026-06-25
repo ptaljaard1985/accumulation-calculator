@@ -4779,6 +4779,7 @@
 
     projectionRequested = true;
     refresh();
+    window.scrollTo(0, 0);
   }
 
   function applyScenarioContrib(kind){
@@ -6191,6 +6192,9 @@
     // Refresh every events container so the drawer reflects any edits made in State 1.
     renderEvents();
     refresh();
+    // The CTA sits at the bottom of State 1, so land at the top of State 2
+    // rather than wherever the page was scrolled.
+    window.scrollTo(0, 0);
   });
   document.getElementById('btn-load-sample').addEventListener('click', loadSampleData);
   document.getElementById('add-event-btn').addEventListener('click', function(){
