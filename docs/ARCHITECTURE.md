@@ -48,7 +48,7 @@ return 'empty';
     <!-- STATE 2 & 3 shared · Plan-inputs bar -->
     <div class="plan-bar" data-view-only="filled+compare" data-open="false">
       <div class="plan-bar-row">
-        logo + client name + 5 fact cells + Save plan + Open plan + Export report + Edit plan toggle
+        logo + client name (left) + .plan-bar-actions (right): Save plan + Open plan + Export report + Edit plan (primary)
       </div>
       <div class="plan-bar-drawer">
         col I: household (both spouses with editable names + ages + 4 fields)
@@ -98,11 +98,19 @@ return 'empty';
       <div class="canvas-foot">illustrative line + Print/PDF</div>
     </div>
 
-    <!-- Compliance appendix — same for all states -->
+    <!-- Compliance appendix — same for all states. On screen it collapses to
+         ONE outer accordion (Session 16); the three sub-accordions live inside
+         its body. Print forces every details.accordion open and flattens them. -->
     <div class="print-summary">
-      <details class="accordion" data-accordion="tables">Detail tables ...</details>
-      <details class="accordion" data-accordion="methodology">Methodology ...</details>
-      <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+     <details class="accordion appendix-toggle" id="appendix-toggle">
+      <summary>Methodology & disclaimer</summary>
+      <div class="accordion-body">
+        <h2>Summary of assumptions and outcome</h2>
+        <details class="accordion" data-accordion="tables">Detail tables ...</details>
+        <details class="accordion" data-accordion="methodology">Methodology ...</details>
+        <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+      </div>
+     </details>
     </div>
 
     <!-- Export deck — hidden on screen + portrait-print; shown when
@@ -163,17 +171,19 @@ The helper-prose span ("Ages anchored to {name}'s age.") uses `class="events-ref
 
 **Client-input defaults + clamps (Session 11).** Spouse ages, retirement age, the four balance inputs, and the four monthly contribution inputs ship with **no HTML `value=""` defaults and no `min`/`max`/`step` constraints** — they render blank with a `placeholder="—"` until the adviser types. `parseAge(id, fallback)` is now a straight `isFinite(n) ? n : fallback` with no 18/64 clamp; every call site still passes `40` as the fallback, which is an internal NaN backstop (invisible because the HTML input is blank). The retirement-age block in `readInputs()` reads the raw integer and falls back to 65 only when the field is truly blank — no 50/75 clamp. The `retirement-age` blur handler calls `refresh()` directly (previously it was snapping values back into 50-75). Market assumption defaults (5% return / 5% CPI / 5% escalation) and the `project()` horizon-minimum (`years = max(1, retirementAge − refAge)`) are unchanged.
 
-**`data-goal-active` hide pattern.** Any surface that displays goal-progress (outcome-strip sub-line, compare-card meta row, plan-bar fact cell, print-summary row, export-deck answer slot) carries `data-goal-active="false"` in the markup. A single CSS rule `[data-goal-active="false"] { display: none !important; }` collapses them all. Renderers flip the attribute via the shared `setGoalActive(id, bool)` helper, driven by `computeGoalProgress(p)` which returns `null` when the goal is blank or zero.
+**`data-goal-active` hide pattern.** Any surface that displays goal-progress (outcome-strip sub-line, compare-card meta row, print-summary row, export-deck answer slot) carries `data-goal-active="false"` in the markup. A single CSS rule `[data-goal-active="false"] { display: none !important; }` collapses them all. Renderers flip the attribute via the shared `setGoalActive(id, bool)` helper, driven by `computeGoalProgress(p)` which returns `null` when the goal is blank or zero.
 
 ### 5. Rendering functions
 
 Each pulls from the `project()` result and updates the DOM:
 
-- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line numbers (`#headline-age`, `#headline-income`, and the `#headline-anchor-name` reference-spouse span), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` itself is static ("Retirement plan") and carries no bound numbers — Session 12 moved age/income into the italic sub-line. The capital number is no longer rendered in this region; the outcome strip's `#sum-capital` cell remains the visible source.
-- `updatePlanBar(p)` — populates the 5 core plan-bar fact cells plus the 6th **Income goal** cell (`#fact-goal-cell` / `#fact-goal`), the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line.
+- `updateSummary(p)` — outcome strip (Monthly income · Household capital · Years to retirement) plus the State 2 sub-line (`#headline-age` and the `#headline-anchor-name` reference-spouse span — Session 16 trimmed the income figure out of the sub-line, so `#headline-income` no longer exists), and the goal-progress sub-line (`#sum-income-goal`) inside the primary cell when `incomeGoal > 0`. The State 2 `<h1>` is static ("Retirement plan"). The income and capital numbers are rendered only in the outcome strip (`#sum-income` / `#sum-capital`), the single loud source.
+- `updatePlanBar(p)` — populates the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line (`#plan-bar-for`). Session 16 removed the six summary fact cells from the strip (the header now carries only identity + actions), so the `set('fact-*', …)` / `setGoalActive('fact-goal-cell', …)` calls here are deliberately left as null-safe no-ops rather than ripped out.
 - `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
 - `swrForAge(age)` — age-based safe withdrawal rate (decimal fraction), replacing the former flat 5% income rule (Session 13). Table (held inside the function so the Node harness extracts it alongside `project`) covers ages 55-100; below 55 drops 0.1pp/yr from 4.2% floored at 3.5%; above 100 held at 25%. `fmtSwr(age)` formats it as a one-decimal percent for labels. Used by `project()` (headline `monthlyIncomeReal = finalTotalReal * swrForAge(refAge + years) / 12`), `incomeCurveData` (per candidate age), and the income display surfaces.
-- `incomeCurveData(inputs)` — pure helper for the Income view. Clones `inputs`, sets `retirementAge` to `retirementAge + 10`, runs `project()` once, and returns `{ ages, incomeReal, markerIndex, markerAge }` where `incomeReal[i] = real.total[i] * swrForAge(ages[i]) / 12` (today's-money starting income if retiring at year `i`, using that age's SWR) and `markerIndex = retirementAge − refAge`. Because `project()` positions are independent of horizon length and the marker age equals the reference age there, `incomeReal[markerIndex]` equals the base run's `monthlyIncomeReal` exactly. Pure (given `project`), so the Node test harness extracts and exercises it directly.
+- `incomeCurveData(inputs, extraYears)` — pure helper for the Income view. Clones `inputs`, sets `retirementAge` to `retirementAge + extraYears` (optional, **default 10**; the gap solver passes `20`), runs `project()` once, and returns `{ ages, incomeReal, markerIndex, markerAge }` where `incomeReal[i] = real.total[i] * swrForAge(ages[i]) / 12` (today's-money starting income if retiring at year `i`, using that age's SWR) and `markerIndex = retirementAge − refAge`. Because `project()` positions are independent of horizon length and the marker age equals the reference age there, `incomeReal[markerIndex]` equals the base run's `monthlyIncomeReal` exactly. Pure (given `project`), so the Node test harness extracts and exercises it directly.
+- `bumpContribs(inputs, deltaTotal)` / `marginalIncomePer1000(inputs)` / `solveGapRoutes(inputs)` — pure helpers for the closing-the-gap card (live next to `incomeCurveData`, so the Node harness extracts them). `bumpContribs` raises total monthly contribution by `deltaTotal` while preserving the household split (even split when the base total is 0). `marginalIncomePer1000` is the income added per extra R1 000/month (two `project()` runs). `solveGapRoutes` returns `null` (no goal / goal met / degenerate horizon) or `{ shortfall, contribPerMonth, contribReachable, retAge, retYears, retReachable }`: the contribution route is closed-form off the affine slope (rounded up to R100); the retire-later route scans `incomeCurveData(inputs, 20)` for the first age past the planned retirement age that clears the goal. Math in `CALCULATIONS.md` ("Closing the gap").
+- `updateGapSolver(p)` — renders the "Closing the gap" card (a `.narrative`-shelled section between the outcome strip and the narrative, State 2 only). Shows the contribution-leverage line whenever the horizon is valid (eyebrow "Contribution leverage"); when a goal is set and there is a shortfall it switches the eyebrow to "Closing the gap" and adds the two route rows. Uses `setGoalActive` (the generic `data-goal-active` hide flag) to collapse the whole card on a degenerate horizon and to toggle the routes block. Copy is em-dash-free (a JS test scans the function body).
 - `buildIncomeCurveChart(p)` — State 2 **Income** chart (the default first view). A single `type: 'line'` dataset (navy line, faint navy fill) of `incomeCurveData(p.inputs).incomeReal` vs candidate age. **Always real** — ignores `mode` (nominal future-rand income at a future age is misleading). The dashed vertical "planned retirement age" marker is drawn by `retAgeMarkerPlugin`, a chart-local inline plugin (a plain hook object in the config's `plugins: [...]` array — NOT chartjs-plugin-annotation) reading `chart.$markerIndex` / `chart.$markerAge` in `afterDatasetsDraw`. On first build it calls `chartIncome.update('none')` so the marker paints (the initial `new Chart` draw runs before the marker props are set).
 - `buildCapitalChart(p)` — State 2 capital chart. Gold discretionary on bottom, navy retirement on top. No baseline-overlay line (State 3 replaces that entire idea).
 - `buildBreakdownChart(p)` — three-layer stacked bars (greys + gold).
@@ -181,7 +191,7 @@ Each pulls from the `project()` result and updates the DOM:
 - `buildCompareCharts(p)` → `ensureCompareChart(...)` — State 3's two independent Chart.js instances. Both share the same y-ceiling (`max(baseline.total, scenario.total) × 1.05`) so bars line up visually. Baseline chart renders at 0.35 opacity (alpha applied to the rgba fills, not via a CSS filter — filter would wreck Chart.js hover).
 - `updateCompareCards(p)` — populates the hero numbers, sub-lines, meta rows, and the delta chip on the scenario card. `setMetaDelta(id, delta, kind)` writes the inline `em` deltas beside changed meta values; `kind` supports `currency`, `pct`, `years`, and `pp` (percentage-point delta used by the goal-progress row). A fifth meta-row on each card (`#cmp-baseline-goal-row` / `#cmp-scenario-goal-row`) renders `Goal progress · N% of R X` when the adviser-level `incomeGoal` is set; both cards read against the same current goal, not a baseline-frozen snapshot. The N% is wrapped in a `goal-progress-on-track` (green) or `goal-progress-behind` (red) span so the traffic-light tone matches the outcome strip.
 - `updatePrintSummary(p)` — compliance-appendix tables plus the conditional goal row (`#s-goal-row`) gated on `computeGoalProgress(p)`. The print cell wraps the % in the same `goal-progress-*` class span so printed PDFs carry the green/red signal.
-- `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine. `describeCurrentPosition` calls the shared `goalSentence(projectedIncome, goal)` helper after the safe-withdrawal-rate income sentence; it returns null (no sentence) when the goal is blank and one of three variants (overshoot / near-miss / shortfall) when set. The helper is em-dash-free by construction and must stay that way (two JS tests enforce this).
+- `updateNarrative(p)` — the "In plain terms" card. Two layouts: no baseline → CURRENT POSITION; baseline locked → BASELINE POSITION + PLANNED SCENARIO. In State 3 the narrative is hidden by `data-view-only="filled"` so these writes go to invisible DOM, which is fine. Session 16 shortened `describeCurrentPosition(p)` to a single em-dash-free sentence ("Projected R x a month in today's money, before tax[, covering y% of the R z monthly goal]") with the goal clause appended only when `incomeGoal > 0` — the outcome strip, gap card, and plan-bar already carry the numbers. `describeBaselinePosition` / `describePlannedScenario` (State 3, still multi-sentence) are unchanged and still use `eventsSentence`. The former `goalSentence` helper was removed when the short narrative dropped its only caller.
 - `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`. Templates currently supported: `header`, `summary-pos`, `summary-contrib`, `chip` (chip renders just the name, used by the State 1 retire-when row).
 - `updateAnchorChips()` — toggles `.is-on` on the two State 1 `.empty-name-chip` buttons from the current `anchor` rule plus the current ages (ties break to A, matching `resolveYoungerOlder`). Called once per `refresh()` next to `renderSpouseLabels()`, so chip selection stays correct regardless of whether the user clicked a chip, used the drawer Youngest/Oldest toggle, or changed an age field.
 - `updateBaselineControls()` — now a hook (kept for future use). Button visibility is driven by `data-view-only` on the two canvas-heads, so it has no work to do.
@@ -196,6 +206,7 @@ var inputs = readInputs();
 var p = project(inputs);
 lastProjection = p;
 updateSummary(p);
+updateGapSolver(p);
 updatePlanBar(p);
 updateViewVisibility();
 if (!baseline) {
@@ -258,7 +269,9 @@ Called by the `beforeprint` / `afterprint` / `matchMedia('print') change` handle
 
 ### 12. Event wiring
 
-At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-income/capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event; **Export report** (`#btn-export-report` → `startExport()`). Everything ends by calling `refresh()`.
+At the bottom: input listeners on all household fields, age inputs, retirement-age; slider listeners; scenario-slider listeners; `data-sync-to` blur handlers; `data-sync-spouse-name` blur handlers; drawer toggle; anchor buttons; view switcher (`btn-view-income/capital/breakdown/table`); mode toggles (both `#btn-pv/fv` and `#btn-pv-cmp/fv-cmp` wired to the same `setMode`); Lock / Re-lock / Clear baseline; Add event; **Export report** (`#btn-export-report` → `startExport()`); and a dev-only **Load sample data** button (`#btn-load-sample` → `loadSampleData()`, see below). Everything ends by calling `refresh()`.
+
+**`loadSampleData()` (test scaffolding).** A convenience on the State-1 `.empty-cta`: populates a representative household and sets `projectionRequested = true` so one click lands in State 2, avoiding re-typing during testing. It writes the canonical inputs (via `setHpFormatted` for money, direct `.value` for ages/age/sliders), sets `spouseNames` + the family/client name, then calls `refresh()`. Not a product feature — hidden in print via `.empty-cta`; strip or gate it before a client-facing release.
 
 ### 13. Export deck (A4 landscape, 12 pages)
 
