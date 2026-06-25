@@ -93,11 +93,11 @@ Run through this checklist:
 ## Running tests
 
 ```bash
-# Python tests (math audits) — 42 tests
+# Python tests (math audits) — 47 tests
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 45 tests
+# JS tests (actual shipped JS) — 52 tests
 cd tests/js
 node run.js
 ```
@@ -112,8 +112,8 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/ARCHITECTURE.md` — code structure in detail.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
-- `tests/python/` — math audits in Python (42 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (45 tests).
+- `tests/python/` — math audits in Python (47 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (52 tests).
 
 ## What not to do
 
@@ -131,6 +131,29 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 15 — 2026-06-25
+
+**Shipped (close-the-gap-solver):** the calculator now answers the question that creates a feeling of control for the persona (a 48-year-old, earning well, contributing monthly): *"so what do I do about it?"* A new **"Closing the gap"** card under the State-2 outcome strip turns the income goal into action, and a **contribution-leverage** line ties the monthly debit order to the outcome. Moves the tool from descriptive ("you're at 72% of goal") to prescriptive ("add R4 200/month, or retire 2 years later"). No change to `project()`; both features are derived readouts on top of it.
+
+- **Feature 1 — close-the-gap solver.** When a goal is set AND there's a shortfall (`computeGoalProgress(p).pct < 100`), the card shows the two **actionable** single-lever routes to 100%: increase contributions by R x/month, or retire x years later (at age N). The "+x%/yr return" route was deliberately omitted — a client can't will a higher market return, and "feeling in control" means levers they actually hold.
+- **Feature 2 — contribution leverage.** A one-line readout: "Each extra R1 000/month adds about R y/month to retirement income, in today's money." Shown whenever the horizon is valid, independent of the goal.
+- **The math — affine, closed-form, no binary search.** Projected income is affine in total monthly contribution: `I(c) = I0 + k·Δc` (contributed capital, growth on it, CPI deflation, and the fixed-age SWR are all linear in the contribution; every pot shares one return/escalation/CPI, so the slope `k` is split-independent). So `k` comes from two `project()` runs (Feature 2 displays `k×1000`), and the contribution route is `Δc = (goal − I0)/k` rounded **up** to the nearest R100 so the stated figure clears the goal. The retire-later route reuses `incomeCurveData(inputs, 20)` (now takes an optional horizon, default 10) and scans for the first age beyond the planned retirement age whose today's-money income clears the goal. The one non-affine corner — an outflow capital event large enough to be capped at available discretionary — is sub-R100 in practice and absorbed by the round-up; documented in `docs/CALCULATIONS.md`.
+- **New pure helpers** (next to `incomeCurveData`, extractable by the Node harness): `bumpContribs(inputs, deltaTotal)`, `marginalIncomePer1000(inputs)`, `solveGapRoutes(inputs)` (returns `null` when no goal, goal met, or degenerate horizon). **New renderer** `updateGapSolver(p)` called from `refresh()` right after `updateSummary(p)`; the card reuses the `.narrative` shell (gold rule) and the `data-goal-active` hide pattern, lives inside the State-2 `data-view-only="filled"` block (hidden in States 1/3), and carries the working-copy portrait print.
+
+**Decisions (and why):**
+
+- **Two actionable routes, not three.** The "earn x% more return" route was dropped: it implies return is a dial the client turns, which is false and (had the resilience band shipped) would have contradicted it. Solver = the client's decisions; market uncertainty is a separate story.
+- **Resilience/stress-test band dropped from scope.** Considered (conservative 9% / optimistic 10% nominal), then cut by the user to keep this release to the two prescriptive features. The 9/10 framing surfaced a nice teaching point — real return is `(1+nom)/(1+cpi)−1`, so 9% nominal at 5% CPI is 3.81% real, not 4% — which is exactly why the engine deflates by division, not subtraction.
+- **Closed-form over binary search.** The approved plan called for it; the affine property makes it exact and cheap, and keeps the helpers trivially auditable.
+
+**Also added (test scaffolding):** a `Load sample data (test)` ghost button in the State-1 `.empty-cta`. `loadSampleData()` populates a representative household (David & Sarah Bennett, ages 48/46, R2m retirement + R0.5m discretionary each, R15k + R3k monthly contributions each, retire 65, 9% return / 5% CPI / 5% escalation, R100 000 goal) and jumps straight to State 2 — so the tool can be exercised without re-typing. The sample lands at ~R87 200/month vs the R100 000 goal (87%), which exercises the new gap card. It's a dev convenience, not a product feature (hidden in print via `.empty-cta`); no test added per the "UI verified by eye" convention. **Remove or relabel before any client-facing release** if the button shouldn't be visible in a meeting.
+
+**Tests:** 52 JS (45 + 7 new) + 47 Python (42 + 5 new), all green. New Python module `test_gap_solver.py` (affine property, marginal-income match, solved-contribution-closes-goal with round-up correctness, retire-later-is-first-clearing-age, null cases). New JS tests extract `marginalIncomePer1000` + `solveGapRoutes` and assert the same properties + card markup/wiring + em-dash-free copy.
+
+**Docs updated:** `docs/CALCULATIONS.md` (new "Closing the gap" section), `docs/ARCHITECTURE.md` (new helpers + `updateGapSolver` in the render list + `refresh()` snippet + `incomeCurveData` horizon param), `docs/DESIGN.md` (the new card in the State-2 section), `README.md` + `tests/README.md` + counts, `CLAUDE.md` (this entry + counts 45→52 JS / 42→47 Py).
+
+**Known caveat:** Visual verification needs a browser (none available here). Eyeball: (a) set a goal above the projection → card titled "Closing the gap" shows both routes + the per-R1 000 line; applying the stated contribution flips the outcome-strip goal line to "on track"; (b) goal below the projection → routes hide, eyebrow reads "Contribution leverage", per-R1 000 line remains; (c) no goal → leverage line only; (d) Cmd+P → the card renders on page 1; (e) State 3 (locked baseline) → card hidden.
 
 ### Session 14 — 2026-06-03
 
