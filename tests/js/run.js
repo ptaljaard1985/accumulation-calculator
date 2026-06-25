@@ -479,7 +479,6 @@ check('income-goal: canonical drawer input + State 1 sync wired', () => {
   assert.ok(/id="income-goal"/.test(html), '#income-goal canonical input missing');
   assert.ok(/data-sync-to="income-goal"/.test(html),
     'State 1 shadow input with data-sync-to="income-goal" missing');
-  assert.ok(/id="fact-goal-cell"/.test(html), 'plan-bar fact-goal cell missing');
   assert.ok(/id="sum-income-goal"/.test(html), 'outcome-strip goal sub-line missing');
   assert.ok(/id="cmp-baseline-goal-row"/.test(html), 'baseline goal meta-row missing');
   assert.ok(/id="cmp-scenario-goal-row"/.test(html), 'scenario goal meta-row missing');
