@@ -805,6 +805,10 @@
     margin-top: 4px;
   }
   .outcome-cell.primary .osub { color: rgba(250,247,240,0.62); }
+  /* Closing-the-gap content relocated into the strip as the right-hand cell. */
+  .outcome-gap { flex: 2; }
+  .outcome-gap .narrative-eyebrow { margin-bottom: 8px; }
+  .outcome-gap .narrative-body { font-size: 14px; line-height: 1.55; max-width: none; }
 
   /* ─── Compare grid (State 3) ──────────────── */
   .compare {
@@ -2368,49 +2372,21 @@
         <div class="osub" id="sum-income-sub">today's money · safe withdrawal rate, before tax</div>
         <div class="osub" id="sum-income-goal" data-goal-active="false"></div>
       </div>
-      <div class="outcome-cell">
-        <div class="ocap">Household capital</div>
-        <div class="oval num" id="sum-capital">R —</div>
-        <div class="osub" id="sum-capital-sub">at retirement · today's money</div>
-      </div>
-      <div class="outcome-cell">
-        <div class="ocap">Years to retirement</div>
-        <div class="oval num" id="sum-years">—</div>
-        <div class="osub" id="sum-years-sub">retiring in —</div>
+      <div class="outcome-cell outcome-gap gap-solver" id="gap-solver" data-goal-active="false">
+        <div class="narrative-eyebrow" id="gap-eyebrow">Closing the gap</div>
+        <div class="narrative-body">
+          <div class="gap-routes" id="gap-routes" data-goal-active="false">
+            <p id="gap-routes-intro"></p>
+            <ul class="gap-route-list">
+              <li id="gap-route-contrib" data-goal-active="false"></li>
+              <li id="gap-route-retage" data-goal-active="false"></li>
+              <li id="gap-route-none" data-goal-active="false"></li>
+            </ul>
+          </div>
+          <p class="gap-leverage" id="gap-leverage"></p>
+        </div>
       </div>
     </div>
-
-    <section class="narrative gap-solver" id="gap-solver" data-goal-active="false">
-      <div class="narrative-eyebrow" id="gap-eyebrow">Closing the gap</div>
-      <div class="narrative-body">
-        <div class="gap-routes" id="gap-routes" data-goal-active="false">
-          <p id="gap-routes-intro"></p>
-          <ul class="gap-route-list">
-            <li id="gap-route-contrib" data-goal-active="false"></li>
-            <li id="gap-route-retage" data-goal-active="false"></li>
-            <li id="gap-route-none" data-goal-active="false"></li>
-          </ul>
-        </div>
-        <p class="gap-leverage" id="gap-leverage"></p>
-      </div>
-    </section>
-
-    <section class="narrative" id="narrative-summary">
-      <div class="narrative-eyebrow">In plain terms</div>
-      <div class="narrative-body">
-        <div class="narrative-section" id="narrative-current-section">
-          <p id="narrative-current-p"></p>
-        </div>
-        <div class="narrative-section" id="narrative-baseline-section" style="display: none;">
-          <div class="narrative-section-label">Baseline position</div>
-          <p id="narrative-baseline-p"></p>
-        </div>
-        <div class="narrative-section" id="narrative-scenario-section" style="display: none;">
-          <div class="narrative-section-label">Planned scenario</div>
-          <p id="narrative-scenario-p"></p>
-        </div>
-      </div>
-    </section>
 
     <div class="canvas-foot">
       <span>Illustrative only · assumes monthly contributions escalate at the specified rate.</span>
@@ -3818,10 +3794,6 @@
     set('sum-income', fmtR(p.monthlyIncomeReal));
     set('sum-income-sub', 'today’s money · ' + fmtSwr(swrAge) +
       ' safe withdrawal at age ' + swrAge + ', before tax');
-    set('sum-capital', fmtShort(p.finalTotalReal));
-    set('sum-capital-sub', 'at retirement · today’s money · ' + fmtShort(p.finalTotalNom) + ' nominal');
-    set('sum-years', p.years);
-    set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
 
     // State 2 sub-line (h1 is static "Retirement plan"; the factual sentence
     // under it carries name + age only — the income figure lives in the
@@ -4492,24 +4464,11 @@
 
     return sentences.join(' ');
   }
-
-  function updateNarrative(p){
-    var setHTML = function(id, html){ document.getElementById(id).innerHTML = html; };
-    var show = function(id, on){ document.getElementById(id).style.display = on ? '' : 'none'; };
-
-    if (baseline){
-      show('narrative-current-section', false);
-      show('narrative-baseline-section', true);
-      show('narrative-scenario-section', true);
-      setHTML('narrative-baseline-p', describeBaselinePosition(baseline));
-      setHTML('narrative-scenario-p', describePlannedScenario(p, baseline));
-    } else {
-      show('narrative-current-section', true);
-      show('narrative-baseline-section', false);
-      show('narrative-scenario-section', false);
-      setHTML('narrative-current-p', describeCurrentPosition(p));
-    }
-  }
+  // Note: describeCurrentPosition / describeBaselinePosition / describePlannedScenario
+  // are no longer rendered on screen — State 2 dropped its "In plain terms" card (the
+  // outcome strip carries the headline number + goal progress, and State 3's compare
+  // cards carry the story). They are retained because the JS test suite extracts and
+  // exercises them by name (tests/js/run.js), and for potential reuse.
 
   // ===== View switching =====
   function setView(v){
@@ -4832,7 +4791,6 @@
     }
     updateCompareCards(p);
     updatePrintSummary(p);
-    updateNarrative(p);
     renderSpouseLabels();
     updateAnchorChips();
     updateScenarioReadouts();
