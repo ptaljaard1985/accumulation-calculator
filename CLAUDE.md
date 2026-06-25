@@ -97,7 +97,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 52 tests
+# JS tests (actual shipped JS) — 50 tests
 cd tests/js
 node run.js
 ```
@@ -113,7 +113,7 @@ Both must pass before any change ships. See `tests/README.md`.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (47 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (52 tests).
+- `tests/js/` — JS tests in Node against the actual shipped HTML (50 tests).
 
 ## What not to do
 
@@ -131,6 +131,23 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 16 — 2026-06-25
+
+**Shipped (close-the-gap-solver, same branch/PR #15):** trimmed State 2 density. The screen had grown to eight stacked blocks with the income figure repeated 4-5x; three targeted cuts, no math change.
+
+- **Compliance appendix → one collapsed toggle.** `#print-summary` (the "Summary of assumptions and outcome" + Detail tables / Methodology / Disclaimer accordions) is now wrapped in a single outer `<details class="accordion" id="appendix-toggle">` whose summary reads "Methodology & disclaimer". On screen it's one quiet closed line; expanding reveals the three sub-accordions. Print is unchanged — the `onbeforeprint` / `matchMedia('print')` handlers force **every** `details.accordion` open (the new outer one included), and `@media print .accordion > summary { display:none }` flattens it all with the `<h2>` as the section title. CSS: `.print-summary` lost its card chrome on screen (border/padding) so the toggle reads as a line; the `@media print .print-summary` rule already zeroed those.
+- **Narrative → one sentence.** `describeCurrentPosition(p)` rewritten from a multi-sentence paragraph (which restated return/CPI/contributions/capital/income/goal — ~75% duplicated elsewhere) to a single line: "Projected R x a month in today's money, before tax[, covering y% of the R z monthly goal]." Goal clause only when `incomeGoal > 0`. `describeBaselinePosition` / `describePlannedScenario` (State 3) untouched.
+- **Headline sub-line trimmed.** "[Name] retires at age 65 with R x per month…" → "[Name] retires at age 65." Removed `#headline-income` span + the `set('headline-income', …)` call in `updateSummary`. The outcome strip's `#sum-income` is the single loud source.
+- **Dead code removed.** `goalSentence()` lost its only caller (the old narrative), so it and its two direct JS tests were deleted, and it was dropped from the narrative test bundle. `eventsSentence()` stays (still used by the State 3 narratives).
+
+**Decision:** narrative was *shortened*, not removed (Pierre's pick) — a brief plain-English line for reading aloud, without the wall of restated numbers. Appendix kept on screen behind one toggle rather than hidden entirely, so the detail tables stay one click away in a meeting.
+
+**Tests:** 50 JS (52 − 2 removed `goalSentence` tests; one `describeCurrentPosition` assertion updated to the short output) + 47 Python (unchanged), all green. `<details>` tags balance 4/4.
+
+**Docs updated:** `docs/DESIGN.md` (State 2 stack + appendix toggle + one-line narrative + trimmed headline), `docs/ARCHITECTURE.md` (`describeCurrentPosition` now short, `updateSummary` drops `headline-income`, print-summary nesting, `goalSentence` removed), `README.md` + `tests/README.md` + counts (52 → 50 JS), `CLAUDE.md` (this entry).
+
+**Known caveat:** Visual verification needs a browser. Eyeball: (a) headline reads "David retires at age 65." with no income in the sub-line; (b) "In plain terms" is one sentence, goal clause drops when the goal is blank; (c) the bottom of the screen is a single "Methodology & disclaimer ▾" line that expands to the three sub-accordions; (d) Cmd+P still prints the full appendix (forced open, flattened, with the "Summary of assumptions and outcome" title).
 
 ### Session 15 — 2026-06-25
 
