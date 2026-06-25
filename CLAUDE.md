@@ -132,6 +132,27 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 17 — 2026-06-25
+
+**Shipped:** further thinned State 2 below the chart — from three blocks (3-cell outcome strip → "Closing the gap" card → "In plain terms" card) down to a single two-cell outcome strip. No math change; all renderer logic for the gap solver is untouched, only relocated.
+
+- **Outcome strip → two cells.** Removed the **Household capital** and **Years to retirement** cells (advisers don't reference them in meetings). The strip is now the navy **Monthly income** primary cell (unchanged — income + safe-withdrawal sub-line + goal-progress sub-line) plus a new right-hand cell `.outcome-gap` that holds the relocated closing-the-gap content. CSS: `.outcome-gap { flex: 2 }` so the navy hero keeps ~its original one-third width; `.outcome-gap .narrative-body { font-size: 14px }` to sit in the shorter strip cell.
+- **"Closing the gap" moved into the strip.** The `#gap-solver` section (with all its IDs: `gap-eyebrow`, `gap-routes`, `gap-routes-intro`, `gap-route-contrib/-retage/-none`, `gap-leverage`) moved verbatim from a standalone `.narrative`-shelled card below the strip into the strip as `.outcome-cell.outcome-gap`. It keeps its inner `narrative-eyebrow` / `narrative-body` classes for typography but drops the `.narrative` wrapper (no gold left-rule inside the strip). `updateGapSolver(p)` is unchanged — the contribution-leverage line is still always shown whenever the horizon is valid (eyebrow "Contribution leverage"), and the two routes appear only on a goal shortfall (eyebrow "Closing the gap"). On a degenerate horizon `setGoalActive('gap-solver', false)` collapses the cell and the navy cell spans full width.
+- **"In plain terms" narrative removed from State 2.** The `#narrative-summary` card markup was deleted and `updateNarrative(p)` (plus its `refresh()` call) removed — the single-sentence current-position summary (Session 16) just restated the income number + goal progress the navy cell already shows. `describeCurrentPosition` / `describeBaselinePosition` / `describePlannedScenario` are **kept in the source** (the JS suite extracts them by name; State 3 never rendered them on screen anyway — the compare cards carry the story) with a comment noting they now have no renderer.
+- **`updateSummary(p)`** dropped the four now-dead `set('sum-capital'…)` / `set('sum-years'…)` calls.
+
+**Decisions (and why):**
+
+- **Drop "In plain terms" entirely rather than move it in too.** Pierre's call mid-task — with the navy cell already showing income + "Goal R x / mo · on track to y% of target", the plain-terms sentence was pure restatement. Moving it beside the navy cell would have repeated the same number twice in one strip.
+- **Keep the gap helpers' three `describe*` functions despite no caller.** Removing them would churn the JS test bundle (it extracts and exercises all three by name). They're cheap to keep and a comment flags them as renderer-less. The alternative (delete functions + their tests) is more change than the task warrants.
+- **`flex: 2` on the gap cell, not `flex: 1`.** Preserves the navy hero's ~one-third dominance from the old three-cell strip; a 50/50 split made the strip read as two equal halves and over-weighted the prose. Flagged in the plan as a browser-eyeball tuning.
+
+**Tests:** 50 JS + 47 Python, all green (no changes — every ID the suite checks survives: `gap-solver`, `gap-routes`, `gap-leverage`, `gap-route-contrib/-retage`, `sum-income-goal`, and the three `describe*` functions).
+
+**Docs updated:** `docs/DESIGN.md` (Filled-state intro, Outcome strip, Narrative section now "removed from State 2", Closing-the-gap "content" not "card"), `docs/ARCHITECTURE.md` (State 2 body schematic, `updateSummary` drops capital/years, `updateGapSolver` location, `updateNarrative` removed from render list + `refresh()` snippet), `CLAUDE.md` (this entry).
+
+**Known caveat:** Visual verification needs a browser. Eyeball: (a) State 2 shows chart → one strip (navy income left ~1/3, closing-the-gap right ~2/3) → foot, with no capital/years cells and no "In plain terms" card; (b) goal above projection → right cell "Closing the gap" + two routes + leverage line; (c) goal met or blank → "Contribution leverage" + leverage line only; (d) Cmd+P keeps the strip on page 1. Check the `flex: 2` width and the 14px body read well at meeting distance.
+
 ### Session 16 — 2026-06-25
 
 **Shipped (close-the-gap-solver, same branch/PR #15):** trimmed State 2 density. The screen had grown to eight stacked blocks with the income figure repeated 4-5x; three targeted cuts, no math change.
