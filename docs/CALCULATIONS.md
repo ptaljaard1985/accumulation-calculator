@@ -100,6 +100,46 @@ A shorter remaining horizon supports a higher sustainable draw, so the rate rise
 
 Income at age 65 is now 4.8%, not the old flat 5%. The same `swr(age)` drives both the headline (at the configured retirement age) and the Income chart (at each candidate age), so the chart's marker value always equals the headline. The methodology note makes clear this is a planning approximation, not a guaranteed sustainable rate.
 
+## Closing the gap (the goal solver)
+
+Two derived readouts sit on top of `project()` — they change no projection math, they interrogate it.
+
+### The affine property
+
+Projected monthly income is **affine in the total monthly contribution**:
+
+```
+I(c) = I0 + k · Δc
+```
+
+Contributed capital accumulates linearly in the contribution amount, the growth credited on it is linear, CPI deflation is a linear scaling, and the safe withdrawal rate is fixed for a given retirement age. Because all four pots share one return, one escalation rate, and one CPI, the slope `k` is **independent of how a contribution increase is split across the four legs**. This is what makes the solver closed-form rather than a search.
+
+The Python audit verifies it directly: the slope measured from a +R1 000 step equals the slope from a +R50 000 step.
+
+### Contribution leverage (per R1 000)
+
+```
+k_per_1000 = I(c + 1000) − I(c)        # two project() runs
+```
+
+This is the "each extra R1 000/month buys about R y/month" figure, in today's money.
+
+### The two routes to the goal
+
+Only computed when a goal is set, the horizon is at least one year, and there is a shortfall (`I0 < goal`).
+
+- **Contribution route** (closed form):
+  ```
+  Δc = ceil( (goal − I0) / k  ÷ 100 ) × 100
+  ```
+  `k = k_per_1000 / 1000`. Rounding **up** to the nearest R100/month guarantees the stated figure clears the goal (and one R100 step less falls short — both asserted in the tests).
+
+- **Retire-later route** (scan): take the income-by-age curve out to `retirementAge + 20` (one extended `project()` run, same mechanism as the Income chart) and report the **first age beyond the planned retirement age** whose today's-money starting income is ≥ the goal.
+
+### The one inexact corner
+
+Affinity is exact except when an **outflow** capital event is large enough to be capped at the available discretionary balance (raising contributions can lift that cap, so income gains slightly less than linear there). In practice discretionary is positive and the deviation is sub-R100/month, which the round-up on the contribution route absorbs. The retire-later route is unaffected (it re-projects at each age rather than extrapolating). The solver returns `null` (shows nothing) when there is no goal, the goal is already met, or the horizon is degenerate.
+
 ## Capital events
 
 Each event has `{ age, amount, todaysMoney (bool), kind ('inflow' | 'outflow') }`. Age is in the reference spouse's age. Applied at the end of the designated year, after growth and contributions.

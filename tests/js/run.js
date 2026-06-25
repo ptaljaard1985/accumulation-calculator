@@ -264,7 +264,7 @@ check('default scenario matches v1 baseline', () => {
 // ============================================================
 const narrativeBundle = [
   'fmtR', 'fmtShort', 'fmtPct', 'swrForAge', 'fmtSwr', 'totalMonthlyContribs',
-  'eventsSentence', 'goalSentence', 'describeCurrentPosition',
+  'eventsSentence', 'describeCurrentPosition',
   'describeBaselinePosition', 'describePlannedScenario',
 ].map(n => extractFn(inline, n)).join('\n');
 const narrative = new Function(
@@ -284,10 +284,11 @@ check('narrative: no em-dashes in current-position output', () => {
     events: [{ age: 50, amount: 500_000, todaysMoney: true, kind: 'inflow' }],
   });
   const out = narrative.describeCurrentPosition(p);
-  assert.ok(out.length > 100, 'narrative too short: ' + out);
+  // Now a single plain-English sentence, not the old multi-sentence prose.
+  assert.ok(/^Projected/.test(out.replace(/<[^>]+>/g, '')),
+    'should open with "Projected": ' + out);
+  assert.ok(/R\s?\d/.test(out), 'should state the monthly income figure: ' + out);
   assert.ok(out.indexOf(EM_DASH) === -1, 'em-dash found: ' + out);
-  assert.ok(/retirement/i.test(out) && /inflation/i.test(out),
-    'missing pertinent terms: ' + out);
 });
 
 check('narrative: no em-dashes in baseline + planned-scenario output', () => {
@@ -478,7 +479,6 @@ check('income-goal: canonical drawer input + State 1 sync wired', () => {
   assert.ok(/id="income-goal"/.test(html), '#income-goal canonical input missing');
   assert.ok(/data-sync-to="income-goal"/.test(html),
     'State 1 shadow input with data-sync-to="income-goal" missing');
-  assert.ok(/id="fact-goal-cell"/.test(html), 'plan-bar fact-goal cell missing');
   assert.ok(/id="sum-income-goal"/.test(html), 'outcome-strip goal sub-line missing');
   assert.ok(/id="cmp-baseline-goal-row"/.test(html), 'baseline goal meta-row missing');
   assert.ok(/id="cmp-scenario-goal-row"/.test(html), 'scenario goal meta-row missing');
@@ -489,31 +489,6 @@ check('income-goal: canonical drawer input + State 1 sync wired', () => {
 check('income-goal: readInputs returns incomeGoal field', () => {
   assert.ok(/incomeGoal:\s*parseCurrency\(['"]income-goal['"]\)/.test(inline),
     'readInputs should read #income-goal via parseCurrency');
-});
-
-// goalSentence is the shared narrative helper. Bundle fmtR + it.
-const goalBundle = ['fmtR', 'goalSentence'].map(n => extractFn(inline, n)).join('\n');
-const goalFns = new Function(goalBundle + '; return { fmtR, goalSentence };')();
-
-check('goal: goalSentence returns null when goal is zero or missing', () => {
-  assert.strictEqual(goalFns.goalSentence(50000, 0), null);
-  assert.strictEqual(goalFns.goalSentence(50000, -1), null);
-  assert.strictEqual(goalFns.goalSentence(50000, null), null);
-});
-
-check('goal: goalSentence describes overshoot, near-miss, shortfall', () => {
-  const over = goalFns.goalSentence(86400, 80000);
-  assert.ok(/ahead of/i.test(over), 'overshoot should say "ahead of": ' + over);
-  assert.ok(over.indexOf('—') === -1, 'em-dash in overshoot: ' + over);
-
-  const near = goalFns.goalSentence(76000, 80000);
-  assert.ok(/just short/i.test(near), 'near-miss should say "just short": ' + near);
-  assert.ok(near.indexOf('—') === -1, 'em-dash in near-miss: ' + near);
-
-  const far = goalFns.goalSentence(40000, 80000);
-  assert.ok(/50%/.test(far), 'shortfall should include percent: ' + far);
-  assert.ok(/gap of/i.test(far), 'shortfall should say "gap of": ' + far);
-  assert.ok(far.indexOf('—') === -1, 'em-dash in shortfall: ' + far);
 });
 
 check('narrative: describeCurrentPosition includes goal sentence when set', () => {
@@ -747,6 +722,97 @@ check('plan: Save/Open buttons wired in nav + State 1', () => {
   assert.ok(/id="btn-open-plan-empty"/.test(html), 'State 1 Open button missing');
   assert.ok(/showSaveFilePicker' in window/.test(inline), 'no FS Access feature-detect');
   assert.ok(/AbortError/.test(inline), 'cancel (AbortError) should be swallowed');
+});
+
+// ============================================================
+// Closing-the-gap solver + contribution leverage (Features 1 & 2)
+// ============================================================
+const gapBundle = [
+  'totalMonthlyContribs', 'swrForAge', 'project', 'incomeCurveData',
+  'bumpContribs', 'marginalIncomePer1000', 'solveGapRoutes',
+].map(n => extractFn(inline, n)).join('\n');
+const gap = new Function(gapBundle +
+  '; return { marginalIncomePer1000, solveGapRoutes };')();
+
+const gapBase = {
+  ageA: 48, ageB: 46,
+  retA: 1_500_000, retB: 1_200_000, discA: 500_000, discB: 300_000,
+  contribRetA: 8_000, contribRetB: 7_000, contribDiscA: 3_000, contribDiscB: 2_000,
+  rNom: 0.09, cpi: 0.05, esc: 0.05,
+  anchor: 'youngest', retirementAge: 65, incomeGoal: 0, events: [],
+};
+const gapT = 8_000 + 7_000 + 3_000 + 2_000;  // base total monthly contribution
+const bump = (inp, delta) => {
+  const f = (gapT + delta) / gapT;
+  return Object.assign({}, inp, {
+    contribRetA: 8_000 * f, contribRetB: 7_000 * f,
+    contribDiscA: 3_000 * f, contribDiscB: 2_000 * f,
+  });
+};
+
+check('gap: marginalIncomePer1000 equals the income delta for +R1000/mo total', () => {
+  const k = gap.marginalIncomePer1000(gapBase);
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const i1 = projectFn(bump(gapBase, 1000)).monthlyIncomeReal;
+  assert.ok(approx(k, i1 - i0, 0.5), `k=${k} expected=${i1 - i0}`);
+  assert.ok(k > 0, 'marginal income should be positive');
+});
+
+check('gap: income is affine in total contribution (constant slope)', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const slope = d => (projectFn(bump(gapBase, d)).monthlyIncomeReal - i0) / d;
+  assert.ok(approx(slope(1000), slope(50000), 1e-3),
+    `slope1000=${slope(1000)} slope50000=${slope(50000)}`);
+});
+
+check('gap: solved contribution closes the goal; one R100 less misses', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const goal = i0 + 15000;
+  const inp = Object.assign({}, gapBase, { incomeGoal: goal });
+  const r = gap.solveGapRoutes(inp);
+  assert.ok(r && r.contribReachable, 'should find a contribution route');
+  assert.ok(projectFn(bump(inp, r.contribPerMonth)).monthlyIncomeReal >= goal - 0.5,
+    'solved contribution should reach the goal');
+  assert.ok(projectFn(bump(inp, r.contribPerMonth - 100)).monthlyIncomeReal < goal,
+    'R100 less should miss the goal');
+});
+
+check('gap: retire-later route is the first later age that clears the goal', () => {
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const goal = i0 + 8000;
+  const inp = Object.assign({}, gapBase, { incomeGoal: goal });
+  const r = gap.solveGapRoutes(inp);
+  assert.ok(r && r.retReachable, 'should find a retire-later age');
+  let first = null;
+  for (let age = inp.retirementAge + 1; age <= inp.retirementAge + 20; age++){
+    if (projectFn(Object.assign({}, inp, { retirementAge: age })).monthlyIncomeReal >= goal){
+      first = age; break;
+    }
+  }
+  assert.strictEqual(r.retAge, first, `route=${r.retAge} scan=${first}`);
+  assert.strictEqual(r.retYears, first - inp.retirementAge);
+});
+
+check('gap: solveGapRoutes returns null with no goal or a goal already met', () => {
+  assert.strictEqual(gap.solveGapRoutes(gapBase), null);  // incomeGoal 0
+  const i0 = projectFn(gapBase).monthlyIncomeReal;
+  const met = Object.assign({}, gapBase, { incomeGoal: i0 - 5000 });
+  assert.strictEqual(gap.solveGapRoutes(met), null);
+});
+
+check('gap: card markup + refresh wiring present', () => {
+  assert.ok(/id="gap-solver"/.test(html), '#gap-solver card missing');
+  assert.ok(/id="gap-routes"/.test(html), '#gap-routes block missing');
+  assert.ok(/id="gap-leverage"/.test(html), '#gap-leverage line missing');
+  assert.ok(/id="gap-route-contrib"/.test(html) && /id="gap-route-retage"/.test(html),
+    'route list items missing');
+  assert.ok(/function updateGapSolver/.test(inline), 'updateGapSolver missing');
+  assert.ok(/updateGapSolver\(p\)/.test(inline), 'updateGapSolver not called in refresh()');
+});
+
+check('gap: updateGapSolver copy has no em-dashes', () => {
+  const src = extractFn(inline, 'updateGapSolver');
+  assert.ok(src.indexOf('—') === -1, 'em-dash found in updateGapSolver copy');
 });
 
 console.log();

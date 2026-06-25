@@ -495,30 +495,13 @@
     font-weight: 500;
   }
   .plan-bar-for.is-placeholder { color: var(--faint); font-style: italic; text-transform: none; letter-spacing: 0; }
-  .plan-bar-facts {
+  .plan-bar-actions {
     flex: 1;
     display: flex;
-    gap: 22px;
     align-items: center;
-    overflow: hidden;
+    justify-content: flex-end;
+    gap: 8px;
   }
-  .plan-bar-facts .fact {
-    display: flex; flex-direction: column; gap: 2px;
-    min-width: 0;
-  }
-  .plan-bar-facts .fact-label {
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--mute);
-    font-weight: 500;
-  }
-  .plan-bar-facts .fact-val {
-    font-size: 13px;
-    color: var(--ink);
-    font-weight: 500;
-  }
-  .plan-bar-facts .fact-val.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .plan-bar-edit { flex-shrink: 0; }
 
   .plan-bar-drawer {
@@ -985,6 +968,17 @@
     margin: 0 0 6px;
   }
 
+  /* ─── Closing-the-gap card (reuses .narrative shell) ─── */
+  .gap-route-list { list-style: none; margin: 4px 0 0; padding: 0; }
+  .gap-route-list li { margin: 0 0 6px; padding-left: 16px; position: relative; }
+  .gap-route-list li:last-child { margin-bottom: 0; }
+  .gap-route-list li::before {
+    content: '·'; position: absolute; left: 4px; top: -1px;
+    color: var(--gold-2); font-weight: 600;
+  }
+  .gap-leverage { margin-top: 12px; color: var(--mute); }
+  .gap-solver .gap-routes + .gap-leverage { margin-top: 14px; }
+
   /* ─── Canvas foot ───────────────────────── */
   .canvas-foot {
     display: flex; justify-content: space-between; align-items: center;
@@ -1105,13 +1099,14 @@
   }
 
   /* ─── Print summary appendix ─────────────── */
+  /* On screen the appendix collapses to a single accordion line (the outer
+     #appendix-toggle provides its own card/border), so the wrapper carries no
+     chrome of its own. Print restores nothing here — the @media print rule
+     below already zeroes border/padding and flattens the nested accordions. */
   .print-summary {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-lg);
-    padding: 28px 32px;
     margin-top: 18px;
   }
+  /* Shown only inside the expanded appendix body and in print. */
   .print-summary h2 {
     font-family: var(--serif);
     font-size: 20px; font-weight: 500; margin: 0 0 16px;
@@ -1973,7 +1968,6 @@
     .compare { grid-template-columns: 1fr; }
     .scenario-grid { grid-template-columns: repeat(2, 1fr); }
     .plan-bar-drawer { grid-template-columns: 1fr; }
-    .plan-bar-facts { flex-wrap: wrap; gap: 14px; }
     .empty-setup { grid-template-columns: 1fr; gap: 24px; }
     .empty-setup-divider { display: none; }
     .empty-foot { grid-template-columns: 1fr; }
@@ -2126,6 +2120,7 @@
     <div class="empty-cta">
       <button class="btn primary" id="btn-see-projection" type="button">See current projection</button>
       <button class="btn ghost" id="btn-open-plan-empty" type="button">Open a saved plan</button>
+      <button class="btn ghost" id="btn-load-sample" type="button">Load sample data (test)</button>
     </div>
   </section>
 
@@ -2139,36 +2134,12 @@
           <div class="plan-bar-for is-placeholder" id="plan-bar-for">Client name</div>
         </div>
       </div>
-      <div class="plan-bar-facts">
-        <div class="fact">
-          <span class="fact-label">Household</span>
-          <span class="fact-val" id="fact-household">—</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Combined starting capital</span>
-          <span class="fact-val num" id="fact-capital">R —</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Monthly contributions</span>
-          <span class="fact-val num" id="fact-contrib">R —</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Retire at</span>
-          <span class="fact-val" id="fact-retage">—</span>
-        </div>
-        <div class="fact">
-          <span class="fact-label">Return · CPI</span>
-          <span class="fact-val num" id="fact-market">—</span>
-        </div>
-        <div class="fact" id="fact-goal-cell" data-goal-active="false">
-          <span class="fact-label">Income goal</span>
-          <span class="fact-val num" id="fact-goal">R —</span>
-        </div>
+      <div class="plan-bar-actions">
+        <button class="btn ghost no-print" id="btn-save-plan" type="button">Save plan</button>
+        <button class="btn ghost no-print" id="btn-open-plan" type="button">Open plan</button>
+        <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
+        <button class="btn primary plan-bar-edit no-print" id="btn-edit-plan">Edit plan ↓</button>
       </div>
-      <button class="btn ghost no-print" id="btn-save-plan" type="button">Save plan</button>
-      <button class="btn ghost no-print" id="btn-open-plan" type="button">Open plan</button>
-      <button class="btn ghost no-print" id="btn-export-report" type="button">Export report</button>
-      <button class="btn ghost plan-bar-edit no-print" id="btn-edit-plan">Edit plan ↓</button>
     </div>
 
     <div class="plan-bar-drawer">
@@ -2324,7 +2295,7 @@
       <div class="canvas-head-eyebrow">Projected outcome at retirement</div>
       <h1 class="headline">Retirement plan</h1>
       <p class="headline-sub">
-        <span id="headline-anchor-name">Spouse A</span> retires at age <span class="num" id="headline-age">65</span> with <span class="num" id="headline-income">R —</span> per month starting retirement income, in today's money.
+        <span id="headline-anchor-name">Spouse A</span> retires at age <span class="num" id="headline-age">65</span>.
       </p>
     </div>
     <div class="canvas-actions no-print">
@@ -2408,6 +2379,21 @@
         <div class="osub" id="sum-years-sub">retiring in —</div>
       </div>
     </div>
+
+    <section class="narrative gap-solver" id="gap-solver" data-goal-active="false">
+      <div class="narrative-eyebrow" id="gap-eyebrow">Closing the gap</div>
+      <div class="narrative-body">
+        <div class="gap-routes" id="gap-routes" data-goal-active="false">
+          <p id="gap-routes-intro"></p>
+          <ul class="gap-route-list">
+            <li id="gap-route-contrib" data-goal-active="false"></li>
+            <li id="gap-route-retage" data-goal-active="false"></li>
+            <li id="gap-route-none" data-goal-active="false"></li>
+          </ul>
+        </div>
+        <p class="gap-leverage" id="gap-leverage"></p>
+      </div>
+    </section>
 
     <section class="narrative" id="narrative-summary">
       <div class="narrative-eyebrow">In plain terms</div>
@@ -2528,6 +2514,9 @@
   </div>
 
   <div class="print-summary" id="print-summary" data-view-only="filled+compare">
+   <details class="accordion appendix-toggle" id="appendix-toggle">
+    <summary>Methodology &amp; disclaimer</summary>
+    <div class="accordion-body">
     <h2>Summary of assumptions and outcome</h2>
 
     <details class="accordion" data-accordion="tables">
@@ -2605,6 +2594,8 @@
         </div>
       </div>
     </details>
+    </div>
+   </details>
   </div>
 
   <!-- ========================================================
@@ -3832,10 +3823,10 @@
     set('sum-years', p.years);
     set('sum-years-sub', 'retiring in ' + p.retirementYearCalendar);
 
-    // State 2 sub-line numbers (h1 is static "Retirement plan"; the
-    // factual sentence under it carries name + age + income).
+    // State 2 sub-line (h1 is static "Retirement plan"; the factual sentence
+    // under it carries name + age only — the income figure lives in the
+    // outcome strip, the single loud source, so it isn't repeated here).
     set('headline-age', p.retirementAge);
-    set('headline-income', fmtR(p.monthlyIncomeReal));
     var anchorKey = resolveAnchorSpouseKey();
     var anchorNameEl = document.getElementById('headline-anchor-name');
     if (anchorNameEl) anchorNameEl.textContent = spouseNames[anchorKey];
@@ -3854,6 +3845,58 @@
         setGoalActive('sum-income-goal', false);
       }
     }
+  }
+
+  // Closing-the-gap card. Always shows the contribution-leverage line when the
+  // horizon is valid; adds the two single-lever routes when a goal is set and
+  // there is a shortfall. Hidden entirely on a degenerate horizon. State 2 only
+  // (the card lives inside the data-view-only="filled" block).
+  function updateGapSolver(p){
+    if (!document.getElementById('gap-solver')) return;
+    var marginal = (p.years >= 1) ? marginalIncomePer1000(p.inputs) : 0;
+    if (!(p.years >= 1) || !isFinite(marginal) || marginal <= 0){
+      setGoalActive('gap-solver', false);
+      return;
+    }
+    setGoalActive('gap-solver', true);
+
+    var routes = solveGapRoutes(p.inputs);
+    if (routes){
+      set('gap-eyebrow', 'Closing the gap');
+      setGoalActive('gap-routes', true);
+      var goalStr = fmtR(p.inputs.incomeGoal);
+      var anyRoute = routes.contribReachable || routes.retReachable;
+      document.getElementById('gap-routes-intro').innerHTML = anyRoute
+        ? 'To reach the ' + goalStr + ' monthly goal, in today’s money, either:'
+        : 'The ' + goalStr + ' monthly goal is out of reach by saving more or retiring later on their own:';
+
+      var liC = document.getElementById('gap-route-contrib');
+      if (routes.contribReachable){
+        liC.innerHTML = 'Increase contributions by <strong>' + fmtR(routes.contribPerMonth) + ' a month</strong>.';
+        setGoalActive('gap-route-contrib', true);
+      } else { setGoalActive('gap-route-contrib', false); }
+
+      var liR = document.getElementById('gap-route-retage');
+      if (routes.retReachable){
+        var yr = routes.retYears;
+        liR.innerHTML = 'Or retire <strong>' + yr + ' year' + (yr === 1 ? '' : 's') +
+          ' later</strong>, at age ' + routes.retAge + '.';
+        setGoalActive('gap-route-retage', true);
+      } else { setGoalActive('gap-route-retage', false); }
+
+      var liN = document.getElementById('gap-route-none');
+      if (!anyRoute){
+        liN.innerHTML = 'Closing it will take a change to the household’s assumptions, not one lever on its own.';
+        setGoalActive('gap-route-none', true);
+      } else { setGoalActive('gap-route-none', false); }
+    } else {
+      set('gap-eyebrow', 'Contribution leverage');
+      setGoalActive('gap-routes', false);
+    }
+
+    document.getElementById('gap-leverage').innerHTML =
+      'Each extra <strong>R1 000 a month</strong> in contributions adds about <strong>' +
+      fmtR(marginal) + ' a month</strong> to retirement income, in today’s money.';
   }
 
   // Individual button visibility — the State 3 compact head contains both
@@ -3875,11 +3918,12 @@
   // monthlyIncomeReal exactly, because positions 0..years are identical to the
   // base run and the marker age equals the reference age there. Always real —
   // no nominal variant (future-rand income at a future age is misleading).
-  function incomeCurveData(inputs){
+  function incomeCurveData(inputs, extraYears){
+    if (!isFinite(extraYears)) extraYears = 10;
     var refAge = inputs.anchor === 'youngest'
       ? Math.min(inputs.ageA, inputs.ageB)
       : Math.max(inputs.ageA, inputs.ageB);
-    var maxAge = inputs.retirementAge + 10;
+    var maxAge = inputs.retirementAge + extraYears;
     var ext = Object.assign({}, inputs, { retirementAge: maxAge });
     var pe = project(ext);
     return {
@@ -3889,6 +3933,88 @@
       }),
       markerIndex: Math.max(0, inputs.retirementAge - refAge),
       markerAge: inputs.retirementAge
+    };
+  }
+
+  // ===== Closing-the-gap solver (Feature 1) + contribution leverage (Feature 2) =====
+  // Projected monthly income is AFFINE in the total monthly contribution:
+  // I(c) = I0 + k*Δc. Contributed capital, growth on it, CPI deflation, and the
+  // fixed-age SWR are all linear in the contribution amount, and every pot shares
+  // one return/escalation/CPI, so the slope k is independent of how the increase
+  // is split across the four legs. (The one corner that is not exactly affine is
+  // an outflow capital event large enough to be CAPPED at the available
+  // discretionary balance — raising contributions can lift that cap. In practice
+  // discretionary is positive and the error is sub-R100; the round-up-to-R100 on
+  // the contribution route absorbs it.) This lets us solve in closed form rather
+  // than by binary search.
+
+  // Return a clone of inputs with total monthly contribution raised by deltaTotal,
+  // preserving the household's existing split (even split if the base total is 0).
+  function bumpContribs(inputs, deltaTotal){
+    var T = totalMonthlyContribs(inputs);
+    var out = Object.assign({}, inputs);
+    if (T > 0){
+      var f = (T + deltaTotal) / T;
+      out.contribRetA = inputs.contribRetA * f;
+      out.contribRetB = inputs.contribRetB * f;
+      out.contribDiscA = inputs.contribDiscA * f;
+      out.contribDiscB = inputs.contribDiscB * f;
+    } else {
+      var each = deltaTotal / 4;
+      out.contribRetA = each; out.contribRetB = each;
+      out.contribDiscA = each; out.contribDiscB = each;
+    }
+    return out;
+  }
+
+  // Feature 2: today's-money monthly income added per extra R1 000/month of total
+  // contribution. Two project() runs; pure given project().
+  function marginalIncomePer1000(inputs){
+    var i0 = project(inputs).monthlyIncomeReal;
+    var i1 = project(bumpContribs(inputs, 1000)).monthlyIncomeReal;
+    return i1 - i0;
+  }
+
+  // Feature 1: the single-lever routes to the income goal. Returns null when no
+  // goal is set, when the goal is already met, or when the horizon is degenerate.
+  // Pure given project() + incomeCurveData().
+  function solveGapRoutes(inputs){
+    var goal = (inputs && isFinite(inputs.incomeGoal)) ? inputs.incomeGoal : 0;
+    if (!(goal > 0)) return null;
+    var p0 = project(inputs);
+    if (!(p0.years >= 1)) return null;
+    var i0 = p0.monthlyIncomeReal;
+    if (i0 >= goal) return null;                 // no shortfall
+    var shortfall = goal - i0;
+
+    // Contribution route: closed form from the affine slope.
+    var kPerRand = marginalIncomePer1000(inputs) / 1000;
+    var contribPerMonth = null, contribReachable = false;
+    if (kPerRand > 1e-9){
+      contribPerMonth = Math.ceil((shortfall / kPerRand) / 100) * 100; // round up to R100
+      contribReachable = true;
+    }
+
+    // Retire-later route: first age beyond the planned retirement age whose
+    // today's-money starting income clears the goal. Scan out to +20 years.
+    var curve = incomeCurveData(inputs, 20);
+    var retAge = null, retYears = null, retReachable = false;
+    for (var i = 0; i < curve.ages.length; i++){
+      if (curve.ages[i] > inputs.retirementAge && curve.incomeReal[i] >= goal){
+        retAge = curve.ages[i];
+        retYears = curve.ages[i] - inputs.retirementAge;
+        retReachable = true;
+        break;
+      }
+    }
+
+    return {
+      shortfall: shortfall,
+      contribPerMonth: contribPerMonth,
+      contribReachable: contribReachable,
+      retAge: retAge,
+      retYears: retYears,
+      retReachable: retReachable
     };
   }
 
@@ -4247,23 +4373,6 @@
   // Narrative copy rule: no em-dashes (U+2014) in any string below. Use
   // commas, full stops, or rephrase. The narrative is read aloud in client
   // meetings; em-dashes don't parse audibly and read as dashboard shorthand.
-  function goalSentence(projectedIncome, goal){
-    if (!(goal > 0)) return null;
-    var pct = Math.round(100 * projectedIncome / goal);
-    var shortfall = projectedIncome - goal;
-    var absAmt = fmtR(Math.abs(shortfall));
-    if (pct >= 100){
-      return 'This projects <strong>ahead of</strong> the household’s ' + fmtR(goal) +
-             ' monthly goal by ' + absAmt + ' a month, in today’s money.';
-    }
-    if (pct >= 90){
-      return 'This lands just short of the ' + fmtR(goal) +
-             ' monthly goal, by ' + absAmt + ' a month in today’s money.';
-    }
-    return 'This covers <strong>' + pct + '%</strong> of the ' + fmtR(goal) +
-           ' monthly goal, a gap of ' + absAmt + ' a month in today’s money.';
-  }
-
   function eventsSentence(events){
     var nIn = 0, nOut = 0;
     for (var i = 0; i < events.length; i++){
@@ -4276,40 +4385,18 @@
            ' to the discretionary portfolio along the way.';
   }
 
+  // One-line plain-English summary for State 2. Kept deliberately short — the
+  // outcome strip, gap card, and plan-bar already carry the numbers; this gives
+  // the spoken framing without restating every assumption. Em-dash-free.
   function describeCurrentPosition(p){
-    var inputs = p.inputs;
-    var hhMonthly = totalMonthlyContribs(inputs);
-    var last = p.real.total.length - 1;
-    var retShare = p.real.total[last] > 0
-      ? Math.round(100 * p.real.ret[last] / p.real.total[last])
-      : 0;
-    var discShare = Math.max(0, 100 - retShare);
-
-    var sentences = [];
-    sentences.push(
-      'At a <strong>' + fmtPct(inputs.rNom * 100) + '</strong> nominal return and <strong>' +
-      fmtPct(inputs.cpi * 100) + '</strong> inflation, with combined monthly contributions of <strong>' +
-      fmtR(hhMonthly) + '</strong> escalating at ' + fmtPct(inputs.esc * 100) + ' per year, ' +
-      'the household is projected to accumulate <strong>' + fmtR(p.finalTotalReal) + '</strong> in today’s money by ' +
-      p.retirementYearCalendar + ' (about ' + fmtShort(p.finalTotalNom) + ' in future rands).'
-    );
-    if (p.real.total[last] > 0){
-      sentences.push(
-        'Roughly ' + retShare + '% of that sits in retirement-fund savings and ' +
-        discShare + '% in discretionary.'
-      );
+    var goal = p.inputs.incomeGoal;
+    var s = 'Projected <strong>' + fmtR(p.monthlyIncomeReal) +
+      '</strong> a month in today’s money, before tax';
+    if (goal > 0){
+      var pct = Math.round(100 * p.monthlyIncomeReal / goal);
+      s += ', covering <strong>' + pct + '%</strong> of the ' + fmtR(goal) + ' monthly goal';
     }
-    sentences.push(
-      'Drawn at ' + fmtSwr(p.refAge + p.years) + ' per year, the safe withdrawal rate for retiring at age ' +
-      (p.refAge + p.years) + ', the projected capital supports about <strong>' +
-      fmtR(p.monthlyIncomeReal) + ' per month</strong> in retirement, in today’s money and before tax.'
-    );
-    var gs = goalSentence(p.monthlyIncomeReal, inputs.incomeGoal);
-    if (gs) sentences.push(gs);
-    if (p.events && p.events.length > 0){
-      sentences.push(eventsSentence(p.events));
-    }
-    return sentences.join(' ');
+    return s + '.';
   }
 
   function describeBaselinePosition(bline){
@@ -4581,6 +4668,45 @@
     el.value = v.toLocaleString('en-ZA').replace(/,/g, ' ');
   }
 
+  // Test-only convenience: populate a representative household and jump straight
+  // to the projection, so the tool can be exercised without re-typing inputs.
+  // Wired to the "Load sample data (test)" button on the empty screen.
+  function loadSampleData(){
+    spouseNames.A = 'David';
+    spouseNames.B = 'Sarah';
+    // Mirror the names into the State 1 first-name inputs (cosmetic; State 1 is
+    // about to be left) and set the family/client name everywhere it's read.
+    document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
+      el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
+    });
+    var fam = document.getElementById('family-name');
+    if (fam){ fam.textContent = 'Bennett'; fam.classList.remove('is-placeholder'); }
+    var cn = document.getElementById('client-name');
+    if (cn) cn.value = 'David & Sarah Bennett';
+    var cne = document.getElementById('client-name-edit');
+    if (cne) cne.value = 'David & Sarah Bennett';
+
+    document.getElementById('hp-age-A').value = '48';
+    document.getElementById('hp-age-B').value = '46';
+    setHpFormatted('hp-ret-A', 2000000);
+    setHpFormatted('hp-ret-B', 2000000);
+    setHpFormatted('hp-disc-A', 500000);
+    setHpFormatted('hp-disc-B', 500000);
+    setHpFormatted('hp-ret-contrib-A', 15000);
+    setHpFormatted('hp-ret-contrib-B', 15000);
+    setHpFormatted('hp-disc-contrib-A', 3000);
+    setHpFormatted('hp-disc-contrib-B', 3000);
+    document.getElementById('retirement-age').value = '65';
+    document.getElementById('return').value = '9';
+    document.getElementById('cpi').value = '5';
+    document.getElementById('esc').value = '5';
+    setHpFormatted('income-goal', 100000);
+
+    projectionRequested = true;
+    refresh();
+    window.scrollTo(0, 0);
+  }
+
   function applyScenarioContrib(kind){
     if (!scenarioAnchors) return;
     var anchor = kind === 'ret' ? scenarioAnchors.retContrib : scenarioAnchors.discContrib;
@@ -4691,6 +4817,7 @@
     var p = project(inputs);
     lastProjection = p;
     updateSummary(p);
+    updateGapSolver(p);
     updatePlanBar(p);
     updateViewVisibility();
     // Main chart card only renders in State 2 (no baseline); State 3 uses
@@ -5990,7 +6117,11 @@
     // Refresh every events container so the drawer reflects any edits made in State 1.
     renderEvents();
     refresh();
+    // The CTA sits at the bottom of State 1, so land at the top of State 2
+    // rather than wherever the page was scrolled.
+    window.scrollTo(0, 0);
   });
+  document.getElementById('btn-load-sample').addEventListener('click', loadSampleData);
   document.getElementById('add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());
     renderEvents();

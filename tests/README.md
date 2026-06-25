@@ -4,7 +4,7 @@ Two separate test suites, both of which must pass before any change ships.
 
 ## Python tests — math audits
 
-Location: `tests/python/`. 42 tests.
+Location: `tests/python/`. 47 tests.
 
 These implement the accumulation projection from scratch in Python and assert that specific inputs produce specific outputs, checked against closed-form financial formulas where possible (FV of lump sum, ordinary annuity FV, geometric series for escalating contributions, real-rate compounding, CPI deflation).
 
@@ -17,6 +17,7 @@ Structure:
 - `test_retirement_age.py` — retirement age flexibility, anchor toggle, minimum horizon (9 tests).
 - `test_events.py` — capital events: inflow, outflow, currency mode, horizon filtering, cancellation, multi-event composition (11 tests).
 - `test_income_curve.py` — income-by-retirement-age curve + age-based SWR: single extended run matches per-age dedicated projections, marker equals headline income, events beyond the planned age, the `swr_for_age` table/floor/clamp, closed-form SWR cross-check (5 tests).
+- `test_gap_solver.py` — closing-the-gap solver + contribution leverage: income is affine in contribution, marginal income per R1 000 matches independent runs, solved contribution closes the goal (and one R100 less misses), retire-later route is the first clearing age, null when no goal / goal met (5 tests).
 
 Run them with:
 
@@ -26,11 +27,11 @@ pip install pytest       # one-time
 pytest                   # or `pytest -v` for verbose output
 ```
 
-Expected output: `42 passed`.
+Expected output: `47 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 45 tests.
+Location: `tests/js/`. 50 tests.
 
 These exercise the actual JS inside `retirement_accumulation.html` by extracting `project()` via brace-matching and running it under Node. No Jest dependency — just `node run.js` and the built-in `assert` module.
 
@@ -45,7 +46,7 @@ node run.js
 
 Exit code 0 = all pass. Any failure prints a stack trace and exits non-zero.
 
-Expected output: `45 passed, 0 failed`.
+Expected output: `50 passed, 0 failed`.
 
 ## When to add a test
 
