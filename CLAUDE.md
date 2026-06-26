@@ -135,6 +135,27 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 19 — 2026-06-26
+
+**Shipped (report redesign):** replaced the 12-page A4-landscape export deck with a compact **3–4 page report** (`new_report.html` was the visual reference; its hardcoded sample data was NOT shipped). Pages: **Cover → Projection → (optional Scenario) → Methodology/Compliance**. The projection page's income chart is now **inline SVG** (sharp at any PDF zoom) instead of a print-time Chart.js canvas. No engine change — `project()`/`readInputs()`/`incomeCurveData()`/`swrForAge()`/`computeGoalProgress()` and all state are untouched; this is a render/markup swap. Python suite unchanged (47 green); JS suite updated (still 54 green).
+
+- **Removed:** the entire `.export-deck` CSS (old lines ~1279–2032), the 12-page `.export-deck` markup + 5 `export-chart-*` canvases, and the export JS (`buildExportDeck`, `buildExportCharts`, `destroyExportCharts`, `populate{Events,Compare,YearTable}`, `padSeries`, `toRoman`, `renumberExportPages`, `setMetaWithDelta`, `exportCharts` var). Kept + reused: `escapeHtml`, `deriveFamilyName`, `ensureExportPageSheet`/`removeExportPageSheet`, `setBind`/`setBindText` (selector retargeted `.export-deck`→`.report-deck`).
+- **Added markup:** `<section class="report-deck">` with 4 `.report-page`s (scoped CSS under `.report-deck` with report-local `--r-*` custom properties so nothing leaks into the screen UI). The scenario page carries `data-enabled` (starts `"false"`). Plus an include-scenario modal (`#report-scenario-modal`) — a sibling of the deck inside `#calc-root`.
+- **`buildReportData(p, baseline, eventsStore, spouseNames)`** — pure formatting adapter, no math. Names = spouse first names joined ("David and Sarah"), falling back to `deriveFamilyName(#client-name)` → "the Nkosi household" when both are defaults. Chart points come from `incomeCurveData(inputs)` (single source; marker income == `p.monthlyIncomeReal`). Scenario = deterministic `baseline.inputs` vs `p.inputs` lever table (retirement/discretionary contribs A+B, return, inflation, escalation, income goal, retirement age, goal-progress pp); unchanged levers render **"unchanged"** explicitly, no attribution inferred.
+- **`renderReportIncomeChart()`** — SVG generator ported from the reference (`createSvgEl`/`niceChartMax`/`xForAge`/`yForValue`, gridlines, dashed goal line drawn only when goal>0, white income path, vertical marker + gold dot at the selected age, white callout box, x-axis age labels). Targets `#report-income-chart` (viewBox `0 0 940 350`).
+- **Flow:** `#btn-export-report` → `startExport()` → if `baseline` exists, open the modal (Cancel / Export without scenario / Include scenario); else `runReportExport(false)`. `runReportExport(includeScenario)` injects the `@page` landscape sheet, sets `data-export-mode`/`export-printing`, toggles the scenario page, `populateReportDeck(buildReportData(...))`, `renumberReportPages()`, then the double-rAF → `window.print()`. `afterprint` → `teardownExport()` (no Chart.js to destroy now — SVG is inert).
+
+**Decisions (and why):**
+
+- **SVG over canvas** — a print-time canvas rasterises at screen DPI and the old deck spent effort fighting that; SVG with a viewBox is resolution-independent and needs no measurement/resize dance.
+- **Report CSS scoped under `.report-deck` with `--r-*` tokens** — the v2 palette already matches the design (`--navy: #323E5D`, `--gold: #b98936`, Inter), but a self-contained token set keeps the report visually exact and immune to future screen-token changes.
+- **Styled modal, not `confirm()`** (Pierre's pick) — on-brand 3-button prompt.
+- **Cover names: spouse-first with family fallback** (Pierre's pick).
+
+**Tests:** 54 JS (export-deck assertions rewritten for the report deck: 4-page sequence, scenario `data-enabled`, SVG chart, modal wiring, `buildReportData` is a formatting adapter, static-prose em-dash audit; dropped the `toRoman` test) + 47 Python (unchanged), all green. Also ran an out-of-harness runtime smoke (fake DOM) through `buildReportData`→`populateReportDeck`→`renderReportIncomeChart` on the sample household: cover income R87 210/mo · age 65, scenario delta +R26 819, SVG renders, marker income == headline.
+
+**Known caveat:** No headless browser available this session, so layout (clipping/overflow on each page, page-count `NN / TT`, footer on every page) needs a browser eyeball. `new_report.html` (the prototype reference, untracked) was left in place. Regression to check: plain Cmd+P without clicking Report still produces the portrait working-copy; save/open plan still round-trips.
+
 ### Session 18 — 2026-06-26
 
 **Context:** V2 (`retirement_accumulation_v2.html`, the cockpit redesign merged in PR #17) is now Pierre's primary file. This session worked almost entirely in V2 (one fix mirrored into the original), repointed the JS harness to V2, and made it the documented primary across `CLAUDE.md` / `README.md` / `tests/README.md` / `docs/*`. No math change all session — every change is markup/render/UX over the unchanged engine.
