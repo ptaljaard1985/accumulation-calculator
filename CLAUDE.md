@@ -135,6 +135,18 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 20 — 2026-06-26
+
+**Shipped (report export bugfixes):** two fixes to the Session-19 landscape report. No engine change.
+
+1. **Page 2 showed the live scenario, not the locked baseline.** `runReportExport()` populated the deck from `lastProjection` (the live state after the scenario levers move), so the cover + projection pages rendered the adjusted scenario (e.g. R99 701 @ 10%) instead of the locked plan. Fix: `runReportExport(includeScenario)` now selects explicitly — `includeScenarioPage = includeScenario && baseline`; `mainProjection = includeScenarioPage ? baseline.p : lastProjection`; `comparisonBaseline = includeScenarioPage ? baseline : null` — and passes `buildReportData(mainProjection, comparisonBaseline, …)`. Inside `buildReportData`, the scenario comparison always plots the live plan as the "planned" side via `buildScenarioComparison(lastProjection, bline)` (the main `p` is now the baseline). Result: with a scenario, Page 2 = baseline (R87 210 @ 9.00%), Page 3 compares baseline R87 210 vs live plan R99 701 (Δ +R12 491, return +1.00%); "export without scenario" keeps Page 2 on the live plan and drops the scenario page.
+
+2. **Extra/blank pages + cover-footer-on-its-own-page.** The general print rule `.calc { padding: 16px 20px 24px }` (plus `.page` padding) shifted the deck down inside the printable area, so each exact-210mm page straddled a sheet boundary (cover footer spilled to a 2nd sheet) and the forced `page-break-after` on the last page added a trailing blank — 5 pages instead of 3, 6 instead of 4. Fix: a print block scoped to `html.export-printing` zeroes the `.workspace / .page-col / .page / #calc-root` padding/margin/min-height, pins each `.report-page` to 297×210mm with `overflow: hidden`, forces breaks between pages, sets `:last-of-type { page-break-after: auto }` (no trailing blank), and hides the disabled scenario page. The portrait/working-copy print path is untouched (different scope).
+
+**Tests:** 56 JS (54 + 2 new: projection-selection logic in `runReportExport`/`buildReportData`; the export-scoped print wrapper resets) + 47 Python (unchanged), all green. Bug 1 also verified numerically via a fake-DOM smoke (baseline @ 9% → R87 210; live plan @ 10% → R99 701; deltas as above).
+
+**Known caveat:** Bug 2 is CSS-only and verified by reasoning + the structural test; the exact page count (3 / 4, no blanks, no footer-only page) still needs a browser print-preview — no headless browser available this session.
+
 ### Session 19 — 2026-06-26
 
 **Shipped (report redesign):** replaced the 12-page A4-landscape export deck with a compact **3–4 page report** (`new_report.html` was the visual reference; its hardcoded sample data was NOT shipped). Pages: **Cover → Projection → (optional Scenario) → Methodology/Compliance**. The projection page's income chart is now **inline SVG** (sharp at any PDF zoom) instead of a print-time Chart.js canvas. No engine change — `project()`/`readInputs()`/`incomeCurveData()`/`swrForAge()`/`computeGoalProgress()` and all state are untouched; this is a render/markup swap. Python suite unchanged (47 green); JS suite updated (still 54 green).
