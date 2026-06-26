@@ -2,6 +2,28 @@
 
 This document describes the internal structure of `retirement_accumulation.html`. Read this if you're about to modify the code. Math and conventions are in `CALCULATIONS.md`; visual choices are in `DESIGN.md`.
 
+## Primary file: V2 cockpit (`retirement_accumulation_v2.html`)
+
+**`retirement_accumulation_v2.html` is now the active deliverable.** It is the "Private Client Planning Cockpit" re-skin of the original — same `project()` engine and projection math, restyled: Inter font (replacing Fraunces/Inter Tight on the chrome), a cockpit brand-blue palette, a full-bleed sticky top bar, and card shadows. The original `retirement_accumulation.html` is retained but secondary (kept for reference / fallback). The JS test harness (`tests/js/run.js`) now reads v2 (it extracts `project()` and the pure helpers from `retirement_accumulation_v2.html`).
+
+The bulk of this document still describes the **original** file (with its approximate line ranges and the `data-view` three-state tree). v2 keeps that architecture; the sections below summarise where v2's State-2 structure now diverges. When a description here conflicts with v2, v2 wins — but most of the engine, render-pipeline, and naming conventions are shared verbatim.
+
+### Session changes to State 2 (v2; some in both files)
+
+1. **`clearBaseline()` true revert (BOTH files).** New pure helper `baselineRestoreFields(bi)` returns `{ money: { id→number, … }, plain: { id→number, … } }` partitioning the locked `baseline.inputs` into money fields (written back via `setHpFormatted`) and plain fields (written back via `.value`). `clearBaseline()` now writes those values onto the canonical DOM inputs and restores the anchor via `setAnchor(bi.anchor)` **before** nulling `baseline`, so on clear State 2 shows the originally-locked plan rather than the scenario-lever adjustments that drifted the inputs while compare was open.
+
+2. **Edit button is a static label.** The plan-bar `#btn-edit-plan` reads "Edit info ↓" in every state. `wireDrawer` toggles `data-open` on the plan-bar but no longer swaps the button text (previously cycled "Advisor view" / "Edit plan ↓" / "Close ↑").
+
+3. **State-2 toolbar row removed.** The `#canvas-head-filled` row (Real/Nominal seg + "Lock as baseline" button) is deleted. The Real/Nominal toggle (`#btn-pv` / `#btn-fv`, same ids) moved **into** `.chart-card-head` inside a new `.chart-head-toggles` flex group, to the left of the Income/Capital/Breakdown/Table view seg. `#btn-lock` is gone. The top-bar "Compare" button `#btn-compare-top` is now wired in the main IIFE: `if (!baseline) lockBaseline(); else` scroll to `.compare`. The separate second `<script>` bridge IIFE was deleted.
+
+4. **New `updateRecapCard(p)` render function.** Called in `refresh()` immediately after `updatePlanBar(p)`. Paints the new "Current plan" recap card from `p.inputs` using `fmtR` / `fmtPct` and the null-safe `set()`. The card's spouse-name column headers carry `data-spouse` + `data-spouse-template="header"` so `renderSpouseLabels()` keeps them synced. Ids: `recap-ret-A/B`, `recap-disc-A/B`, `recap-contrib-ret-A/B`, `recap-contrib-disc-A/B`, `recap-return`, `recap-cpi`, `recap-esc`.
+
+5. **Appendix collapsed; `updatePrintSummary` deleted.** The `#print-summary` block lost its "Detail tables" accordion (and the events + baseline-comparison subsections inside it, and the `<h2>`). The single `#appendix-toggle` ("Methodology & disclaimer") now shows methodology + disclaimer directly via `<h3>` subheads, with no inner accordions. The whole `updatePrintSummary(p)` function was **deleted** and its `refresh()` call removed — every `s-*` id it wrote lived in the removed Detail-tables block. The print-forcing handlers still iterate `details.accordion` generically, so the remaining outer accordion forces open in print as before.
+
+6. **Foot buttons removed.** The State-2 and State-3 `.canvas-foot-actions` blocks (Table view + Print/PDF in State 2; Print/PDF in State 3) are gone from the markup; the "Illustrative only…" foot text remains. (The `.canvas-foot-actions` CSS rule survives but is now unused.) The Report button (`#btn-export-report` → `startExport`) is the export path and is independent of the foot.
+
+7. **`buildYearTable(p)` rewritten to a reconciliation flow.** Columns: Year · Age A · Age B · Opening · Contributions · Growth · [Capital events — only when `p.events.length > 0`] · Closing. Respects the Real/Nominal `mode` (the chosen series is `real` or `nominal`). Per row: `opening = series.total[i-1]`; `contrib` = the `series.cumulContribs` diff; `event` = mode-deflated `p.eventImpactNom[i]`; `growth = closing − opening − contrib − event` (a residual, so every row reconciles by construction). The old per-pot and baseline/delta columns are dropped — the table only renders in State 2.
+
 ## The one-file principle
 
 Everything lives in one HTML file. The `<head>` holds two `<link>` tags (Google Fonts preconnect + stylesheet) and a `<style>` block with design tokens + ~1100 lines of component CSS. The `<body>` holds the page structure. A single `<script>` block at the bottom holds all the logic.
@@ -58,10 +80,14 @@ return 'empty';
     </div>
 
     <!-- STATE 2 canvas head -->
+    <!-- ORIGINAL file: this head held a Real/Nominal toggle + "Lock as baseline".
+         v2: that #canvas-head-filled toolbar row is REMOVED. Real/Nominal
+         (#btn-pv/#btn-fv) moved into .chart-card-head's .chart-head-toggles;
+         #btn-lock is gone; the top-bar #btn-compare-top now drives lock/compare. -->
     <div class="canvas-head" data-view-only="filled">
       eyebrow + serif headline "Retirement plan" + factual sub-line
       ("[Name] retires at age 65 with R ___ per month starting retirement
-      income, in today's money.") + Real/Nominal toggle + Lock as baseline
+      income, in today's money.")
     </div>
 
     <!-- STATE 3 canvas head (compact) -->
@@ -79,7 +105,7 @@ return 'empty';
       <div class="outcome-strip">
         primary (Monthly income) + .outcome-gap #gap-solver (Closing the gap / Contribution leverage)
       </div>
-      <div class="canvas-foot">illustrative line + Table view + Print/PDF</div>
+      <div class="canvas-foot">illustrative line (v2: Table view + Print/PDF foot buttons removed)</div>
     </div>
 
     <!-- STATE 3 body -->
@@ -94,20 +120,22 @@ return 'empty';
       </div>
       <div class="compare-legend">retirement fund · discretionary</div>
       <div class="scenario-levers">4-column slider grid</div>
-      <div class="canvas-foot">illustrative line + Print/PDF</div>
+      <div class="canvas-foot">illustrative line (v2: Print/PDF foot button removed)</div>
     </div>
 
-    <!-- Compliance appendix — same for all states. On screen it collapses to
-         ONE outer accordion (Session 16); the three sub-accordions live inside
-         its body. Print forces every details.accordion open and flattens them. -->
+    <!-- Compliance appendix — same for all states. One outer accordion.
+         ORIGINAL: its body held an <h2> + three sub-accordions (Detail tables /
+         Methodology / Disclaimer). v2: the "Detail tables" accordion (and the
+         events + baseline-comparison subsections + the <h2>) is removed;
+         methodology + disclaimer now render directly as <h3> subheads (no inner
+         accordions). updatePrintSummary was deleted with the tables block.
+         Print still forces every details.accordion open and flattens them. -->
     <div class="print-summary">
      <details class="accordion appendix-toggle" id="appendix-toggle">
       <summary>Methodology & disclaimer</summary>
       <div class="accordion-body">
-        <h2>Summary of assumptions and outcome</h2>
-        <details class="accordion" data-accordion="tables">Detail tables ...</details>
-        <details class="accordion" data-accordion="methodology">Methodology ...</details>
-        <details class="accordion" data-accordion="disclaimer">Disclaimer ...</details>
+        <h3>Methodology ...</h3>     <!-- v2: direct subheads, no inner accordions -->
+        <h3>Disclaimer ...</h3>
       </div>
      </details>
     </div>
@@ -178,6 +206,7 @@ Each pulls from the `project()` result and updates the DOM:
 
 - `updateSummary(p)` — outcome strip primary cell (Monthly income `#sum-income` + safe-withdrawal sub-line + the goal-progress sub-line `#sum-income-goal` when `incomeGoal > 0`) plus the State 2 headline sub-line (`#headline-age` and the `#headline-anchor-name` reference-spouse span — Session 16 trimmed the income figure out of the sub-line, so `#headline-income` no longer exists). The State 2 `<h1>` is static ("Retirement plan"). **Session 17** removed the Household-capital and Years-to-retirement cells, so this no longer writes `#sum-capital` / `#sum-years`.
 - `updatePlanBar(p)` — populates the drawer meta labels (household completion, retire-at, market-summary, events count, goal), the events helper's ref-spouse name, and the plan-bar "Prepared for" line (`#plan-bar-for`). Session 16 removed the six summary fact cells from the strip (the header now carries only identity + actions), so the `set('fact-*', …)` / `setGoalActive('fact-goal-cell', …)` calls here are deliberately left as null-safe no-ops rather than ripped out.
+- `updateRecapCard(p)` — *(v2 only)* paints the "Current plan" recap card from `p.inputs` (balances, contributions, return/CPI/escalation) via `fmtR` / `fmtPct` and the null-safe `set()`. Called right after `updatePlanBar(p)`. Its spouse-name column headers carry `data-spouse` + `data-spouse-template="header"` so `renderSpouseLabels()` syncs them. Ids: `recap-ret-A/B`, `recap-disc-A/B`, `recap-contrib-ret-A/B`, `recap-contrib-disc-A/B`, `recap-return`, `recap-cpi`, `recap-esc`.
 - `updateViewVisibility()` — computes `deriveViewState()`, writes `data-view` on the root, toggles display on every `[data-view-only]` node. Called first in every `refresh()` so chart builds see correct visibility.
 - `swrForAge(age)` — age-based safe withdrawal rate (decimal fraction), replacing the former flat 5% income rule (Session 13). Table (held inside the function so the Node harness extracts it alongside `project`) covers ages 55-100; below 55 drops 0.1pp/yr from 4.2% floored at 3.5%; above 100 held at 25%. `fmtSwr(age)` formats it as a one-decimal percent for labels. Used by `project()` (headline `monthlyIncomeReal = finalTotalReal * swrForAge(refAge + years) / 12`), `incomeCurveData` (per candidate age), and the income display surfaces.
 - `incomeCurveData(inputs, extraYears)` — pure helper for the Income view. Clones `inputs`, sets `retirementAge` to `retirementAge + extraYears` (optional, **default 10**; the gap solver passes `20`), runs `project()` once, and returns `{ ages, incomeReal, markerIndex, markerAge }` where `incomeReal[i] = real.total[i] * swrForAge(ages[i]) / 12` (today's-money starting income if retiring at year `i`, using that age's SWR) and `markerIndex = retirementAge − refAge`. Because `project()` positions are independent of horizon length and the marker age equals the reference age there, `incomeReal[markerIndex]` equals the base run's `monthlyIncomeReal` exactly. Pure (given `project`), so the Node test harness extracts and exercises it directly.
@@ -186,10 +215,10 @@ Each pulls from the `project()` result and updates the DOM:
 - `buildIncomeCurveChart(p)` — State 2 **Income** chart (the default first view). A single `type: 'line'` dataset (navy line, faint navy fill) of `incomeCurveData(p.inputs).incomeReal` vs candidate age. **Always real** — ignores `mode` (nominal future-rand income at a future age is misleading). The dashed vertical "planned retirement age" marker is drawn by `retAgeMarkerPlugin`, a chart-local inline plugin (a plain hook object in the config's `plugins: [...]` array — NOT chartjs-plugin-annotation) reading `chart.$markerIndex` / `chart.$markerAge` in `afterDatasetsDraw`. On first build it calls `chartIncome.update('none')` so the marker paints (the initial `new Chart` draw runs before the marker props are set).
 - `buildCapitalChart(p)` — State 2 capital chart. Gold discretionary on bottom, navy retirement on top. No baseline-overlay line (State 3 replaces that entire idea).
 - `buildBreakdownChart(p)` — three-layer stacked bars (greys + gold).
-- `buildYearTable(p)` — HTML table inside the chart-card slot, sticky year column.
+- `buildYearTable(p)` — HTML table inside the chart-card slot, sticky year column. **v2: rewritten to a reconciliation flow.** Columns: Year · Age A · Age B · Opening · Contributions · Growth · [Capital events, only when `p.events.length > 0`] · Closing. Respects the Real/Nominal `mode`. Per row `growth = closing − opening − contrib − event` is a residual so each row reconciles by construction; the old per-pot and baseline/delta columns are dropped. Renders in State 2 only.
 - `buildCompareCharts(p)` → `ensureCompareChart(...)` — State 3's two independent Chart.js instances. Both share the same y-ceiling (`max(baseline.total, scenario.total) × 1.05`) so bars line up visually. Baseline chart renders at 0.35 opacity (alpha applied to the rgba fills, not via a CSS filter — filter would wreck Chart.js hover).
 - `updateCompareCards(p)` — populates the hero numbers, sub-lines, meta rows, and the delta chip on the scenario card. `setMetaDelta(id, delta, kind)` writes the inline `em` deltas beside changed meta values; `kind` supports `currency`, `pct`, `years`, and `pp` (percentage-point delta used by the goal-progress row). A fifth meta-row on each card (`#cmp-baseline-goal-row` / `#cmp-scenario-goal-row`) renders `Goal progress · N% of R X` when the adviser-level `incomeGoal` is set; both cards read against the same current goal, not a baseline-frozen snapshot. The N% is wrapped in a `goal-progress-on-track` (green) or `goal-progress-behind` (red) span so the traffic-light tone matches the outcome strip.
-- `updatePrintSummary(p)` — compliance-appendix tables plus the conditional goal row (`#s-goal-row`) gated on `computeGoalProgress(p)`. The print cell wraps the % in the same `goal-progress-*` class span so printed PDFs carry the green/red signal.
+- `updatePrintSummary(p)` — *(original only)* compliance-appendix tables plus the conditional goal row (`#s-goal-row`) gated on `computeGoalProgress(p)`, wrapping the % in a `goal-progress-*` span. **v2 deletes this function entirely** — the Detail-tables block it wrote (every `s-*` id) was removed and the call dropped from `refresh()`; v2's "Current plan" recap card (`updateRecapCard`) covers the on-screen starting-position readout instead.
 - *(removed Session 17)* `updateNarrative(p)` — the "In plain terms" card renderer is gone, along with the card markup; State 2 no longer shows a narrative (the outcome strip carries the headline number + goal progress; State 3's compare cards carry the story). The `describeCurrentPosition` / `describeBaselinePosition` / `describePlannedScenario` helpers stay in the source (they are extracted by name in the JS test suite and kept for potential reuse) but have no on-screen renderer now. They remain em-dash-free and still use `eventsSentence`.
 - `renderSpouseLabels()` — walks `[data-spouse]` nodes and rewrites their text from `spouseNames`. Templates currently supported: `header`, `summary-pos`, `summary-contrib`, `chip` (chip renders just the name, used by the State 1 retire-when row).
 - `updateAnchorChips()` — toggles `.is-on` on the two State 1 `.empty-name-chip` buttons from the current `anchor` rule plus the current ages (ties break to A, matching `resolveYoungerOlder`). Called once per `refresh()` next to `renderSpouseLabels()`, so chip selection stays correct regardless of whether the user clicked a chip, used the drawer Youngest/Oldest toggle, or changed an age field.
@@ -207,6 +236,7 @@ lastProjection = p;
 updateSummary(p);
 updateGapSolver(p);
 updatePlanBar(p);
+updateRecapCard(p);    // v2 — paints the "Current plan" recap card from p.inputs
 updateViewVisibility();
 if (!baseline) {
   if (chartView === 'income') buildIncomeCurveChart(p);
@@ -217,7 +247,7 @@ if (!baseline) {
   buildCompareCharts(p);
 }
 updateCompareCards(p);
-updatePrintSummary(p);
+// (v2: updatePrintSummary(p) removed — the function was deleted with the Detail-tables block)
 renderSpouseLabels();
 updateAnchorChips();
 updateScenarioReadouts();
@@ -227,7 +257,7 @@ The chart branch is skipped for the view that isn't active — main charts only 
 
 ### 7. Baseline lock
 
-`lockBaseline()` captures `{ inputs, p, monthlyIncomeReal, finalTotalReal }` AND captures scenario anchors. `clearBaseline()` resets both. The two compare Chart.js instances persist across lock/clear cycles — re-locking just updates their data and animates.
+`lockBaseline()` captures `{ inputs, p, monthlyIncomeReal, finalTotalReal }` AND captures scenario anchors. `clearBaseline()` (BOTH files, this session) now does a **true revert**: it writes the locked `baseline.inputs` back onto the canonical DOM inputs (money via `setHpFormatted`, plain via `.value`, partitioned by the pure helper `baselineRestoreFields(bi)`) and restores `setAnchor(bi.anchor)` **before** nulling `baseline` — so State 2 shows the originally-locked plan, not the scenario-lever drift. The two compare Chart.js instances persist across lock/clear cycles — re-locking just updates their data and animates.
 
 **Hard freeze semantics**: the baseline includes return and CPI assumptions. Changing them after lock moves the planned line but not the baseline line. Deliberate — a "lock" that doesn't lock everything would be confusing in a meeting.
 
@@ -257,7 +287,7 @@ The two State 1 retire-when chips (`.empty-name-chip`) click-to-anchor. On click
 
 ### 10. Drawer toggle
 
-A small IIFE at the bottom wires `#btn-edit-plan` to toggle `data-open` on the plan-bar. The CSS rule `.plan-bar[data-open="true"] .plan-bar-drawer { display: grid; }` does the rest. No animation — the drawer appears/vanishes instantly.
+A small IIFE at the bottom (`wireDrawer`) wires `#btn-edit-plan` to toggle `data-open` on the plan-bar. The CSS rule `.plan-bar[data-open="true"] .plan-bar-drawer { display: grid; }` does the rest. No animation — the drawer appears/vanishes instantly. **v2:** the button is a static "Edit info ↓" label — `wireDrawer` no longer swaps its text (the original cycled "Advisor view" / "Edit plan ↓" / "Close ↑").
 
 ### 11. Chart resize (print)
 
@@ -364,7 +394,7 @@ No caching, no debouncing, no animation.
 
 ## Things worth knowing
 
-- `updatePrintSummary(p)` needs `p`; don't call it with a stale projection. `refresh()` always produces a fresh `p` and passes it through.
+- *(original only)* `updatePrintSummary(p)` needs `p`; don't call it with a stale projection. `refresh()` always produces a fresh `p` and passes it through. **v2 deletes this function** (see §5) — the equivalent on-screen readout is `updateRecapCard(p)`.
 - `baseline.p` is a full projection snapshot. Chart access is `baseline.p.real.total` or `baseline.p.nominal.total`.
 - Compare Chart.js instances persist across lock/clear cycles — `ensureCompareChart` updates in place when the chart already exists.
 - Empty-state input sync is one-way (State 1 → canonical). There's no reverse — if the user somehow lands back in State 1 after entering data, the State 1 fields won't pre-populate. Not a real flow today.

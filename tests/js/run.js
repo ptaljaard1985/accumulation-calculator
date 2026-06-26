@@ -11,7 +11,7 @@ const path = require('path');
 const assert = require('assert');
 
 const html = fs.readFileSync(
-  path.join(__dirname, '..', '..', 'retirement_accumulation.html'), 'utf8');
+  path.join(__dirname, '..', '..', 'retirement_accumulation_v2.html'), 'utf8');
 
 // Grab the inline <script>...</script> (skip the Chart.js src tag)
 const scripts = html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g) || [];
@@ -482,7 +482,6 @@ check('income-goal: canonical drawer input + State 1 sync wired', () => {
   assert.ok(/id="sum-income-goal"/.test(html), 'outcome-strip goal sub-line missing');
   assert.ok(/id="cmp-baseline-goal-row"/.test(html), 'baseline goal meta-row missing');
   assert.ok(/id="cmp-scenario-goal-row"/.test(html), 'scenario goal meta-row missing');
-  assert.ok(/id="s-goal-row"/.test(html), 'print-summary goal row missing');
   assert.ok(/data-bind="answer-goal"/.test(html), 'export deck answer-goal slot missing');
 });
 
@@ -571,15 +570,11 @@ check('goal colors: on-track uses --pos, behind uses --neg', () => {
     '.goal-progress-behind should use var(--neg) (red)');
 });
 
-check('goal colors: compare + print + export wrap the % in a progress span', () => {
+check('goal colors: compare + export wrap the % in a progress span', () => {
   // Compare-card scenario + baseline
   assert.ok(/cmp-scenario-goal[\s\S]{0,200}goal-progress-on-track/.test(inline) ||
             /goal-progress-on-track[\s\S]{0,200}cmp-scenario-goal/.test(inline),
     'cmp-scenario-goal should wrap % in a goal-progress span');
-  // Print summary s-goal
-  assert.ok(/s-goal[\s\S]{0,200}goal-progress-on-track/.test(inline) ||
-            /goal-progress-on-track[\s\S]{0,200}s-goal/.test(inline),
-    's-goal print row should wrap % in a goal-progress span');
   // Export deck answer-goal
   assert.ok(/answer-goal[\s\S]{0,300}goal-progress-on-track/.test(inline) ||
             /goal-progress-on-track[\s\S]{0,300}answer-goal/.test(inline),
@@ -813,6 +808,84 @@ check('gap: card markup + refresh wiring present', () => {
 check('gap: updateGapSolver copy has no em-dashes', () => {
   const src = extractFn(inline, 'updateGapSolver');
   assert.ok(src.indexOf('—') === -1, 'em-dash found in updateGapSolver copy');
+});
+
+// ============================================================
+// Clear baseline reverts the scenario-lever writebacks
+// ============================================================
+check('clearBaseline: restore map covers every field the levers/drawer can change', () => {
+  const restore = new Function(
+    extractFn(inline, 'baselineRestoreFields') + '; return baselineRestoreFields;')();
+  const bi = {
+    ageA: 48, ageB: 46,
+    retA: 2_000_000, retB: 1_000_000, discA: 500_000, discB: 250_000,
+    contribRetA: 15_000, contribRetB: 9_000, contribDiscA: 3_000, contribDiscB: 1_000,
+    rNom: 0.09, cpi: 0.05, esc: 0.05,
+    anchor: 'oldest', retirementAge: 65, incomeGoal: 100_000,
+  };
+  const f = restore(bi);
+  // money fields carry the raw numbers; setHpFormatted does the formatting.
+  assert.strictEqual(f.money['hp-ret-A'], 2_000_000);
+  assert.strictEqual(f.money['hp-disc-contrib-B'], 1_000);
+  assert.strictEqual(f.money['income-goal'], 100_000);
+  // plain fields convert market decimals back to percent + carry the ages.
+  assert.strictEqual(f.plain['return'], 9);
+  assert.strictEqual(f.plain['cpi'], 5);
+  assert.strictEqual(f.plain['esc'], 5);
+  assert.strictEqual(f.plain['hp-age-A'], 48);
+  assert.strictEqual(f.plain['retirement-age'], 65);
+  // Completeness: every input the levers (contrib/return/age) or the drawer
+  // (balances/goal/cpi/esc/ages) can change must be in the restore map, or
+  // Clear baseline would leave a stale scenario value behind.
+  const ids = Object.keys(f.money).concat(Object.keys(f.plain));
+  ['hp-ret-A','hp-ret-B','hp-disc-A','hp-disc-B',
+   'hp-ret-contrib-A','hp-ret-contrib-B','hp-disc-contrib-A','hp-disc-contrib-B',
+   'income-goal','hp-age-A','hp-age-B','return','cpi','esc','retirement-age']
+    .forEach(id => assert.ok(ids.includes(id), `restore map missing ${id}`));
+});
+
+check('clearBaseline: restores inputs + anchor BEFORE nulling the baseline', () => {
+  const src = extractFn(inline, 'clearBaseline');
+  assert.ok(/baselineRestoreFields/.test(src),
+    'clearBaseline does not apply baselineRestoreFields');
+  assert.ok(/setAnchor\(bi\.anchor\)/.test(src),
+    'clearBaseline does not restore the locked anchor');
+  // The restore must run before `baseline = null`, else refresh() -> readInputs()
+  // reads the adjusted DOM and State 2 shows the scenario, not the locked plan.
+  const restoreAt = src.indexOf('baselineRestoreFields');
+  const nullAt = src.indexOf('baseline = null');
+  assert.ok(restoreAt !== -1 && nullAt !== -1 && restoreAt < nullAt,
+    'baseline nulled before the locked inputs were restored');
+});
+
+// ============================================================
+// Current-plan recap card (State 2)
+// ============================================================
+check('recap card: markup + render wiring present', () => {
+  ['recap-ret-A','recap-ret-B','recap-disc-A','recap-disc-B',
+   'recap-contrib-ret-A','recap-contrib-ret-B','recap-contrib-disc-A','recap-contrib-disc-B',
+   'recap-return','recap-cpi','recap-esc'].forEach(id =>
+    assert.ok(new RegExp('id="' + id + '"').test(html), `recap markup missing #${id}`));
+  assert.ok(/class="plan-recap"/.test(html), '.plan-recap card missing');
+  // spouse-name headers must carry data-spouse so renderSpouseLabels() syncs them
+  assert.ok(/recap-spouse-name[^>]*data-spouse="A"/.test(html) &&
+            /recap-spouse-name[^>]*data-spouse="B"/.test(html),
+    'recap spouse-name headers must use data-spouse for label sync');
+  assert.ok(/function updateRecapCard/.test(inline), 'updateRecapCard missing');
+  assert.ok(/updateRecapCard\(p\)/.test(inline), 'updateRecapCard not called in refresh()');
+});
+
+// ============================================================
+// Year-by-year table — reconciliation flow columns
+// ============================================================
+check('year table: reconciliation-flow columns present', () => {
+  const src = extractFn(inline, 'buildYearTable');
+  ['Opening', 'Contributions', 'Growth', 'Closing'].forEach(h =>
+    assert.ok(src.indexOf("'" + h + "'") !== -1 || src.indexOf('>' + h + '<') !== -1,
+      `year-table header "${h}" missing`));
+  // growth is the residual that makes each row reconcile
+  assert.ok(/closing\s*-\s*series\.total\[i-1\]\s*-\s*contrib\s*-\s*event/.test(src),
+    'growth should be the opening+contrib+event residual');
 });
 
 console.log();

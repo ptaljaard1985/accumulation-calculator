@@ -2,6 +2,8 @@
 
 An interactive retirement projection tool for two-spouse pre-retiree South African households, built for use in client advisory meetings by Simple Wealth (Pty) Ltd, FSP 50637.
 
+> **Primary file: `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). It shares the original's projection engine and is the file all active work targets. The original `retirement_accumulation.html` is retained as a secondary reference. Some feature descriptions below predate the v2 redesign and reflect the original layout.
+
 ## What it does
 
 Given two spouses' current retirement-fund and discretionary balances, their monthly contribution levels, and a handful of market assumptions, the calculator projects household capital year-by-year from today to a configurable retirement age. The UI has three states:
@@ -14,7 +16,7 @@ Secondary features: optional **capital events** (one-off inflows like inheritanc
 
 ## Running it
 
-Open `retirement_accumulation.html` in a browser. That's it — no build, no server, no install.
+Open `retirement_accumulation_v2.html` (the primary file) in a browser. That's it — no build, no server, no install.
 
 External runtime deps (loaded via `<link>` / `<script>` tags): Chart.js from `cdnjs.cloudflare.com`, and the Fraunces / Inter Tight / JetBrains Mono webfont families from `fonts.googleapis.com`. Everything else — tokens, styles, logic — is inline. The file opens and computes offline; webfonts and the chart library fall back gracefully if the network is unavailable.
 
@@ -23,7 +25,8 @@ Tested on recent Safari and Chrome.
 ## Project structure
 
 ```
-retirement_accumulation.html    the deliverable (single file)
+retirement_accumulation_v2.html the primary deliverable (single file, cockpit redesign)
+retirement_accumulation.html    the original warm-paper deliverable (secondary)
 
 CLAUDE.md                       read first by Claude Code
 README.md                       this file
@@ -34,7 +37,7 @@ docs/
 tests/
   README.md                     how to run tests
   python/                       math audits (pytest, 47 tests)
-  js/                           JS tests against shipped HTML (node, 50 tests)
+  js/                           JS tests against the shipped v2 HTML (node, 54 tests)
 ```
 
 ## Running the tests

@@ -4,7 +4,9 @@ This file is read first by Claude Code on every session. It tells you what this 
 
 ## What this is
 
-A standalone HTML retirement accumulation calculator for Simple Wealth (Pty) Ltd, a South African authorised financial services provider (FSP 50637). One file, `retirement_accumulation.html`, opens by double-click, prints to PDF cleanly, and is used by the adviser (Pierre) with pre-retiree clients in real meetings.
+A standalone HTML retirement accumulation calculator for Simple Wealth (Pty) Ltd, a South African authorised financial services provider (FSP 50637). A single HTML file opens by double-click, prints to PDF cleanly, and is used by the adviser (Pierre) with pre-retiree clients in real meetings.
+
+**Primary file (since Session 18): `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky full-bleed top bar). It shares the original's projection engine but is the file all active work now targets. The original `retirement_accumulation.html` is retained as a secondary reference. Below, "the file" / "the calculator" means the v2 file unless a section is explicitly about the original. The same non-negotiable constraints apply to both.
 
 The calculator projects household capital from today to a configurable retirement age, for a two-spouse household with both retirement-fund and discretionary portfolios. Primary output is projected monthly income in today's money, computed by applying an age-based safe withdrawal rate (a schedule that rises with the retirement age, e.g. 4.8% at 65) to the combined capital at retirement, divided by twelve, before tax. Secondary outputs: capital at retirement (real and nominal), cumulative contributions, year-by-year trajectory, "lock as baseline" comparison, and an optional capital-events mechanism for one-off inflows and outflows.
 
@@ -97,23 +99,24 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 50 tests
+# JS tests (actual shipped JS) — 54 tests
 cd tests/js
 node run.js
 ```
 
-Both must pass before any change ships. See `tests/README.md`.
+Both must pass before any change ships. See `tests/README.md`. The JS harness reads `retirement_accumulation_v2.html` (the current primary file — see below).
 
 ## File inventory
 
-- `retirement_accumulation.html` — the deliverable. This is the product.
+- `retirement_accumulation_v2.html` — **the current primary deliverable.** The "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). Same projection engine as the original; all active work targets this file.
+- `retirement_accumulation.html` — the original warm-paper deliverable. Retained but secondary; only the `clearBaseline` revert fix has been mirrored into it this session.
 - `README.md` — human-readable project overview, for GitHub.
 - `CLAUDE.md` — this file.
 - `docs/ARCHITECTURE.md` — code structure in detail.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (47 tests).
-- `tests/js/` — JS tests in Node against the actual shipped HTML (50 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (54 tests).
 
 ## What not to do
 
@@ -131,6 +134,40 @@ Both must pass before any change ships. See `tests/README.md`.
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 18 — 2026-06-26
+
+**Context:** V2 (`retirement_accumulation_v2.html`, the cockpit redesign merged in PR #17) is now Pierre's primary file. This session worked almost entirely in V2 (one fix mirrored into the original), repointed the JS harness to V2, and made it the documented primary across `CLAUDE.md` / `README.md` / `tests/README.md` / `docs/*`. No math change all session — every change is markup/render/UX over the unchanged engine.
+
+**Shipped (branch off `main`; one PR):**
+
+1. **`clearBaseline` is now a true revert (BOTH files).** Bug: the scenario levers write their adjustments back onto the canonical inputs as you drag them, so clearing a baseline dropped you into State 2 showing the *adjusted scenario*, not the locked plan (`readInputs()` reads the live DOM). Fix: new pure helper `baselineRestoreFields(bi)` returns `{ money: {id→number…}, plain: {id→number…} }`; `clearBaseline()` writes the locked `baseline.inputs` back onto the canonical inputs (money via `setHpFormatted`, plain via `.value`) and restores the anchor via `setAnchor(bi.anchor)` **before** nulling `baseline`. Events are untouched (the levers never touch `eventsStore`). Applied to **both** `retirement_accumulation_v2.html` and `retirement_accumulation.html` (identical latent bug; and the JS harness needed the tested function present in whatever file it reads). Known cosmetic: a field blank at lock-time (read as 0) restores as "0" rather than blank, consistent with the lever writeback.
+
+2. **JS harness repointed to V2.** `tests/js/run.js` now reads `retirement_accumulation_v2.html`. Verified by an Explore audit that every math test (engine byte-identical bar chart colours) and every markup/string assertion passes against V2.
+
+3. **Plan-bar edit button → static "Edit info ↓" in all states.** The `wireDrawer` handler still toggles `data-open` but no longer swaps the label (was "Advisor view" / "Edit plan ↓" / "Close ↑").
+
+4. **Removed the State-2 toolbar row; folded Real/Nominal into the chart head; deleted the Lock button.** Deleted `#canvas-head-filled` (held a redundant Real/Nominal seg + "Lock as baseline →"). The Real/Nominal toggle (`#btn-pv`/`#btn-fv`, same ids) moved into `.chart-card-head` inside a new `.chart-head-toggles` group, left of the Income/Capital/Breakdown/Table seg. `#btn-lock` deleted; the top-bar **Compare** button (`#btn-compare-top`) is now wired in the main IIFE (`if (!baseline) lockBaseline(); else scroll to .compare`) and the separate bridge `<script>` IIFE was deleted. Pierre confirmed Compare and Lock were functionally identical in State 2.
+
+5. **New "Current plan" recap card (State 2).** A `.plan-recap` card between the outcome strip and the foot: two columns per spouse (names via `data-spouse`/`renderSpouseLabels()`) showing Retirement balance, Discretionary balance, Monthly retirement contributions, Monthly discretionary contributions; a divider; then an assumptions row (Expected return · Assumed inflation · Escalation). New `updateRecapCard(p)` reads `p.inputs` via the null-safe `set()` + `fmtR`/`fmtPct`, called in `refresh()` after `updatePlanBar(p)`. Split-by-pot + escalation were Pierre's picks. Projected capital-at-retirement is deliberately excluded (that's the chart + outcome strip).
+
+6. **Collapsed the appendix to one box; deleted `updatePrintSummary`.** The `#print-summary` "Detail tables" accordion (client/meeting, starting position, contributions & assumptions, projected outcome, plus the events + baseline-comparison subsections and the `<h2>`) was removed; the single `#appendix-toggle` ("Methodology & disclaimer") now expands directly to methodology + disclaimer via `<h3>` subheads (no inner accordions). `updatePrintSummary(p)` was deleted entirely (every `s-*` id it wrote lived in the removed block; its events/baseline blocks used non-null-safe `.style.display`) and its `refresh()` call removed. Detail now lives in the on-screen recap card + the 12-page Report deck.
+
+7. **Removed the canvas-foot action buttons.** State-2 ("Table view", "Print / PDF") and State-3 ("Print / PDF") `.canvas-foot-actions` removed; the "Illustrative only…" foot text stays. Table view is reachable from the chart-head Table toggle; the top-bar gold **Report** button (`#btn-export-report` → `startExport`, independent) is the export path.
+
+8. **Year table → reconciliation flow.** `buildYearTable(p)` rewritten to `Year · Age A · Age B · Opening · Contributions · Growth · [Capital events] · Closing`, respecting the Real/Nominal toggle. Per row: `opening = series.total[i-1]`, `contrib = series.cumulContribs` diff, `event = ` mode-deflated `p.eventImpactNom[i]`, `growth = closing − opening − contrib − event` (residual, so each row reconciles by construction; nominal mode → nominal growth, real mode → real growth net of inflation). The Capital-events column appears only when `p.events.length > 0`. Old per-pot and baseline/delta columns dropped (the table only renders in State 2).
+
+**Decisions (and why):**
+
+- **Fix mirrored into the original file too.** The harness can only test a function it can read, and the bug was real in both. Low risk — `baselineRestoreFields` is pure and identical.
+- **Compare rewired in the main IIFE, not via a hidden Lock button.** `lockBaseline`/`baseline` are in that closure; deleting the bridge IIFE and calling `lockBaseline()` directly is cleaner and honours "delete the button altogether."
+- **Year table reconciles in the displayed unit.** Growth as the residual guarantees Opening+Contrib+Growth(+Events)=Closing in whatever unit the toggle selects — the adviser can trace totals start to finish, and the Real/Nominal toggle meaningfully shows nominal-vs-real growth.
+
+**Tests:** 54 JS (50 + 2 `clearBaseline` + 1 recap + 1 year-table; two `s-goal*` assertions removed in place) + 47 Python (unchanged — no math change), all green. Harness now reads V2.
+
+**Docs updated:** `CLAUDE.md` (this entry + V2-primary note in "What this is" + File inventory + test counts + "Running tests"), `README.md`, `tests/README.md`, `docs/ARCHITECTURE.md` (new "Primary file: V2 cockpit" section + in-place fixes to `clearBaseline`, the `refresh()`/render list, the page schematic, the drawer toggle), `docs/DESIGN.md` (new "Primary file: V2 cockpit" section + State-2 / Table / Print "(v2)" notes).
+
+**Known caveat / compliance flag:** Removing the Detail tables thins the **portrait Cmd+P** output (it loses the assumptions/outcome tables). The portrait print still carries inputs (recap card, page 1), outputs (outcome strip + chart), methodology and disclaimer; the **Report** deck remains the full client deliverable. This is a deliberate, Pierre-directed trim that softens non-negotiable #2 for the portrait path — flagged here so it isn't read as an accidental regression. None of the V2 changes are browser-verified yet (no headless browser this session); eyeball State 2 (no toolbar row; Real/Nominal in the chart head; recap card; reconciling year table) and the single appendix box.
 
 ### Session 17 — 2026-06-25
 

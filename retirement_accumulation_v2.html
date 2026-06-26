@@ -829,6 +829,51 @@
   .outcome-gap .narrative-eyebrow { margin-bottom: 8px; }
   .outcome-gap .narrative-body { font-size: 14px; line-height: 1.55; max-width: none; }
 
+  /* ─── Current-plan recap card (State 2) ──────── */
+  .plan-recap {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 22px 24px;
+    margin-bottom: 22px;
+  }
+  .plan-recap .narrative-eyebrow { margin-bottom: 16px; }
+  .plan-recap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 32px;
+  }
+  .plan-recap-divider { background: var(--hairline); }
+  .recap-spouse-name {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .recap-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .recap-row:last-child { border-bottom: none; }
+  .recap-row .label { font-size: 12px; color: var(--mute); }
+  .recap-row .val { font-size: 13px; color: var(--ink); font-weight: 500; }
+  .plan-recap-assump {
+    display: flex; gap: 28px; flex-wrap: wrap;
+    border-top: 1px solid var(--hairline);
+    padding-top: 14px; margin-top: 16px;
+  }
+  .recap-assump { display: flex; flex-direction: column; gap: 4px; }
+  .recap-assump .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--mute); font-weight: 600;
+  }
+  .recap-assump .val { font-size: 14px; color: var(--ink); font-weight: 500; }
+
   /* ─── Compare grid (State 3) ──────────────── */
   .compare {
     display: grid;
@@ -1212,7 +1257,7 @@
     /* Collapse drawer in print */
     .plan-bar[data-open="true"] .plan-bar-drawer { display: none; }
     .plan-bar { margin-bottom: 14px; padding: 10px 14px; }
-    .chart-card, .outcome-strip, .narrative, .compare-card { page-break-inside: avoid; }
+    .chart-card, .outcome-strip, .narrative, .compare-card, .plan-recap { page-break-inside: avoid; }
     .print-summary { page-break-before: always; border: none; padding: 0; margin-top: 0; }
     .chart-wrap { height: 260px !important; }
     .compare-chart-wrap { height: 220px !important; }
@@ -2018,7 +2063,7 @@
 
     /* ── Card depth + radius across the major surfaces ── */
     .plan-bar, .chart-card, .outcome-strip, .compare-card,
-    .scenario-levers, .narrative, .empty-events-panel { box-shadow: var(--shadow-sm); }
+    .scenario-levers, .narrative, .empty-events-panel, .plan-recap { box-shadow: var(--shadow-sm); }
     .chart-card, .outcome-strip, .compare-card, .scenario-levers, .narrative { border-radius: var(--r-lg); }
 
     /* ── Top bar (plan-bar) → full-bleed cockpit header ──
@@ -2033,8 +2078,8 @@
       background: rgba(255,253,249,0.96); backdrop-filter: blur(14px);
       box-shadow: none;
     }
-    /* Filled head no longer has a title block; keep the toolbar right-aligned. */
-    #canvas-head-filled { display: flex; align-items: center; justify-content: flex-end; }
+    /* Chart-head toggle group: Real/Nominal sits left of the view seg. */
+    .chart-head-toggles { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     /* ── Buttons ── */
     .btn { border-radius: var(--r); font-weight: 700; }
@@ -2067,6 +2112,8 @@
       .outcome-cell { flex: 1 1 100%; }
       .compare.big { grid-template-columns: 1fr; }
       .scenario-grid { grid-template-columns: 1fr 1fr; }
+      .plan-recap-grid { grid-template-columns: 1fr; gap: 20px; }
+      .plan-recap-divider { display: none; }
       .chart-card, .compare-card, .card, .chart-wrap, .compare-chart-wrap { max-width: 100%; overflow: hidden; }
       .chart-wrap canvas, .compare-chart-wrap canvas { width: 100% !important; height: auto !important; }
     }
@@ -2295,7 +2342,7 @@
         </div>
       </div>
       <div class="plan-bar-actions">
-        <button class="btn plan-bar-edit no-print" id="btn-edit-plan" type="button">Advisor view</button>
+        <button class="btn plan-bar-edit no-print" id="btn-edit-plan" type="button">Edit info ↓</button>
         <button class="btn no-print" id="btn-save-plan" type="button">Save</button>
         <button class="btn no-print" id="btn-open-plan" type="button">Open</button>
         <button class="btn primary no-print" id="btn-compare-top" type="button">Compare</button>
@@ -2450,20 +2497,9 @@
     </div>
   </div>
 
-  <!-- ─── Canvas head ─── -->
-  <div class="canvas-head" id="canvas-head-filled" data-view-only="filled">
-    <!-- Hidden anchors retained for updateSummary() (null-safe); the
-         "Projected outcome / retires at age" block was removed per design. -->
-    <span id="headline-anchor-name" hidden></span><span id="headline-age" hidden></span>
-    <div class="canvas-actions no-print">
-      <div class="seg mini">
-        <button id="btn-pv" class="on" type="button">Real</button>
-        <button id="btn-fv" type="button">Nominal</button>
-      </div>
-      <button class="btn primary" id="btn-lock" type="button">Lock as baseline →</button>
-    </div>
-  </div>
-
+  <!-- ─── Canvas head (compare only; State-2 toolbar row removed — the
+       Real/Nominal toggle now lives in the chart-card head, and Lock as
+       baseline is handled by the top-bar Compare button) ─── -->
   <div class="canvas-head compact" id="canvas-head-compare" data-view-only="compare">
     <div>
       <div class="canvas-head-eyebrow">Scenario compare · baseline locked</div>
@@ -2498,11 +2534,17 @@
             <span class="sw" style="background: var(--gold);"></span>Growth on contributions
           </span>
         </div>
-        <div class="seg mini no-print">
-          <button id="btn-view-income" class="on" type="button">Income</button>
-          <button id="btn-view-capital" type="button">Capital</button>
-          <button id="btn-view-breakdown" type="button">Breakdown</button>
-          <button id="btn-view-table" type="button">Table</button>
+        <div class="chart-head-toggles no-print">
+          <div class="seg mini">
+            <button id="btn-pv" class="on" type="button">Real</button>
+            <button id="btn-fv" type="button">Nominal</button>
+          </div>
+          <div class="seg mini">
+            <button id="btn-view-income" class="on" type="button">Income</button>
+            <button id="btn-view-capital" type="button">Capital</button>
+            <button id="btn-view-breakdown" type="button">Breakdown</button>
+            <button id="btn-view-table" type="button">Table</button>
+          </div>
         </div>
       </div>
       <div class="chart-wrap">
@@ -2541,12 +2583,34 @@
       </div>
     </div>
 
+    <div class="plan-recap">
+      <div class="narrative-eyebrow">Current plan</div>
+      <div class="plan-recap-grid">
+        <div class="recap-col">
+          <div class="recap-spouse-name" data-spouse="A" data-spouse-template="header">Spouse A</div>
+          <div class="recap-row"><span class="label">Retirement balance</span><span class="val num" id="recap-ret-A">R —</span></div>
+          <div class="recap-row"><span class="label">Discretionary balance</span><span class="val num" id="recap-disc-A">R —</span></div>
+          <div class="recap-row"><span class="label">Monthly retirement contributions</span><span class="val num" id="recap-contrib-ret-A">R —</span></div>
+          <div class="recap-row"><span class="label">Monthly discretionary contributions</span><span class="val num" id="recap-contrib-disc-A">R —</span></div>
+        </div>
+        <div class="plan-recap-divider"></div>
+        <div class="recap-col">
+          <div class="recap-spouse-name" data-spouse="B" data-spouse-template="header">Spouse B</div>
+          <div class="recap-row"><span class="label">Retirement balance</span><span class="val num" id="recap-ret-B">R —</span></div>
+          <div class="recap-row"><span class="label">Discretionary balance</span><span class="val num" id="recap-disc-B">R —</span></div>
+          <div class="recap-row"><span class="label">Monthly retirement contributions</span><span class="val num" id="recap-contrib-ret-B">R —</span></div>
+          <div class="recap-row"><span class="label">Monthly discretionary contributions</span><span class="val num" id="recap-contrib-disc-B">R —</span></div>
+        </div>
+      </div>
+      <div class="plan-recap-assump">
+        <div class="recap-assump"><span class="label">Expected return</span><span class="val num" id="recap-return">—</span></div>
+        <div class="recap-assump"><span class="label">Assumed inflation</span><span class="val num" id="recap-cpi">—</span></div>
+        <div class="recap-assump"><span class="label">Escalation</span><span class="val num" id="recap-esc">—</span></div>
+      </div>
+    </div>
+
     <div class="canvas-foot">
       <span>Illustrative only · assumes monthly contributions escalate at the specified rate.</span>
-      <div class="canvas-foot-actions no-print">
-        <button class="btn ghost" onclick="document.getElementById('btn-view-table').click();" type="button">Table view</button>
-        <button class="btn" onclick="window.print()" type="button">Print / PDF</button>
-      </div>
     </div>
   </div>
 
@@ -2636,9 +2700,6 @@
 
     <div class="canvas-foot">
       <span>Illustrative only · scenario projected against the locked baseline.</span>
-      <div class="canvas-foot-actions no-print">
-        <button class="btn" onclick="window.print()" type="button">Print / PDF</button>
-      </div>
     </div>
   </div>
 
@@ -2646,83 +2707,16 @@
    <details class="accordion appendix-toggle" id="appendix-toggle">
     <summary>Methodology &amp; disclaimer</summary>
     <div class="accordion-body">
-    <h2>Summary of assumptions and outcome</h2>
-
-    <details class="accordion" data-accordion="tables">
-      <summary>Detail tables</summary>
-      <div class="accordion-body">
-        <h3>Client &amp; meeting</h3>
-        <table class="summary-table">
-          <tr><td>Client</td><td id="s-client">—</td></tr>
-          <tr><td>Meeting date</td><td id="s-date">—</td></tr>
-          <tr><td>Adviser</td><td id="s-adviser">—</td></tr>
-        </table>
-
-        <h3>Starting position</h3>
-        <table class="summary-table">
-          <tr><td data-spouse="A" data-spouse-template="summary-pos">Spouse A (age · retirement · discretionary)</td><td id="s-pos-A">—</td></tr>
-          <tr><td data-spouse="B" data-spouse-template="summary-pos">Spouse B (age · retirement · discretionary)</td><td id="s-pos-B">—</td></tr>
-          <tr><td>Household capital today</td><td id="s-cap-today">—</td></tr>
-        </table>
-
-        <h3>Contributions &amp; assumptions</h3>
-        <table class="summary-table">
-          <tr><td data-spouse="A" data-spouse-template="summary-contrib">Spouse A monthly contributions (retirement · discretionary)</td><td id="s-contrib-A">—</td></tr>
-          <tr><td data-spouse="B" data-spouse-template="summary-contrib">Spouse B monthly contributions (retirement · discretionary)</td><td id="s-contrib-B">—</td></tr>
-          <tr><td>Annual contribution escalation</td><td id="s-esc">—</td></tr>
-          <tr><td>Expected investment return (nominal, p.a.)</td><td id="s-return">—</td></tr>
-          <tr><td>Expected inflation (CPI)</td><td id="s-cpi">—</td></tr>
-          <tr><td>Retirement age anchor</td><td id="s-anchor">—</td></tr>
-          <tr><td>Horizon</td><td id="s-horizon">—</td></tr>
-        </table>
-
-        <h3>Projected outcome at retirement</h3>
-        <table class="summary-table">
-          <tr><td>Household capital (today's money)</td><td id="s-cap-real">—</td></tr>
-          <tr><td>Household capital (future rands)</td><td id="s-cap-nom">—</td></tr>
-          <tr><td>Projected monthly income (today's money, before tax)</td><td id="s-income">—</td></tr>
-          <tr><td>Safe withdrawal rate applied</td><td id="s-swr">—</td></tr>
-          <tr id="s-goal-row" data-goal-active="false"><td>Monthly income goal · progress (today's money, before tax)</td><td id="s-goal">—</td></tr>
-          <tr><td>Total contributions over horizon (future rands)</td><td id="s-total-contrib">—</td></tr>
-        </table>
-
-        <div id="s-events-section" style="display: none;">
-          <h3>Capital events</h3>
-          <table class="summary-table">
-            <tbody id="s-events-body"></tbody>
-          </table>
-        </div>
-
-        <div id="s-baseline-section" style="display: none;">
-          <h3>Comparison to baseline</h3>
-          <table class="summary-table">
-            <tr><td>Baseline monthly income (today's money)</td><td id="s-base-income">—</td></tr>
-            <tr><td>Planned monthly income (today's money)</td><td id="s-plan-income">—</td></tr>
-            <tr><td>Change in monthly income</td><td id="s-delta-income">—</td></tr>
-            <tr><td>Change in current monthly contributions</td><td id="s-delta-contrib">—</td></tr>
-          </table>
-        </div>
+      <h3>Methodology &amp; assumptions</h3>
+      <div class="assumptions">
+        <strong style="color: var(--ink);">Notes on methodology.</strong>
+        Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income applies an age-based safe withdrawal rate to the combined capital (retirement fund plus discretionary), divided by twelve, shown in today's money and before tax. The rate is read from a schedule that rises with the age at retirement (a shorter remaining horizon supports a higher sustainable draw), ranging from about 4.2% at age 55 to 4.8% at age 65 and higher at older ages. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
       </div>
-    </details>
 
-    <details class="accordion" data-accordion="methodology">
-      <summary>Methodology &amp; assumptions</summary>
-      <div class="accordion-body">
-        <div class="assumptions">
-          <strong style="color: var(--ink);">Notes on methodology.</strong>
-          Contributions are made monthly at the stated amounts, with the monthly amount escalating once per year by the annual escalation rate. The retirement fund and discretionary balances grow at the stated nominal return, compounded monthly. Values labelled "today's money" are deflated by the CPI rate to express future amounts in current purchasing power. Projected monthly retirement income applies an age-based safe withdrawal rate to the combined capital (retirement fund plus discretionary), divided by twelve, shown in today's money and before tax. The rate is read from a schedule that rises with the age at retirement (a shorter remaining horizon supports a higher sustainable draw), ranging from about 4.2% at age 55 to 4.8% at age 65 and higher at older ages. This rule-of-thumb figure is appropriate for early-stage planning conversations; a more detailed drawdown projection with tax and regulatory constraints should be produced closer to the client's retirement date. No allowance has been made for tax on contributions or on investment income, platform fees, advice fees, retirement fund Section 10C deductions, or changes in contribution patterns over the working career.
-        </div>
+      <h3>Disclaimer</h3>
+      <div class="disclaimer" style="border-top: none; margin-top: 0; padding-top: 4px;">
+        This projection is illustrative only and is based on the assumptions entered at the time of the meeting. Actual outcomes will differ, potentially materially, depending on investment performance, inflation, contribution levels, career changes, legislative changes, and individual circumstances. This document does not constitute financial advice in isolation and should be read together with a full financial plan and formal record of advice. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP no. 50637. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).
       </div>
-    </details>
-
-    <details class="accordion" data-accordion="disclaimer">
-      <summary>Disclaimer</summary>
-      <div class="accordion-body">
-        <div class="disclaimer" style="border-top: none; margin-top: 0; padding-top: 4px;">
-          This projection is illustrative only and is based on the assumptions entered at the time of the meeting. Actual outcomes will differ, potentially materially, depending on investment performance, inflation, contribution levels, career changes, legislative changes, and individual circumstances. This document does not constitute financial advice in isolation and should be read together with a full financial plan and formal record of advice. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP no. 50637. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).
-        </div>
-      </div>
-    </details>
     </div>
    </details>
   </div>
@@ -3974,6 +3968,23 @@
     }
   }
 
+  // Current-plan recap card (State 2). A derived readout of the current inputs —
+  // starting balances + monthly contributions per spouse, plus the household
+  // return / inflation / escalation assumptions. Spouse-name headers carry
+  // data-spouse so renderSpouseLabels() keeps them in sync. Projected outcome
+  // (capital at retirement) is deliberately excluded — that's the chart + strip.
+  function updateRecapCard(p){
+    if (!document.getElementById('recap-ret-A')) return;
+    var i = p.inputs;
+    set('recap-ret-A', fmtR(i.retA));   set('recap-ret-B', fmtR(i.retB));
+    set('recap-disc-A', fmtR(i.discA)); set('recap-disc-B', fmtR(i.discB));
+    set('recap-contrib-ret-A', fmtR(i.contribRetA));   set('recap-contrib-ret-B', fmtR(i.contribRetB));
+    set('recap-contrib-disc-A', fmtR(i.contribDiscA)); set('recap-contrib-disc-B', fmtR(i.contribDiscB));
+    set('recap-return', fmtPct(i.rNom * 100));
+    set('recap-cpi', fmtPct(i.cpi * 100));
+    set('recap-esc', fmtPct(i.esc * 100));
+  }
+
   // Closing-the-gap card. Always shows the contribution-leverage line when the
   // horizon is valid; adds the two single-lever routes when a goal is set and
   // there is a shortfall. Hidden entirely on a degenerate horizon. State 2 only
@@ -4376,126 +4387,70 @@
     });
   }
 
+  // Slim year-by-year reconciliation flow. Each year:
+  //   Opening + Contributions + Growth (+ Capital events) = Closing,
+  // and Closing of one year is the Opening of the next — so the adviser can
+  // trace the totals start to finish. Growth is the residual that makes the row
+  // balance, so it reconciles by construction in whichever unit the Real/Nominal
+  // toggle selects (nominal mode → nominal growth; real mode → real, net of
+  // inflation). The Capital-events column appears only when events exist.
   function buildYearTable(p){
     var series = mode === 'pv' ? p.real : p.nominal;
+    var isReal = mode === 'pv';
+    var cpi = p.inputs.cpi;
+    var hasEvents = !!(p.events && p.events.length > 0);
     var thead = document.querySelector('#year-table thead');
     var tbody = document.querySelector('#year-table tbody');
-
-    var showBase = !!baseline;
-    var baseTotal = baseline
-      ? (mode === 'pv' ? baseline.p.real.total : baseline.p.nominal.total)
-      : null;
 
     thead.innerHTML =
       '<tr>' +
         '<th class="age">Year</th>' +
         '<th>Age A</th>' +
         '<th>Age B</th>' +
-        '<th>Retirement fund</th>' +
-        '<th>Discretionary</th>' +
-        '<th>Total capital</th>' +
-        '<th>Annual contributions (nominal)</th>' +
-        (showBase ? '<th>Baseline total</th><th>Delta</th>' : '') +
+        '<th>Opening</th>' +
+        '<th>Contributions</th>' +
+        '<th>Growth</th>' +
+        (hasEvents ? '<th>Capital events</th>' : '') +
+        '<th>Closing</th>' +
       '</tr>';
 
+    var dash = '—';
     var rows = [];
     for (var i = 0; i < p.labels.length; i++){
-      var yearContrib = i === 0 ? null
-        : (p.nominal.cumulContribs[i] - p.nominal.cumulContribs[i-1]);
-      var deltaHtml = '';
-      if (showBase){
-        var delta = series.total[i] - baseTotal[i];
-        var cls = delta >= 0 ? 'style="color: var(--pos);"' : 'style="color: var(--neg);"';
-        deltaHtml =
-          '<td>' + fmtR(baseTotal[i]) + '</td>' +
-          '<td ' + cls + '>' + (delta >= 0 ? '+' : '') + fmtR(delta) + '</td>';
+      var closing = series.total[i];
+      var opening = i === 0 ? null : series.total[i-1];
+      var contrib = i === 0 ? null
+        : (series.cumulContribs[i] - series.cumulContribs[i-1]);
+      var eventNom = p.eventImpactNom[i] || 0;
+      var event = isReal ? eventNom / Math.pow(1 + cpi, i) : eventNom;
+      var growth = i === 0 ? null : (closing - series.total[i-1] - contrib - event);
+
+      var eventCell = '';
+      if (hasEvents){
+        var evTxt = (i === 0 || event === 0) ? dash
+          : (event > 0 ? '+' : '') + fmtR(event);
+        eventCell = '<td>' + evTxt + '</td>';
       }
+
       rows.push(
         '<tr>' +
           '<td class="age">Y' + i + '</td>' +
           '<td>' + p.ageA[i] + '</td>' +
           '<td>' + p.ageB[i] + '</td>' +
-          '<td>' + fmtR(series.ret[i]) + '</td>' +
-          '<td>' + fmtR(series.disc[i]) + '</td>' +
-          '<td>' + fmtR(series.total[i]) + '</td>' +
-          '<td>' + (yearContrib === null ? '—' : fmtR(yearContrib)) + '</td>' +
-          deltaHtml +
+          '<td>' + (opening === null ? dash : fmtR(opening)) + '</td>' +
+          '<td>' + (contrib === null ? dash : fmtR(contrib)) + '</td>' +
+          '<td>' + (growth === null ? dash : fmtR(growth)) + '</td>' +
+          eventCell +
+          '<td>' + fmtR(closing) + '</td>' +
         '</tr>'
       );
     }
     tbody.innerHTML = rows.join('');
   }
 
-  function updatePrintSummary(p){
-    set('s-client', document.getElementById('client-name').value || '—');
-    set('s-date',   document.getElementById('client-date').value || '—');
-    set('s-adviser', document.getElementById('adviser-name').value || '—');
-
-    set('s-pos-A',
-      p.inputs.ageA + ' · ' + fmtR(p.inputs.retA) + ' · ' + fmtR(p.inputs.discA));
-    set('s-pos-B',
-      p.inputs.ageB + ' · ' + fmtR(p.inputs.retB) + ' · ' + fmtR(p.inputs.discB));
-    set('s-cap-today', fmtR(p.nominal.total[0]));
-
-    set('s-contrib-A',
-      fmtR(p.inputs.contribRetA) + '/mo · ' + fmtR(p.inputs.contribDiscA) + '/mo');
-    set('s-contrib-B',
-      fmtR(p.inputs.contribRetB) + '/mo · ' + fmtR(p.inputs.contribDiscB) + '/mo');
-    set('s-esc', fmtPct(p.inputs.esc * 100));
-    set('s-return', fmtPct(p.inputs.rNom * 100));
-    set('s-cpi', fmtPct(p.inputs.cpi * 100));
-    var yo = resolveYoungerOlder();
-    set('s-anchor', (anchor === 'youngest' ? yo.younger : yo.older) + ' reaches 65');
-    set('s-horizon', p.years + ' years · retiring in ' + p.retirementYearCalendar);
-
-    set('s-cap-real', fmtR(p.finalTotalReal));
-    set('s-cap-nom', fmtR(p.finalTotalNom));
-    set('s-income', fmtR(p.monthlyIncomeReal));
-    set('s-swr', fmtSwr(p.refAge + p.years) + ' at age ' + (p.refAge + p.years));
-    set('s-total-contrib', fmtR(p.totalContribsOverHorizon));
-
-    var gp = computeGoalProgress(p);
-    if (gp){
-      var sGoalEl = document.getElementById('s-goal');
-      var sGoalCls = gp.pct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
-      if (sGoalEl) sGoalEl.innerHTML = fmtR(gp.goal) + ' · <span class="' + sGoalCls + '">' + gp.pct + '% of target</span>';
-      setGoalActive('s-goal-row', true);
-    } else {
-      setGoalActive('s-goal-row', false);
-    }
-
-    // Capital events section in the print summary
-    var evSec = document.getElementById('s-events-section');
-    var evBody = document.getElementById('s-events-body');
-    if (p.events && p.events.length > 0){
-      evSec.style.display = '';
-      var refAge = p.refAge;
-      var rows = p.events.slice().sort(function(a, b){ return a.yrOffset - b.yrOffset; })
-        .map(function(ev){
-          var age = refAge + ev.yrOffset;
-          var kindLabel = ev.kind === 'inflow' ? 'Inflow' : 'Outflow';
-          var pvLabel = ev.todaysMoney ? " (today's money)" : ' (nominal)';
-          return '<tr><td>Age ' + age + ' · ' + kindLabel + pvLabel +
-                 '</td><td>' + (ev.kind === 'outflow' ? '−' : '+') + fmtR(ev.amount) + '</td></tr>';
-        });
-      evBody.innerHTML = rows.join('');
-    } else {
-      evSec.style.display = 'none';
-    }
-
-    var baseSec = document.getElementById('s-baseline-section');
-    if (baseline){
-      baseSec.style.display = '';
-      set('s-base-income', fmtR(baseline.monthlyIncomeReal));
-      set('s-plan-income', fmtR(p.monthlyIncomeReal));
-      var dI = p.monthlyIncomeReal - baseline.monthlyIncomeReal;
-      set('s-delta-income', (dI >= 0 ? '+' : '') + fmtR(dI) + '/mo');
-      var dC = totalMonthlyContribs(p.inputs) - totalMonthlyContribs(baseline.inputs);
-      set('s-delta-contrib', (dC >= 0 ? '+' : '') + fmtR(dC) + '/mo');
-    } else {
-      baseSec.style.display = 'none';
-    }
-  }
+  // (updatePrintSummary removed — the on-screen recap card covers the starting
+  //  position + assumptions, and the Report deck carries the full client detail.
+  //  The portrait appendix is now just methodology + disclaimer, which are static.)
 
   // Narrative copy rule: no em-dashes (U+2014) in any string below. Use
   // commas, full stops, or rephrase. The narrative is read aloud in client
@@ -4705,7 +4660,46 @@
     updateBaselineControls();
     refresh();
   }
+  // Pure: maps a locked baseline.inputs object back onto the canonical input
+  // ids, bucketed by how each field must be written — `money` fields go through
+  // setHpFormatted (space-separated thousands, matching the hp-* blur handler),
+  // `plain` fields are written straight to .value. No DOM access and no
+  // locale-dependent formatting, so the Node test harness can exercise it.
+  function baselineRestoreFields(bi){
+    return {
+      money: {
+        'hp-ret-A': bi.retA, 'hp-ret-B': bi.retB,
+        'hp-disc-A': bi.discA, 'hp-disc-B': bi.discB,
+        'hp-ret-contrib-A': bi.contribRetA, 'hp-ret-contrib-B': bi.contribRetB,
+        'hp-disc-contrib-A': bi.contribDiscA, 'hp-disc-contrib-B': bi.contribDiscB,
+        'income-goal': bi.incomeGoal
+      },
+      plain: {
+        'hp-age-A': bi.ageA, 'hp-age-B': bi.ageB,
+        'return': bi.rNom * 100, 'cpi': bi.cpi * 100, 'esc': bi.esc * 100,
+        'retirement-age': bi.retirementAge
+      }
+    };
+  }
+
   function clearBaseline(){
+    // True revert. The scenario levers wrote their adjustments back onto the
+    // canonical inputs as they were dragged (applyScenarioContrib/Return/RetAge),
+    // so the live DOM now holds the scenario, not the locked plan. Restore
+    // baseline.inputs onto the inputs BEFORE nulling the baseline, otherwise
+    // refresh() -> readInputs() reads the adjusted DOM and State 2 shows the
+    // scenario instead of the plan that was locked. (Events are never touched by
+    // the levers, so eventsStore is left alone.)
+    if (baseline && baseline.inputs){
+      var bi = baseline.inputs;
+      var f = baselineRestoreFields(bi);
+      Object.keys(f.money).forEach(function(id){ setHpFormatted(id, f.money[id]); });
+      Object.keys(f.plain).forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.value = f.plain[id];
+      });
+      setAnchor(bi.anchor);   // restores anchor var + youngest/oldest toggle
+    }
     baseline = null;
     scenarioAnchors = null;
     showScenarioRow(false);
@@ -4933,6 +4927,7 @@
     updateSummary(p);
     updateGapSolver(p);
     updatePlanBar(p);
+    updateRecapCard(p);
     updateViewVisibility();
     // Main chart card only renders in State 2 (no baseline); State 3 uses
     // the two compare charts instead.
@@ -4945,7 +4940,6 @@
       buildCompareCharts(p);
     }
     updateCompareCards(p);
-    updatePrintSummary(p);
     renderSpouseLabels();
     updateAnchorChips();
     updateScenarioReadouts();
@@ -5291,8 +5285,8 @@
   });
 
   // Hidden-field meta (client-name / client-date / adviser-name) — drawer
-  // edits mirror into the hidden canonical inputs so updatePrintSummary keeps
-  // picking them up.
+  // edits mirror into the hidden canonical inputs so the plan bar, the saved
+  // plan file, and the Report deck keep picking them up.
   ['client-name-edit', 'client-date-edit'].forEach(function(id){
     var el = document.getElementById(id);
     if (!el) return;
@@ -6195,7 +6189,8 @@
     btn.addEventListener('click', function(){
       var open = bar.getAttribute('data-open') === 'true';
       bar.setAttribute('data-open', open ? 'false' : 'true');
-      btn.textContent = open ? 'Edit plan ↓' : 'Close ↑';
+      // Label stays fixed ("Edit info ↓") in every state — only the drawer
+      // open/close is toggled here, not the button text.
     });
   })();
 
@@ -6218,7 +6213,14 @@
   if (pvCmp) pvCmp.addEventListener('click', function(){ setMode('pv'); });
   var fvCmp = document.getElementById('btn-fv-cmp');
   if (fvCmp) fvCmp.addEventListener('click', function(){ setMode('fv'); });
-  document.getElementById('btn-lock').addEventListener('click', lockBaseline);
+  // Top-bar Compare: in State 2 (no baseline) it locks the current plan and
+  // drops into the compare view; in State 3 it just scrolls to the grid. This
+  // replaces the deleted "Lock as baseline" button + its cross-script bridge.
+  document.getElementById('btn-compare-top').addEventListener('click', function(){
+    if (!baseline) { lockBaseline(); return; }
+    var grid = document.querySelector('.compare');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   document.getElementById('btn-relock').addEventListener('click', lockBaseline);
   document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
   document.getElementById('btn-export-report').addEventListener('click', startExport);
@@ -6271,17 +6273,5 @@
 <!-- ── V2 header "Compare" button. Additive + guarded: reuses the existing
      Lock-as-baseline control to enter compare, or scrolls to the compare
      grid if a baseline is already locked. Touches no engine logic. ── -->
-<script>
-(function(){
-  var c = document.getElementById('btn-compare-top');
-  if (!c) return;
-  c.addEventListener('click', function(){
-    var lock = document.getElementById('btn-lock');      // present + visible only in the filled view
-    if (lock && lock.offsetParent !== null) { lock.click(); return; }
-    var grid = document.querySelector('.compare');
-    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-})();
-</script>
 </body>
 </html>
