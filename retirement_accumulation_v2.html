@@ -1585,18 +1585,41 @@
     display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap;
   }
 
-  /* Print-specific overrides for the report deck. */
+  /* Print-specific overrides for the report deck. Scoped to
+     html.export-printing so the portrait/working-copy print path is
+     untouched. The screen-print wrappers (.calc/.page/.workspace) carry
+     padding + min-height that would push the 210mm pages past the printable
+     boundary — collapse them all so each .report-page maps 1:1 to a sheet. */
   @media print {
-    html.export-printing body { background: #fff; }
-    html.export-printing .page {
-      padding: 0 !important; margin: 0 !important; max-width: 100% !important;
+    html.export-printing,
+    html.export-printing body {
+      margin: 0 !important; padding: 0 !important; background: #fff !important;
+    }
+    html.export-printing .workspace,
+    html.export-printing .page-col,
+    html.export-printing .page,
+    html.export-printing #calc-root[data-export-mode="true"],
+    html.export-printing #calc-root[data-export-mode="true"] .calc {
+      margin: 0 !important; padding: 0 !important;
+      max-width: none !important; width: 100% !important;
+      min-height: 0 !important; overflow: visible !important;
     }
     html.export-printing #calc-root[data-export-mode="true"] .report-deck {
-      display: block; padding: 0; gap: 0; background: transparent;
+      display: block !important; margin: 0 !important; padding: 0 !important;
+      gap: 0 !important; background: transparent !important;
     }
     html.export-printing .report-deck .report-page {
-      box-shadow: none !important; margin: 0 !important; border-radius: 0;
-      width: 297mm; height: 210mm;
+      width: 297mm !important; height: 210mm !important;
+      margin: 0 !important; padding: 0 !important;
+      border-radius: 0 !important; box-shadow: none !important;
+      overflow: hidden !important;
+      break-after: page; page-break-after: always;
+    }
+    html.export-printing .report-deck .report-page:last-of-type {
+      break-after: auto; page-break-after: auto;
+    }
+    html.export-printing .report-deck .report-page[data-enabled="false"] {
+      display: none !important;
     }
     .report-modal-backdrop { display: none !important; }
   }
@@ -4813,7 +4836,10 @@
         + 'captured in the calculator.'
     };
 
-    var scenario = bline ? buildScenarioComparison(p, bline) : null;
+    // Scenario page always compares the locked baseline (current column)
+    // against the live plan (lastProjection). The "main" projection `p` is
+    // the baseline here, so the plan side must come from lastProjection, not p.
+    var scenario = bline ? buildScenarioComparison(lastProjection, bline) : null;
 
     return {
       namesLine: namesLine, date: dateStr,
@@ -5107,10 +5133,17 @@
     var root = document.getElementById('calc-root');
     root.setAttribute('data-export-mode', 'true');
     document.documentElement.classList.add('export-printing');
+    // When the scenario page is included, the report's "main" projection
+    // (cover + projection pages) is the LOCKED baseline, and the scenario
+    // page compares that baseline against the live plan (lastProjection).
+    // Without a scenario page, the main projection is whatever is live now.
+    var includeScenarioPage = includeScenario && baseline;
+    var mainProjection = includeScenarioPage ? baseline.p : lastProjection;
+    var comparisonBaseline = includeScenarioPage ? baseline : null;
     var scenPage = document.querySelector('.report-deck .scenario-page');
-    if (scenPage) scenPage.setAttribute('data-enabled', (includeScenario && baseline) ? 'true' : 'false');
+    if (scenPage) scenPage.setAttribute('data-enabled', includeScenarioPage ? 'true' : 'false');
     // Populate slots + render the SVG chart against the now-visible deck.
-    populateReportDeck(buildReportData(lastProjection, baseline, eventsStore, spouseNames));
+    populateReportDeck(buildReportData(mainProjection, comparisonBaseline, eventsStore, spouseNames));
     renumberReportPages();
     // Defer print() by two rAFs so layout has flushed before the snapshot.
     requestAnimationFrame(function(){

@@ -390,6 +390,36 @@ check('report: buildReportData is a formatting adapter, not an engine', () => {
     'buildReportData should not re-implement the projection maths');
 });
 
+check('report: scenario export uses the locked baseline for the main pages', () => {
+  // Bug fix: with a scenario, cover/projection must use baseline.p (not the
+  // live lastProjection), and the scenario page compares baseline vs live plan.
+  const src = extractFn(inline, 'runReportExport');
+  assert.ok(/includeScenarioPage\s*=\s*includeScenario\s*&&\s*baseline/.test(src),
+    'runReportExport should gate on includeScenario && baseline');
+  assert.ok(/mainProjection\s*=\s*includeScenarioPage\s*\?\s*baseline\.p\s*:\s*lastProjection/.test(src),
+    'main projection should be baseline.p when the scenario page is included');
+  assert.ok(/buildReportData\(\s*mainProjection\s*,\s*comparisonBaseline/.test(src),
+    'runReportExport should pass mainProjection + comparisonBaseline to buildReportData');
+  // The scenario comparison always plots the live plan as the "planned" side.
+  const bd = extractFn(inline, 'buildReportData');
+  assert.ok(/buildScenarioComparison\(\s*lastProjection\s*,/.test(bd),
+    'scenario comparison should use lastProjection as the plan side');
+});
+
+check('report: print CSS collapses export wrappers to avoid blank/footer pages', () => {
+  // Bug fix: the screen-print wrapper padding (.calc/.page/.workspace) pushed
+  // each 210mm page past the sheet boundary, spilling the cover footer and
+  // adding trailing blanks. The export-scoped reset zeroes them.
+  assert.ok(/html\.export-printing \.workspace/.test(html),
+    'export print reset should target .workspace');
+  assert.ok(/html\.export-printing #calc-root\[data-export-mode="true"\][\s\S]{0,400}padding: 0 !important/.test(html),
+    'export print reset should zero calc-root padding');
+  assert.ok(/html\.export-printing \.report-deck \.report-page\[data-enabled="false"\][\s\S]{0,60}display: none !important/.test(html),
+    'disabled scenario page must be hidden in the export print scope');
+  assert.ok(/html\.export-printing \.report-deck \.report-page:last-of-type[\s\S]{0,80}page-break-after: auto/.test(html),
+    'last report page must not force a trailing page break');
+});
+
 check('report: static prose copy has no em-dashes', () => {
   // Hand-written static prose: methodology/compliance <p> blocks and the
   // chart-panel intro. data-bind spans/cells are overwritten at runtime, so
