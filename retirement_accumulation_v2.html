@@ -1511,6 +1511,7 @@
   }
   .report-deck .scenario-tile p { margin: 7px 0 0; color: var(--r-muted); font-size: 12px; }
   .report-deck .scenario-delta { color: var(--r-green); font-weight: 850; }
+  .report-deck .scenario-delta.neg { color: var(--r-red); }
 
   .report-deck .scenario-detail {
     display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0;
@@ -4911,6 +4912,7 @@
       current: fmtR(bline.monthlyIncomeReal),
       planned: fmtR(p.monthlyIncomeReal),
       delta: deltaText,
+      deltaNeg: incomeDelta < 0,
       rows: rows,
       resultNote: resultNote,
       changedNote: capitalise(changedNote),
@@ -4959,6 +4961,11 @@
       setBindText('scen-current', s.current);
       setBindText('scen-plan', s.planned);
       setBindText('scen-delta', s.delta);
+      // A worse scenario (lower projected income) turns the chip red.
+      var deltaNodes = document.querySelectorAll('.report-deck [data-bind="scen-delta"]');
+      for (var dn = 0; dn < deltaNodes.length; dn++){
+        deltaNodes[dn].classList.toggle('neg', !!s.deltaNeg);
+      }
       var body = '';
       for (var i = 0; i < s.rows.length; i++){
         var r = s.rows[i];
