@@ -99,7 +99,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 54 tests
+# JS tests (actual shipped JS) — 66 tests
 cd tests/js
 node run.js
 ```
@@ -116,7 +116,7 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (47 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (54 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (66 tests).
 
 ## What not to do
 
@@ -134,6 +134,29 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 23 — 2026-06-26
+
+**Shipped (capital events on the recap card + PDF report):** capital events were already stored and fed into `project()`, but invisible in two of the three meeting surfaces — the State-2 "Current plan" recap card and the landscape PDF report (the `events` param reached `buildReportData` and was discarded). This session surfaces them in both via a shared display helper. No engine change — events still flow `readEvents()` → `readInputs()` → `project()` untouched; Python suite unchanged.
+
+- **Shared helpers** (next to `escapeHtml`): `capitalEventDisplayRows(events)` → `{ rows, extraCount, hasEvents }`, capping at the first 3 events and counting the rest; each row is `{ age:'Age N', kind:'Inflow'|'Outflow', amount:fmtR(amount), basis:"Today's money"|'Future rands' }`. `capitalEventsHtml(display, rowClass, emptyClass, moreClass)` renders rows to HTML (kind span gets `event-kind-inflow|outflow`, plus an "N additional event(s) modelled." line), `escapeHtml` on every value. Both serve screen + report — no duplication.
+- **Screen recap.** New `#recap-events` sub-section appended inside `.plan-recap` (below the assumptions row) with `.plan-recap-events*` CSS (screen tokens `--hairline/--mute/--ink/--ink-2/--mono`). `updateRecapCard(p)` populates `#recap-events-list` from `p.inputs.events`; empty → "No capital events modelled."
+- **Report Page 2 strip.** New full-width `#report-capital-events` card (`.report-events-card`, gold `✦`/U+2726 chip separators, `--r-green`/`--r-red` for inflow/outflow) added as the **third child of `.projection-page-body`**, after the two summary cards. It is `display:none` when there are no events, so the existing no-events layout is byte-identical (3/4-page output unchanged). When events exist, `populateReportDeck` toggles a `has-events` class on `.projection-page-body` that switches the grid from `108mm 1fr` to `92mm minmax(0,1fr) auto` (chart shrinks ~16mm, strip takes the bottom track). Corrected the handoff's suggested two-row template (it omitted the strip's track).
+- **Report data follows the baseline.** `buildReportData` returns `capitalEvents: capitalEventDisplayRows(inputs.events)` where `inputs = p.inputs`. Because Page 2's `p` is the locked baseline when one exists (Session 20/21 selection in `runReportExport`, untouched), the strip shows the baseline's events, not the live planned scenario.
+- **Methodology text** now conditional: events present → "Capital events are applied at year-end to the discretionary portfolio. Inflows add to discretionary capital; outflows are capped at available discretionary capital and do not draw from retirement funds."; none → "No capital events are modelled in this projection." (Replaces the old generic "included where captured" sentence; CPI-deflation sentence kept.)
+- **Footers** unchanged — already exactly the required FSP string (Session 22).
+
+**Decisions (and why):**
+
+- **Strip hidden + grid swap via a `has-events` class, not a fixed third track.** Keeping the no-events grid identical (`108mm 1fr`, strip `display:none`) guarantees the existing report output is unchanged when there are no events, sidestepping any empty-track/gap artifact.
+- **Page-2 events read from `p.inputs.events`, not the live `eventsStore` param.** Honours the core rule "Page 2 uses baseline/current values when a baseline exists." `baseline.p.inputs.events` carries the locked events.
+- **Methodology note made conditional rather than always-on.** A report with no events that still claims events "are included where captured" reads as boilerplate; the explicit "No capital events are modelled" is clearer for the client.
+
+**Tests:** 66 JS (58 + 8 new: helper unit tests — 3-row cap, extraCount, field mapping, empty/null, singular/plural extra-count, em-dash-free HTML; markup + wiring presence for `#recap-events-list` / `#report-capital-events` / `data-bind="report-events-list"`; `buildReportData` returns `capitalEvents` + conditional methodology note; `populateReportDeck` toggles the strip + `has-events`) + 47 Python (unchanged — no math change), all green. Inline JS parses clean.
+
+**Docs updated:** `CLAUDE.md` (this entry + JS count 54 → 66 in two places), `README.md` + `tests/README.md` (JS count), `docs/ARCHITECTURE.md` (new helpers + recap/report wiring), `docs/DESIGN.md` (recap events sub-section + Page-2 strip).
+
+**Known caveat:** No headless browser this session. The no-events path is unchanged so 3/4-page output is safe, but the `has-events` chart-shrink (92mm) and the single-line strip fitting three events without crowding the 12mm footer band want a browser print-preview. Eyeball: (a) screen recap shows events / "No capital events modelled."; (b) PDF Page 2 strip hidden with 0 events, visible with 1–3 on one line, ">3" shows first 3 + "N additional events modelled."; (c) baseline locked + export without scenario → Page 2 strip + values are the baseline's.
 
 ### Session 22 — 2026-06-26
 
