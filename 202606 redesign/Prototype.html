@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<!-- saved from url=(0111)file:///Users/pierretaljaard/Documents/New%20project/design/retirement-accumulation-ui-prototype-v2-mapped.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retirement Accumulation UI Prototype V2 Mapped</title>
+  <style>
+    :root {
+      --brand: #323E5D;
+      --brand-2: #435176;
+      --ink: #111827;
+      --ink-2: #354052;
+      --muted: #667085;
+      --faint: #a5adba;
+      --line: #dde1e7;
+      --paper: #f5f2ec;
+      --paper-2: #ebe7df;
+      --surface: #fffdf9;
+      --surface-2: #f8faf9;
+      --gold: #b98936;
+      --gold-2: #9b6f2b;
+      --green: #26745b;
+      --green-soft: #e3eee8;
+      --blue-soft: #e8edf4;
+      --rose: #f2dfda;
+      --red: #9d473c;
+      --shadow: 0 22px 48px rgba(24, 32, 44, 0.09);
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.45;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .num {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .workspace {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+    }
+
+    .rail {
+      background: var(--brand);
+      color: #fff;
+      padding: 18px 12px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 22px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .rail-mark {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      display: grid;
+      place-items: center;
+      font-weight: 850;
+      font-size: 12px;
+    }
+
+    .rail-nav {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .rail-button {
+      border: 0;
+      min-height: 58px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: rgba(255, 255, 255, 0.68);
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      padding: 8px 2px;
+    }
+
+    .rail-button.active {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+
+    .rail-icon {
+      font-size: 17px;
+      font-weight: 850;
+      line-height: 1;
+    }
+
+    .rail-label {
+      font-size: 10px;
+      font-weight: 760;
+    }
+
+    .rail-meta {
+      writing-mode: vertical-rl;
+      rotate: 180deg;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      justify-self: center;
+      white-space: nowrap;
+    }
+
+    .page {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topline {
+      min-height: 72px;
+      padding: 14px 26px;
+      background: rgba(253, 251, 247, 0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 6;
+    }
+
+    .client-title {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+    }
+
+    .client-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .client-title h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .client-title p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .button {
+      min-height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      border-color: #c6cdd3;
+      background: #fff;
+    }
+
+    .button.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .button.primary:hover {
+      background: var(--brand-2);
+      border-color: var(--brand-2);
+    }
+
+    .button.small {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    .button.icon {
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+    }
+
+    .content {
+      padding: 24px 26px 34px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) 440px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .answer-card,
+    .control-card,
+    .card,
+    .drawer-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .answer-card {
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 18px;
+      min-height: 410px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+    }
+
+    .answer {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.05;
+      max-width: 790px;
+    }
+
+    .answer strong {
+      color: var(--brand);
+    }
+
+    .confidence {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      background: var(--green-soft);
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      width: fit-content;
+    }
+
+    .confidence.warn {
+      color: var(--red);
+      background: var(--rose);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .goal-meter {
+      align-self: end;
+      display: grid;
+      gap: 10px;
+    }
+
+    .meter-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-weight: 760;
+      font-size: 12px;
+    }
+
+    .meter-track {
+      height: 26px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 70%;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      border-radius: inherit;
+    }
+
+    .meter-target {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      left: 70%;
+      width: 2px;
+      background: var(--gold);
+    }
+
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      gap: 10px;
+    }
+
+    .control-card {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .control-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .control-header h2,
+    .card h2,
+    .drawer-card h2 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .control-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mapped-pill,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--brand);
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .pill.good {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .pill.warn {
+      background: var(--rose);
+      color: var(--red);
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label,
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .input,
+    .select {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+    }
+
+    .input:focus-within,
+    .select:focus-within {
+      border-color: var(--brand-2);
+      background: #fff;
+    }
+
+    .input span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    input,
+    select {
+      min-width: 0;
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .money,
+    input[type="number"] {
+      text-align: right;
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .segmented {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      gap: 2px;
+    }
+
+    .segmented button {
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .segmented button.active {
+      background: var(--brand);
+      color: white;
+    }
+
+    .range-field {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 12px;
+      align-items: center;
+    }
+
+    .range-value {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      grid-column: 1 / -1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--line);
+      border-radius: 999px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--gold);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--gold);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .three-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .card-head {
+      min-height: 54px;
+      padding: 0 17px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .card-body {
+      padding: 17px;
+    }
+
+    .chart-card .card-body {
+      padding: 0;
+    }
+
+    .chart-area {
+      height: 330px;
+      background: var(--surface);
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--brand);
+    }
+
+    .swatch.gold {
+      background: var(--gold);
+    }
+
+    .metric-stack,
+    .insight-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric,
+    .insight {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: var(--surface-2);
+    }
+
+    .metric.good {
+      background: var(--green-soft);
+      border-color: #c7dfd2;
+    }
+
+    .metric.warn {
+      background: var(--rose);
+      border-color: #e9c7be;
+    }
+
+    .metric-label,
+    .mini-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .metric-note,
+    .insight span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .spouse-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .spouse-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr 78px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .spouse-body {
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .event-table {
+      display: grid;
+      gap: 8px;
+    }
+
+    .event-row {
+      display: grid;
+      grid-template-columns: 120px 78px 1fr 104px 34px;
+      gap: 8px;
+      align-items: end;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .compare-card.scenario {
+      border-color: var(--brand);
+      box-shadow: inset 0 0 0 1px var(--brand), var(--shadow);
+    }
+
+    .compare-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .compare-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .compare-big {
+      font-size: 40px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--brand);
+      margin-bottom: 6px;
+    }
+
+    .compare-sub {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .mini-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+      color: var(--muted);
+    }
+
+    .mini-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .mini-table td:last-child {
+      text-align: right;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 760;
+    }
+
+    .scenario-levers {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 1180px) {
+      .hero-panel,
+      .grid,
+      .three-grid,
+      .compare-grid,
+      .report-grid,
+      .scenario-levers {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .rail {
+        position: static;
+        height: auto;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto;
+        align-items: center;
+      }
+
+      .rail-nav {
+        display: flex;
+        overflow-x: auto;
+      }
+
+      .rail-button {
+        min-width: 72px;
+      }
+
+      .rail-meta {
+        display: none;
+      }
+
+      .topline,
+      .fields,
+      .event-row {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        justify-content: stretch;
+        overflow-x: auto;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .answer {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="workspace">
+    <aside class="rail">
+      <div class="rail-mark">SW</div>
+      <nav class="rail-nav" aria-label="Planning views">
+        <button class="rail-button" data-target-view="answer" type="button">
+          <span class="rail-icon">01</span>
+          <span class="rail-label">Answer</span>
+        </button>
+        <button class="rail-button active" data-target-view="inputs" type="button">
+          <span class="rail-icon">02</span>
+          <span class="rail-label">Inputs</span>
+        </button>
+        <button class="rail-button" data-target-view="compare" type="button">
+          <span class="rail-icon">03</span>
+          <span class="rail-label">Compare</span>
+        </button>
+        <button class="rail-button" data-target-view="report" type="button">
+          <span class="rail-icon">04</span>
+          <span class="rail-label">Report</span>
+        </button>
+      </nav>
+      <div class="rail-meta">Mapped to real fields</div>
+    </aside>
+
+    <section class="page">
+      <header class="topline">
+        <div class="client-title">
+          <div class="client-badge" id="client-initials">AM</div>
+          <div>
+            <h1 id="client-name">Alex and Morgan retirement plan</h1>
+            <p id="client-subtitle">Alex and Morgan · 25 June 2026</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="button" type="button">Open plan</button>
+          <button class="button" type="button">Export report</button>
+          <button class="button primary" type="button">Save plan</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="hero-panel">
+          <article class="answer-card">
+            <div>
+              <p class="eyebrow">Projected outcome at retirement</p>
+              <h2 class="answer">
+                <strong id="headline-anchor-name">Morgan</strong> reaches age
+                <strong id="headline-age">65</strong> with projected monthly income of
+                <strong id="headline-income">R&nbsp;97&nbsp;681</strong>.
+              </h2>
+            </div>
+            <div class="confidence" id="confidence-pill"><span class="dot"></span><span id="confidence-copy">Income goal covered</span></div>
+            <div class="goal-meter">
+              <div class="meter-head">
+                <span>Progress toward monthly retirement income goal</span>
+                <span class="num" id="goal-percent">163%</span>
+              </div>
+              <div class="meter-track">
+                <div class="meter-fill" id="goal-meter-fill" style="width: 100%;"></div>
+                <div class="meter-target"></div>
+              </div>
+              <div class="meter-labels">
+                <span class="num">R0/mo</span>
+                <span class="num" id="goal-target-label">Goal R&nbsp;60&nbsp;000/mo</span>
+                <span class="num" id="goal-income-label">Projected R&nbsp;97&nbsp;681/mo</span>
+              </div>
+            </div>
+          </article>
+
+          <aside class="control-card">
+            <div class="control-header">
+              <div>
+                <h2>Core Plan Controls</h2>
+                <p>Actual retirement age, goal, and market assumptions</p>
+              </div>
+              <span class="mapped-pill">Mapped</span>
+            </div>
+
+            <div class="field">
+              <label>Retire when the selected spouse group reaches</label>
+              <div class="fields">
+                <div class="segmented" role="group" aria-label="Retirement age anchor">
+                  <button class="active" data-anchor="youngest" type="button">youngest</button>
+                  <button data-anchor="oldest" type="button">oldest</button>
+                </div>
+                <div class="input"><input id="retirement-age" type="number" value="65"></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="income-goal">Monthly retirement income goal, today's money</label>
+              <div class="input"><span>R</span><input class="money" id="income-goal" value="60000" inputmode="numeric"></div>
+            </div>
+
+            <div class="range-field">
+              <label for="return-rate">Expected return, nominal</label>
+              <span class="range-value" id="return-rate-out">7.00%</span>
+              <input id="return-rate" type="range" min="0" max="15" step="0.25" value="7.5">
+            </div>
+            <div class="range-field">
+              <label for="cpi-rate">CPI</label>
+              <span class="range-value" id="cpi-rate-out">5.00%</span>
+              <input id="cpi-rate" type="range" min="2" max="10" step="0.25" value="5">
+            </div>
+            <div class="range-field">
+              <label for="esc-rate">Contribution escalation</label>
+              <span class="range-value" id="esc-rate-out">6.00%</span>
+              <input id="esc-rate" type="range" min="0" max="12" step="0.25" value="6">
+            </div>
+          </aside>
+        </section>
+
+        <section class="view-section" data-view-section="answer">
+          <div class="grid">
+            <article class="card chart-card">
+              <div class="card-head">
+                <h2>Income and Capital Path</h2>
+                <div class="legend">
+                  <span><i class="swatch"></i>Real capital</span>
+                  <span><i class="swatch gold"></i>Monthly income</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-area">
+                  <canvas id="projection-chart" width="980" height="460"></canvas>
+                </div>
+              </div>
+            </article>
+
+            <aside class="card">
+              <div class="card-head">
+                <h2>Outcome Summary</h2>
+              </div>
+              <div class="card-body">
+                <div class="metric-stack">
+                  <div class="metric good" id="income-metric">
+                    <div class="metric-label">Projected monthly income</div>
+                    <div class="metric-value num" id="metric-income">R&nbsp;97&nbsp;681</div>
+                    <div class="metric-note">today's money, before tax</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Real capital at retirement</div>
+                    <div class="metric-value num" id="metric-real-capital">R&nbsp;23,9M</div>
+                    <div class="metric-note">retirement plus discretionary pools</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Safe withdrawal rate</div>
+                    <div class="metric-value num" id="metric-swr">4.90%</div>
+                    <div class="metric-note">age-adjusted planning rule</div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="three-grid">
+            <article class="card">
+              <div class="card-head"><h2>Starting Position</h2></div>
+              <div class="card-body">
+                <table class="mini-table">
+                  <tbody><tr><td>Retirement balance</td><td id="start-ret-total">R&nbsp;2&nbsp;150&nbsp;000</td></tr>
+                  <tr><td>Discretionary balance</td><td id="start-disc-total">R&nbsp;720&nbsp;000</td></tr>
+                  <tr><td>Household capital today</td><td id="start-total">R&nbsp;2&nbsp;870&nbsp;000</td></tr>
+                </tbody></table>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head"><h2>Monthly Contributions</h2></div>
+              <div class="card-body">
+                <table class="mini-table">
+                  <tbody><tr><td>Retirement contributions</td><td id="contrib-ret-total">R&nbsp;33&nbsp;000/mo</td></tr>
+                  <tr><td>Discretionary contributions</td><td id="contrib-disc-total">R&nbsp;13&nbsp;000/mo</td></tr>
+                  <tr><td>Total monthly contributions</td><td id="contrib-total">R&nbsp;46&nbsp;000/mo</td></tr>
+                </tbody></table>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head"><h2>Goal Gap</h2></div>
+              <div class="card-body">
+                <table class="mini-table">
+                  <tbody><tr><td>Income goal</td><td id="goal-table-income">R&nbsp;60&nbsp;000/mo</td></tr>
+                  <tr><td>Required real capital</td><td id="goal-table-capital">R&nbsp;14,7M</td></tr>
+                  <tr><td>Gap or surplus</td><td id="goal-table-gap">+R&nbsp;9,2M</td></tr>
+                </tbody></table>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view-section active" data-view-section="inputs">
+          <div class="three-grid">
+            <article class="spouse-card">
+              <div class="spouse-head">
+                <div class="field">
+                  <label for="spouse-a-name">Spouse A</label>
+                  <div class="input"><input id="spouse-a-name" value="Alex"></div>
+                </div>
+                <div class="field">
+                  <label for="spouse-a-age">Age</label>
+                  <div class="input"><input id="spouse-a-age" type="number" value="42"></div>
+                </div>
+              </div>
+              <div class="spouse-body">
+                <div class="field">
+                  <label for="ret-a">Retirement balance</label>
+                  <div class="input"><span>R</span><input class="money" id="ret-a" value="1200000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="disc-a">Discretionary balance</label>
+                  <div class="input"><span>R</span><input class="money" id="disc-a" value="420000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="ret-contrib-a">Monthly retirement contributions</label>
+                  <div class="input"><span>R</span><input class="money" id="ret-contrib-a" value="18000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="disc-contrib-a">Monthly discretionary contributions</label>
+                  <div class="input"><span>R</span><input class="money" id="disc-contrib-a" value="7000" inputmode="numeric"></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="spouse-card">
+              <div class="spouse-head">
+                <div class="field">
+                  <label for="spouse-b-name">Spouse B</label>
+                  <div class="input"><input id="spouse-b-name" value="Morgan"></div>
+                </div>
+                <div class="field">
+                  <label for="spouse-b-age">Age</label>
+                  <div class="input"><input id="spouse-b-age" type="number" value="40"></div>
+                </div>
+              </div>
+              <div class="spouse-body">
+                <div class="field">
+                  <label for="ret-b">Retirement balance</label>
+                  <div class="input"><span>R</span><input class="money" id="ret-b" value="950000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="disc-b">Discretionary balance</label>
+                  <div class="input"><span>R</span><input class="money" id="disc-b" value="300000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="ret-contrib-b">Monthly retirement contributions</label>
+                  <div class="input"><span>R</span><input class="money" id="ret-contrib-b" value="15000" inputmode="numeric"></div>
+                </div>
+                <div class="field">
+                  <label for="disc-contrib-b">Monthly discretionary contributions</label>
+                  <div class="input"><span>R</span><input class="money" id="disc-contrib-b" value="6000" inputmode="numeric"></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <h2>Meeting and Report Meta</h2>
+              </div>
+              <div class="card-body">
+                <div class="field">
+                  <label for="prepared-for">Prepared for</label>
+                  <div class="input"><input id="prepared-for" value="Alex and Morgan"></div>
+                </div>
+                <div class="field">
+                  <label for="meeting-date">Meeting date</label>
+                  <div class="input"><input id="meeting-date" value="25 June 2026"></div>
+                </div>
+                <div class="field">
+                  <label for="adviser-name">Adviser</label>
+                  <div class="input"><input id="adviser-name" value="Simple Wealth (Pty) Ltd"></div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Capital Events</h2>
+              <button class="button small" id="add-event" type="button">Add event</button>
+            </div>
+            <div class="card-body">
+              <div class="event-table" id="event-table"><div class="event-row">
+          <div class="field">
+            <label>Type</label>
+            <div class="select">
+              <select data-event-id="1" data-event-field="type">
+                <option value="inflow" selected="">Inflow</option>
+                <option value="outflow">Outflow</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Age</label>
+            <div class="input"><input class="money" data-event-id="1" data-event-field="age" value="55" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <div class="input"><span>R</span><input class="money" data-event-id="1" data-event-field="amount" value="350000" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Basis</label>
+            <div class="segmented">
+              <button data-event-id="1" data-event-field="today" data-event-value="true" class="active" type="button">today</button>
+              <button data-event-id="1" data-event-field="today" data-event-value="false" class="" type="button">future</button>
+            </div>
+          </div>
+          <button class="button icon" data-remove-event="1" type="button" aria-label="Remove event">x</button>
+        </div><div class="event-row">
+          <div class="field">
+            <label>Type</label>
+            <div class="select">
+              <select data-event-id="2" data-event-field="type">
+                <option value="inflow">Inflow</option>
+                <option value="outflow" selected="">Outflow</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Age</label>
+            <div class="input"><input class="money" data-event-id="2" data-event-field="age" value="60" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <div class="input"><span>R</span><input class="money" data-event-id="2" data-event-field="amount" value="180000" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Basis</label>
+            <div class="segmented">
+              <button data-event-id="2" data-event-field="today" data-event-value="true" class="active" type="button">today</button>
+              <button data-event-id="2" data-event-field="today" data-event-value="false" class="" type="button">future</button>
+            </div>
+          </div>
+          <button class="button icon" data-remove-event="2" type="button" aria-label="Remove event">x</button>
+        </div></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="view-section" data-view-section="compare">
+          <div class="compare-grid">
+            <article class="compare-card">
+              <div class="compare-top">
+                <span class="compare-label">Baseline locked</span>
+                <button class="button small" id="lock-baseline" type="button">Lock current plan</button>
+              </div>
+              <div class="compare-big num" id="baseline-income">R&nbsp;97&nbsp;681</div>
+              <div class="compare-sub" id="baseline-sub">R&nbsp;23,9M real capital</div>
+              <table class="mini-table">
+                <tbody><tr><td>Retirement contributions</td><td id="baseline-ret-contrib">R&nbsp;33&nbsp;000/mo</td></tr>
+                <tr><td>Discretionary contributions</td><td id="baseline-disc-contrib">R&nbsp;13&nbsp;000/mo</td></tr>
+                <tr><td>Expected return</td><td id="baseline-return">7.00%</td></tr>
+                <tr><td>Retire at</td><td id="baseline-retage">age 65</td></tr>
+              </tbody></table>
+            </article>
+
+            <article class="compare-card scenario">
+              <div class="compare-top">
+                <span class="compare-label">Planned scenario</span>
+                <span class="pill good" id="scenario-delta">+R&nbsp;0/mo</span>
+              </div>
+              <div class="compare-big num" id="scenario-income">R&nbsp;97&nbsp;681</div>
+              <div class="compare-sub" id="scenario-sub">R&nbsp;23,9M real capital</div>
+              <table class="mini-table">
+                <tbody><tr><td>Retirement contributions</td><td id="scenario-ret-contrib-label">R&nbsp;33&nbsp;000/mo</td></tr>
+                <tr><td>Discretionary contributions</td><td id="scenario-disc-contrib-label">R&nbsp;13&nbsp;000/mo</td></tr>
+                <tr><td>Expected return</td><td id="scenario-return-label">7.00%</td></tr>
+                <tr><td>Retire at</td><td id="scenario-retage-label">age 65</td></tr>
+              </tbody></table>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Scenario Levers</h2>
+              <span class="mapped-pill">Same four levers as original</span>
+            </div>
+            <div class="card-body">
+              <div class="scenario-levers">
+                <div class="range-field">
+                  <label for="scenario-ret-contrib">Retirement contributions</label>
+                  <span class="range-value" id="scenario-ret-contrib-out">R&nbsp;33&nbsp;000</span>
+                  <input id="scenario-ret-contrib" type="range" min="8000" max="58000" step="500" value="0">
+                </div>
+                <div class="range-field">
+                  <label for="scenario-disc-contrib">Discretionary contributions</label>
+                  <span class="range-value" id="scenario-disc-contrib-out">R&nbsp;13&nbsp;000</span>
+                  <input id="scenario-disc-contrib" type="range" min="0" max="38000" step="500" value="0">
+                </div>
+                <div class="range-field">
+                  <label for="scenario-return-rate">Expected return</label>
+                  <span class="range-value" id="scenario-return-rate-out">7.00%</span>
+                  <input id="scenario-return-rate" type="range" min="4.000000000000001" max="10" step="0.25" value="0">
+                </div>
+                <div class="range-field">
+                  <label for="scenario-retage">Retirement age</label>
+                  <span class="range-value" id="scenario-retage-out">65</span>
+                  <input id="scenario-retage" type="range" min="60" max="70" step="1" value="65">
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="view-section" data-view-section="report">
+          <div class="report-grid">
+            <article class="card">
+              <div class="card-head"><h2>Summary of Assumptions</h2></div>
+              <div class="card-body">
+                <table class="mini-table">
+                  <tbody><tr><td>Client</td><td id="report-client">Alex and Morgan</td></tr>
+                  <tr><td>Meeting date</td><td id="report-date">25 June 2026</td></tr>
+                  <tr><td>Adviser</td><td id="report-adviser">Simple Wealth (Pty) Ltd</td></tr>
+                  <tr><td>Return</td><td id="report-return">7.00%</td></tr>
+                  <tr><td>CPI</td><td id="report-cpi">5.00%</td></tr>
+                  <tr><td>Escalation</td><td id="report-esc">6.00%</td></tr>
+                </tbody></table>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head"><h2>Projected Outcome</h2></div>
+              <div class="card-body">
+                <table class="mini-table">
+                  <tbody><tr><td>Horizon</td><td id="report-horizon">25 years</td></tr>
+                  <tr><td>Future capital</td><td id="report-future-capital">R&nbsp;81M</td></tr>
+                  <tr><td>Real capital</td><td id="report-real-capital">R&nbsp;23,9M</td></tr>
+                  <tr><td>Monthly income</td><td id="report-income">R&nbsp;97&nbsp;681/mo</td></tr>
+                  <tr><td>Goal progress</td><td id="report-goal-progress">163%</td></tr>
+                  <tr><td>Total contributions</td><td id="report-total-contrib">R&nbsp;30,3M</td></tr>
+                </tbody></table>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const currency = new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR",
+      maximumFractionDigits: 0
+    });
+
+    const compactCurrency = new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR",
+      notation: "compact",
+      maximumFractionDigits: 1
+    });
+
+    const ids = [
+      "spouse-a-name", "spouse-b-name", "spouse-a-age", "spouse-b-age",
+      "ret-a", "disc-a", "ret-contrib-a", "disc-contrib-a",
+      "ret-b", "disc-b", "ret-contrib-b", "disc-contrib-b",
+      "retirement-age", "income-goal", "return-rate", "cpi-rate", "esc-rate",
+      "prepared-for", "meeting-date", "adviser-name",
+      "scenario-ret-contrib", "scenario-disc-contrib", "scenario-return-rate", "scenario-retage"
+    ];
+
+    const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+    let anchorMode = "youngest";
+    let events = [
+      { id: 1, type: "inflow", age: 55, amount: 350000, today: true },
+      { id: 2, type: "outflow", age: 60, amount: 180000, today: true }
+    ];
+    let nextEventId = 3;
+    let baseline = null;
+
+    function readNumber(input) {
+      return Number(String(input.value || "").replace(/[^\d.-]/g, "")) || 0;
+    }
+
+    function swrForAge(age) {
+      const clamped = Math.max(55, Math.min(80, age));
+      return 0.042 + (clamped - 55) * 0.0007;
+    }
+
+    function getInputState() {
+      const ageA = readNumber(el["spouse-a-age"]);
+      const ageB = readNumber(el["spouse-b-age"]);
+      const referenceAge = anchorMode === "youngest" ? Math.min(ageA, ageB) : Math.max(ageA, ageB);
+      const retirementAge = readNumber(el["retirement-age"]);
+      const years = Math.max(1, retirementAge - referenceAge);
+
+      return {
+        nameA: el["spouse-a-name"].value.trim() || "Spouse A",
+        nameB: el["spouse-b-name"].value.trim() || "Spouse B",
+        ageA,
+        ageB,
+        referenceAge,
+        retirementAge,
+        years,
+        retBalance: readNumber(el["ret-a"]) + readNumber(el["ret-b"]),
+        discBalance: readNumber(el["disc-a"]) + readNumber(el["disc-b"]),
+        retContrib: readNumber(el["ret-contrib-a"]) + readNumber(el["ret-contrib-b"]),
+        discContrib: readNumber(el["disc-contrib-a"]) + readNumber(el["disc-contrib-b"]),
+        returnRate: readNumber(el["return-rate"]) / 100,
+        cpi: readNumber(el["cpi-rate"]) / 100,
+        escalation: readNumber(el["esc-rate"]) / 100,
+        goal: readNumber(el["income-goal"]),
+        preparedFor: el["prepared-for"].value.trim(),
+        meetingDate: el["meeting-date"].value.trim(),
+        adviser: el["adviser-name"].value.trim()
+      };
+    }
+
+    function project(state, overrides = {}) {
+      const retirementAge = overrides.retirementAge ?? state.retirementAge;
+      const years = Math.max(1, retirementAge - state.referenceAge);
+      const retContribBase = overrides.retContrib ?? state.retContrib;
+      const discContribBase = overrides.discContrib ?? state.discContrib;
+      const returnRate = overrides.returnRate ?? state.returnRate;
+      const monthlyReturn = Math.pow(1 + returnRate, 1 / 12) - 1;
+      let ret = state.retBalance;
+      let disc = state.discBalance;
+      let retContrib = retContribBase;
+      let discContrib = discContribBase;
+      let totalContrib = 0;
+      const path = [];
+
+      for (let year = 0; year <= years; year += 1) {
+        if (year > 0) {
+          for (let month = 0; month < 12; month += 1) {
+            ret = ret * (1 + monthlyReturn) + retContrib;
+            disc = disc * (1 + monthlyReturn) + discContrib;
+            totalContrib += retContrib + discContrib;
+          }
+
+          const eventAge = state.referenceAge + year;
+          events.forEach((event) => {
+            if (Number(event.age) === eventAge) {
+              const signed = event.type === "outflow" ? -1 : 1;
+              const eventAmount = event.today ? event.amount * Math.pow(1 + state.cpi, year) : event.amount;
+              disc += signed * eventAmount;
+            }
+          });
+
+          retContrib *= 1 + state.escalation;
+          discContrib *= 1 + state.escalation;
+        }
+
+        const nominal = Math.max(0, ret + disc);
+        const real = nominal / Math.pow(1 + state.cpi, year);
+        const swr = swrForAge(state.referenceAge + year);
+        path.push({
+          age: state.referenceAge + year,
+          nominal,
+          real,
+          monthlyIncome: real * swr / 12
+        });
+      }
+
+      const final = path.at(-1);
+      const swr = swrForAge(retirementAge);
+      const requiredCapital = state.goal > 0 ? state.goal * 12 / swr : 0;
+      return {
+        ...final,
+        years,
+        retirementAge,
+        swr,
+        path,
+        totalContrib,
+        retContrib: retContribBase,
+        discContrib: discContribBase,
+        returnRate,
+        requiredCapital,
+        goalProgress: state.goal > 0 ? final.monthlyIncome / state.goal : 1,
+        gap: state.goal > 0 ? final.real - requiredCapital : final.real
+      };
+    }
+
+    function drawChart(result) {
+      const canvas = document.getElementById("projection-chart");
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = { top: 34, right: 30, bottom: 42, left: 74 };
+      const chartWidth = width - pad.left - pad.right;
+      const chartHeight = height - pad.top - pad.bottom;
+      const values = result.path.map((point) => point.real);
+      const incomeValues = result.path.map((point) => point.monthlyIncome * 180);
+      const maxValue = Math.max(...values, ...incomeValues) * 1.08 || 1;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fffdf9";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "#dde1e7";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#667085";
+      ctx.font = "20px Inter, sans-serif";
+
+      for (let tick = 0; tick <= 4; tick += 1) {
+        const y = pad.top + chartHeight * (tick / 4);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(compactCurrency.format(maxValue * (1 - tick / 4)), 12, y + 7);
+      }
+
+      function pointFor(value, index, list) {
+        return {
+          x: pad.left + chartWidth * (index / Math.max(1, list.length - 1)),
+          y: pad.top + chartHeight * (1 - value / maxValue)
+        };
+      }
+
+      function drawLine(list, color, lineWidth) {
+        ctx.beginPath();
+        list.forEach((value, index) => {
+          const point = pointFor(value, index, list);
+          if (index === 0) {
+            ctx.moveTo(point.x, point.y);
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
+
+      drawLine(values, "#323E5D", 4);
+      drawLine(incomeValues, "#b98936", 3);
+      ctx.fillStyle = "#667085";
+      ctx.font = "20px Inter, sans-serif";
+      ctx.fillText("Now", pad.left, height - 14);
+      ctx.textAlign = "right";
+      ctx.fillText("Retirement", width - pad.right, height - 14);
+      ctx.textAlign = "left";
+    }
+
+    function formatPercent(value) {
+      return `${(value * 100).toFixed(2)}%`;
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function renderEvents() {
+      const table = document.getElementById("event-table");
+      table.innerHTML = "";
+
+      events.forEach((event) => {
+        const row = document.createElement("div");
+        row.className = "event-row";
+        row.innerHTML = `
+          <div class="field">
+            <label>Type</label>
+            <div class="select">
+              <select data-event-id="${event.id}" data-event-field="type">
+                <option value="inflow"${event.type === "inflow" ? " selected" : ""}>Inflow</option>
+                <option value="outflow"${event.type === "outflow" ? " selected" : ""}>Outflow</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Age</label>
+            <div class="input"><input class="money" data-event-id="${event.id}" data-event-field="age" value="${event.age}" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <div class="input"><span>R</span><input class="money" data-event-id="${event.id}" data-event-field="amount" value="${event.amount}" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label>Basis</label>
+            <div class="segmented">
+              <button data-event-id="${event.id}" data-event-field="today" data-event-value="true" class="${event.today ? "active" : ""}" type="button">today</button>
+              <button data-event-id="${event.id}" data-event-field="today" data-event-value="false" class="${event.today ? "" : "active"}" type="button">future</button>
+            </div>
+          </div>
+          <button class="button icon" data-remove-event="${event.id}" type="button" aria-label="Remove event">x</button>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    function updateScenarioRanges(state) {
+      const retSlider = el["scenario-ret-contrib"];
+      const discSlider = el["scenario-disc-contrib"];
+      const returnSlider = el["scenario-return-rate"];
+      const ageSlider = el["scenario-retage"];
+
+      if (!baseline) {
+        baseline = project(state);
+      }
+
+      retSlider.min = Math.max(0, baseline.retContrib - 25000);
+      retSlider.max = baseline.retContrib + 25000;
+      discSlider.min = Math.max(0, baseline.discContrib - 25000);
+      discSlider.max = baseline.discContrib + 25000;
+      returnSlider.min = Math.max(0, baseline.returnRate * 100 - 3);
+      returnSlider.max = Math.min(15, baseline.returnRate * 100 + 3);
+      ageSlider.min = Math.max(50, baseline.retirementAge - 5);
+      ageSlider.max = Math.min(75, baseline.retirementAge + 5);
+
+      if (!retSlider.dataset.userSet) retSlider.value = baseline.retContrib;
+      if (!discSlider.dataset.userSet) discSlider.value = baseline.discContrib;
+      if (!returnSlider.dataset.userSet) returnSlider.value = baseline.returnRate * 100;
+      if (!ageSlider.dataset.userSet) ageSlider.value = baseline.retirementAge;
+    }
+
+    function renderScenario(state) {
+      updateScenarioRanges(state);
+      const scenario = project(state, {
+        retContrib: readNumber(el["scenario-ret-contrib"]),
+        discContrib: readNumber(el["scenario-disc-contrib"]),
+        returnRate: readNumber(el["scenario-return-rate"]) / 100,
+        retirementAge: readNumber(el["scenario-retage"])
+      });
+
+      setText("baseline-income", currency.format(baseline.monthlyIncome));
+      setText("baseline-sub", `${compactCurrency.format(baseline.real)} real capital`);
+      setText("baseline-ret-contrib", `${currency.format(baseline.retContrib)}/mo`);
+      setText("baseline-disc-contrib", `${currency.format(baseline.discContrib)}/mo`);
+      setText("baseline-return", formatPercent(baseline.returnRate));
+      setText("baseline-retage", `age ${baseline.retirementAge}`);
+
+      const delta = scenario.monthlyIncome - baseline.monthlyIncome;
+      setText("scenario-income", currency.format(scenario.monthlyIncome));
+      setText("scenario-sub", `${compactCurrency.format(scenario.real)} real capital`);
+      setText("scenario-ret-contrib-label", `${currency.format(scenario.retContrib)}/mo`);
+      setText("scenario-disc-contrib-label", `${currency.format(scenario.discContrib)}/mo`);
+      setText("scenario-return-label", formatPercent(scenario.returnRate));
+      setText("scenario-retage-label", `age ${scenario.retirementAge}`);
+      setText("scenario-delta", `${delta >= 0 ? "+" : "-"}${currency.format(Math.abs(delta))}/mo`);
+      document.getElementById("scenario-delta").className = delta >= 0 ? "pill good" : "pill warn";
+
+      setText("scenario-ret-contrib-out", currency.format(scenario.retContrib));
+      setText("scenario-disc-contrib-out", currency.format(scenario.discContrib));
+      setText("scenario-return-rate-out", formatPercent(scenario.returnRate));
+      setText("scenario-retage-out", scenario.retirementAge);
+    }
+
+    function update() {
+      const state = getInputState();
+      const result = project(state);
+      const household = `${state.nameA} and ${state.nameB}`;
+      const goal = state.goal || 0;
+      const goalPercent = goal > 0 ? Math.round(result.goalProgress * 100) : 100;
+      const anchorName = anchorMode === "youngest"
+        ? (state.ageA <= state.ageB ? state.nameA : state.nameB)
+        : (state.ageA >= state.ageB ? state.nameA : state.nameB);
+      const initials = `${state.nameA[0] || "A"}${state.nameB[0] || "B"}`.toUpperCase();
+
+      document.getElementById("client-initials").textContent = initials;
+      setText("client-name", `${household} retirement plan`);
+      setText("client-subtitle", `${state.preparedFor || household} · ${state.meetingDate || "meeting date not set"}`);
+      setText("headline-anchor-name", anchorName);
+      setText("headline-age", state.retirementAge);
+      setText("headline-income", currency.format(result.monthlyIncome));
+      setText("goal-percent", goal > 0 ? `${goalPercent}%` : "No goal");
+      document.getElementById("goal-meter-fill").style.width = `${Math.max(3, Math.min(100, goalPercent))}%`;
+      setText("goal-target-label", goal > 0 ? `Goal ${currency.format(goal)}/mo` : "No goal set");
+      setText("goal-income-label", `Projected ${currency.format(result.monthlyIncome)}/mo`);
+
+      const confidence = document.getElementById("confidence-pill");
+      const covered = goal === 0 || result.monthlyIncome >= goal;
+      confidence.className = covered ? "confidence" : "confidence warn";
+      setText("confidence-copy", goal === 0 ? "Goal not set" : covered ? "Income goal covered" : "Income goal shortfall");
+
+      setText("return-rate-out", `${readNumber(el["return-rate"]).toFixed(2)}%`);
+      setText("cpi-rate-out", `${readNumber(el["cpi-rate"]).toFixed(2)}%`);
+      setText("esc-rate-out", `${readNumber(el["esc-rate"]).toFixed(2)}%`);
+
+      setText("metric-income", currency.format(result.monthlyIncome));
+      setText("metric-real-capital", compactCurrency.format(result.real));
+      setText("metric-swr", formatPercent(result.swr));
+      document.getElementById("income-metric").className = covered ? "metric good" : "metric warn";
+
+      setText("start-ret-total", currency.format(state.retBalance));
+      setText("start-disc-total", currency.format(state.discBalance));
+      setText("start-total", currency.format(state.retBalance + state.discBalance));
+      setText("contrib-ret-total", `${currency.format(state.retContrib)}/mo`);
+      setText("contrib-disc-total", `${currency.format(state.discContrib)}/mo`);
+      setText("contrib-total", `${currency.format(state.retContrib + state.discContrib)}/mo`);
+      setText("goal-table-income", goal > 0 ? `${currency.format(goal)}/mo` : "not set");
+      setText("goal-table-capital", goal > 0 ? compactCurrency.format(result.requiredCapital) : "not set");
+      setText("goal-table-gap", `${result.gap >= 0 ? "+" : "-"}${compactCurrency.format(Math.abs(result.gap))}`);
+
+      setText("report-client", state.preparedFor || household);
+      setText("report-date", state.meetingDate || "-");
+      setText("report-adviser", state.adviser || "-");
+      setText("report-return", formatPercent(state.returnRate));
+      setText("report-cpi", formatPercent(state.cpi));
+      setText("report-esc", formatPercent(state.escalation));
+      setText("report-horizon", `${result.years} years`);
+      setText("report-future-capital", compactCurrency.format(result.nominal));
+      setText("report-real-capital", compactCurrency.format(result.real));
+      setText("report-income", `${currency.format(result.monthlyIncome)}/mo`);
+      setText("report-goal-progress", goal > 0 ? `${goalPercent}%` : "not set");
+      setText("report-total-contrib", compactCurrency.format(result.totalContrib));
+
+      drawChart(result);
+      renderScenario(state);
+    }
+
+    renderEvents();
+    baseline = project(getInputState());
+
+    document.querySelectorAll(".rail-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.targetView;
+        document.querySelectorAll(".rail-button").forEach((item) => item.classList.toggle("active", item === button));
+        document.querySelectorAll(".view-section").forEach((section) => {
+          section.classList.toggle("active", section.dataset.viewSection === view);
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-anchor]").forEach((button) => {
+      button.addEventListener("click", () => {
+        anchorMode = button.dataset.anchor;
+        document.querySelectorAll("[data-anchor]").forEach((item) => item.classList.toggle("active", item === button));
+        baseline = null;
+        update();
+      });
+    });
+
+    document.getElementById("add-event").addEventListener("click", () => {
+      const state = getInputState();
+      events.push({ id: nextEventId, type: "inflow", age: state.referenceAge + 5, amount: 100000, today: true });
+      nextEventId += 1;
+      renderEvents();
+      update();
+    });
+
+    document.getElementById("event-table").addEventListener("input", (event) => {
+      const target = event.target;
+      const id = Number(target.dataset.eventId);
+      const field = target.dataset.eventField;
+      const item = events.find((entry) => entry.id === id);
+      if (!item || !field) return;
+      item[field] = field === "type" ? target.value : readNumber(target);
+      baseline = null;
+      update();
+    });
+
+    document.getElementById("event-table").addEventListener("click", (event) => {
+      const removeId = event.target.dataset.removeEvent;
+      if (removeId) {
+        events = events.filter((entry) => entry.id !== Number(removeId));
+        renderEvents();
+        baseline = null;
+        update();
+        return;
+      }
+
+      const id = Number(event.target.dataset.eventId);
+      const field = event.target.dataset.eventField;
+      if (field === "today") {
+        const item = events.find((entry) => entry.id === id);
+        if (item) {
+          item.today = event.target.dataset.eventValue === "true";
+          renderEvents();
+          baseline = null;
+          update();
+        }
+      }
+    });
+
+    document.getElementById("lock-baseline").addEventListener("click", () => {
+      baseline = project(getInputState());
+      ["scenario-ret-contrib", "scenario-disc-contrib", "scenario-return-rate", "scenario-retage"].forEach((id) => {
+        el[id].dataset.userSet = "";
+      });
+      update();
+    });
+
+    ids.forEach((id) => {
+      el[id].addEventListener("input", () => {
+        if (id.startsWith("scenario-")) {
+          el[id].dataset.userSet = "true";
+        } else if (!["scenario-ret-contrib", "scenario-disc-contrib", "scenario-return-rate", "scenario-retage"].includes(id)) {
+          baseline = null;
+        }
+        update();
+      });
+    });
+
+    update();
+  </script>
+
+
+</body></html>
