@@ -135,6 +135,29 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 21 — 2026-06-26
+
+**Shipped (report main-projection selection):** follow-up to the Session-20 fix. With a baseline locked and **"Export without scenario"**, Page 2 was still rendering the live planned scenario (e.g. R93 671 / R35 000 contribs) instead of the locked baseline. Session 20 only forced the baseline onto Page 2 when the scenario page was *included*; the without-scenario path still used `lastProjection`.
+
+Fix in `runReportExport(includeScenario)` — Page 2 follows the baseline whenever one is locked, regardless of the scenario choice:
+
+```js
+var hasBaseline = !!baseline;
+var includeScenarioPage = includeScenario && hasBaseline;
+var mainProjection = hasBaseline ? baseline.p : lastProjection;   // was: includeScenarioPage ? baseline.p : lastProjection
+var comparisonBaseline = includeScenarioPage ? baseline : null;
+```
+
+`buildReportData` is unchanged (it already plots the cover/Page-2 from `mainProjection` and compares `comparisonBaseline.p` vs the live `lastProjection` on Page 3). Behaviour now:
+
+- **Baseline + without scenario** → 3 pages, Page 2 = baseline (R87 210 / R30 000 / 9.00%), no scenario page.
+- **Baseline + include scenario** → 4 pages, Page 2 = baseline; Page 3 = baseline R87 210 vs live plan R93 671 (Δ +R6 461, retirement contribs +R5 000).
+- **No baseline** → 3 pages from the live `lastProjection`.
+
+**Tests:** 56 JS (the `report: ... main pages` test retargeted to the new `hasBaseline` gate + a `comparisonBaseline` assertion) + 47 Python (unchanged), all green. Verified numerically via a fake-DOM smoke across all three paths (contribution-change example: baseline 30k → R87 210, plan 35k → R93 671).
+
+**Known caveat:** page-count / no-blank-pages still wants a browser print-preview (CSS unchanged this session; no headless browser available).
+
 ### Session 20 — 2026-06-26
 
 **Shipped (report export bugfixes):** two fixes to the Session-19 landscape report. No engine change.
