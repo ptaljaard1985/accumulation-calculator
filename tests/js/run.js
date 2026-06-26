@@ -423,6 +423,35 @@ check('report: print CSS collapses export wrappers to avoid blank/footer pages',
     'last report page must not force a trailing page break');
 });
 
+check('report: Page 2 layout resets + reserved footer band', () => {
+  // The global ".spouse-mini + .spouse-mini" dashed divider must be reset so
+  // the two household columns align at the top.
+  assert.ok(/\.report-deck \.household-grid \.spouse-mini \+ \.spouse-mini\s*\{[^}]*border-top:\s*0/.test(html),
+    'second spouse column should reset the global dashed top border');
+  assert.ok(/\.report-deck \.summary-table td:first-child\s*\{[^}]*width:\s*auto/.test(html),
+    'report summary-table first column should reset the global 60% width');
+  // Footer band: report-page reserves a fixed footer row, .page-foot has a
+  // top-border divider, and the absolute .foot-line is hidden.
+  assert.ok(/\.report-deck \.report-page\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) 12mm/.test(html),
+    'report-page should reserve a fixed footer band via grid-template-rows');
+  assert.ok(/\.report-deck \.page-foot\s*\{[^}]*border-top:\s*1px solid var\(--r-line\)/.test(html),
+    '.page-foot should carry a top-border divider');
+  assert.ok(/\.report-deck \.foot-line\s*\{\s*display:\s*none/.test(html),
+    'the absolute .foot-line should be hidden in the report deck');
+});
+
+check('report: every footer + compliance line uses the exact FSP wording', () => {
+  const phrase = 'Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.';
+  // Scope to the report deck only (the screen appendix keeps its own wording).
+  const deck = html.match(/<section class="report-deck"[\s\S]*?<!-- \/\.report-deck -->/);
+  assert.ok(deck, 'report-deck markup not found');
+  const count = deck[0].split(phrase).length - 1;
+  assert.ok(count >= 5,
+    'expected the exact FSP phrase on 4 footers + the compliance line, got ' + count);
+  assert.ok(!/financial services provider\. FSP number 50637/.test(deck[0]),
+    'old footer wording should be gone from the report deck');
+});
+
 check('report: static prose copy has no em-dashes', () => {
   // Hand-written static prose: methodology/compliance <p> blocks and the
   // chart-panel intro. data-bind spans/cells are overwritten at runtime, so

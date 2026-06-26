@@ -1331,7 +1331,9 @@
     overflow: hidden;
     position: relative;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    /* Header / body / a reserved 12mm footer band, so the foot never
+       crowds the lower cards. */
+    grid-template-rows: auto minmax(0, 1fr) 12mm;
     page-break-after: always;
     break-after: page;
   }
@@ -1368,17 +1370,18 @@
     text-align: right; color: var(--r-muted); font-size: 11px; line-height: 1.5;
   }
 
-  .report-deck .page-body { padding: 7mm 13mm 10mm; min-height: 0; }
+  .report-deck .page-body { padding: 7mm 13mm 6mm; min-height: 0; }
 
+  /* The footer is its own grid band with a hairline top border — it acts as
+     the divider, so the absolute .foot-line is no longer needed. */
   .report-deck .page-foot {
-    padding: 0 13mm 7mm;
+    height: 12mm;
+    padding: 0 13mm;
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px; color: var(--r-muted); font-size: 10px;
+    border-top: 1px solid var(--r-line);
   }
-  .report-deck .foot-line {
-    height: 1px; background: var(--r-line);
-    position: absolute; left: 13mm; right: 13mm; bottom: 14mm;
-  }
+  .report-deck .foot-line { display: none; }
 
   /* ---------- Page 1 · Cover (dark) ---------- */
   .report-deck .cover-page { background: var(--r-brand); color: #fff; }
@@ -1397,6 +1400,8 @@
   .report-deck .cover-page .header-name,
   .report-deck .cover-page .header-meta,
   .report-deck .cover-page .page-foot { color: rgba(255, 255, 255, 0.82); }
+  /* On the dark cover the footer divider is a translucent white hairline. */
+  .report-deck .cover-page .page-foot { border-top-color: rgba(255, 255, 255, 0.18); }
 
   .report-deck .cover-layout {
     height: 100%; display: grid; align-content: center; gap: 22px;
@@ -1425,7 +1430,7 @@
 
   /* ---------- Page 2 · Projection ---------- */
   .report-deck .projection-page-body {
-    display: grid; grid-template-rows: 112mm 1fr; gap: 12px; height: 100%; min-height: 0;
+    display: grid; grid-template-rows: 108mm 1fr; gap: 12px; height: 100%; min-height: 0;
   }
   .report-deck .income-chart-panel {
     background: var(--r-brand); border-radius: var(--r-radius); color: #fff;
@@ -1474,6 +1479,12 @@
   .report-deck .household-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   }
+  /* Reset the global screen rule that adds a dashed divider + top margin to a
+     second .spouse-mini — in the report the two columns sit side by side and
+     must align at the top. */
+  .report-deck .household-grid .spouse-mini + .spouse-mini {
+    margin-top: 0; padding-top: 0; border-top: 0;
+  }
   .report-deck .spouse-mini h3 {
     margin: 0 0 8px; font-size: 13px; display: flex; justify-content: space-between; gap: 12px;
   }
@@ -1485,6 +1496,8 @@
     padding: 5px 0; border-bottom: 1px solid var(--r-line);
     color: var(--r-muted); vertical-align: top;
   }
+  /* Reset any width inherited from the global .summary-table rules. */
+  .report-deck .summary-table td:first-child { width: auto; }
   .report-deck .summary-table tr:last-child td { border-bottom: 0; }
   .report-deck .summary-table td:last-child {
     text-align: right; color: var(--r-ink); font-family: var(--mono);
@@ -1552,7 +1565,7 @@
   .report-deck .methodology-page .header-name,
   .report-deck .methodology-page .header-meta,
   .report-deck .methodology-page .page-foot { color: rgba(255, 255, 255, 0.82); }
-  .report-deck .methodology-page .foot-line { background: rgba(255, 255, 255, 0.18); }
+  .report-deck .methodology-page .page-foot { border-top-color: rgba(255, 255, 255, 0.18); }
 
   .report-deck .method-body {
     display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 18px; height: 100%;
@@ -2348,7 +2361,7 @@
         </div>
       </div>
       <footer class="page-foot">
-        <span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span>
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
         <span class="num page-count">01 / 03</span>
       </footer>
     </section>
@@ -2425,7 +2438,7 @@
         </div>
       </div>
       <div class="foot-line"></div>
-      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">02 / 03</span></footer>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span><span class="num page-count">02 / 03</span></footer>
     </section>
 
     <!-- 03 · Scenario (conditional) -->
@@ -2491,7 +2504,7 @@
         </div>
       </div>
       <div class="foot-line"></div>
-      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">03 / 04</span></footer>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span><span class="num page-count">03 / 04</span></footer>
     </section>
 
     <!-- 04 · Methodology / Compliance -->
@@ -2518,12 +2531,12 @@
           <article class="text-block">
             <h2>Compliance note</h2>
             <p>This report is illustrative and depends on the assumptions entered at the time of the meeting. It should be read with a full financial plan and formal record of advice.</p>
-            <p>Actual outcomes may differ materially depending on investment returns, inflation, contribution levels, tax, fees, legislation, and personal circumstances. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP number 50637.</p>
+            <p>Actual outcomes may differ materially depending on investment returns, inflation, contribution levels, tax, fees, legislation, and personal circumstances. Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</p>
           </article>
         </div>
       </div>
       <div class="foot-line"></div>
-      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">04 / 04</span></footer>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span><span class="num page-count">04 / 04</span></footer>
     </section>
 
   </section><!-- /.report-deck -->

@@ -135,6 +135,20 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 22 — 2026-06-26
+
+**Shipped (report Page 2 layout + footer wording):** three presentation fixes to the landscape report. No engine/JS-logic change — CSS + static copy only.
+
+1. **Household columns misaligned.** The global screen rule `.spouse-mini + .spouse-mini { margin-top/padding-top: 14px; border-top: 1px dashed }` was leaking into the report deck, pushing the second spouse (Sarah) down with a dashed line across the top. Reset inside the deck: `.report-deck .household-grid .spouse-mini + .spouse-mini { margin-top: 0; padding-top: 0; border-top: 0 }`. Also reset the global `.summary-table td:first-child { width: 60% }` to `width: auto` in the report scope.
+
+2. **Footer crowding the lower cards.** Replaced the absolute `.foot-line` divider with a reserved footer band: `.report-deck .report-page { grid-template-rows: auto minmax(0, 1fr) 12mm }`; `.page-foot { height: 12mm; border-top: 1px solid var(--r-line) }`; `.foot-line { display: none }`; `.page-body` padding-bottom trimmed to 6mm. Dark pages (cover, methodology) get a translucent-white footer border. Projection chart row reduced 112mm → 108mm to keep Page 2 uncramped.
+
+3. **Footer wording.** All four report footers (cover, projection, scenario, methodology) and the report's compliance paragraph now read exactly: "Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637." The separate screen/portrait appendix (`#print-summary`) keeps its own existing wording — it is a different document and out of scope.
+
+**Tests:** 58 JS (+2: Page-2 layout resets + reserved footer band; exact FSP wording on 4 footers + compliance, scoped to the report deck) + 47 Python (unchanged), all green.
+
+**Known caveat:** the visual result (columns aligned, footer in its own band, 3/4 page counts) still wants a browser print-preview — no headless browser available this session.
+
 ### Session 21 — 2026-06-26
 
 **Shipped (report main-projection selection):** follow-up to the Session-20 fix. With a baseline locked and **"Export without scenario"**, Page 2 was still rendering the live planned scenario (e.g. R93 671 / R35 000 contribs) instead of the locked baseline. Session 20 only forced the baseline onto Page 2 when the scenario page was *included*; the without-scenario path still used `lastProjection`.
