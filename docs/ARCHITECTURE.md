@@ -140,14 +140,16 @@ return 'empty';
      </details>
     </div>
 
-    <!-- Export deck — hidden on screen + portrait-print; shown when
-         startExport() sets data-export-mode on #calc-root. 12 pages,
-         2 conditional (events, compare). See §13 for details. -->
-    <section class="export-deck">
-      <section class="export-page" data-export-page="cover">...</section>
-      <section class="export-page" data-export-page="answer">...</section>
-      ... 10 more pages ...
+    <!-- Report deck — hidden on screen + portrait-print; shown when
+         runReportExport() sets data-export-mode on #calc-root. 4 pages,
+         1 conditional (scenario). See §13 for details. -->
+    <section class="report-deck">
+      <section class="report-page cover-page" data-page="cover">...</section>
+      <section class="report-page" data-page="projection">...</section>
+      <section class="report-page scenario-page" data-page="scenario" data-enabled="false">...</section>
+      <section class="report-page methodology-page" data-page="methodology">...</section>
     </section>
+    <div class="report-modal-backdrop" id="report-scenario-modal">...</div>
 
     <div class="footer-meta">Simple Wealth · Retirement Accumulation · {date}</div>
   </div>
@@ -198,7 +200,7 @@ The helper-prose span ("Ages anchored to {name}'s age.") uses `class="events-ref
 
 **Client-input defaults + clamps (Session 11).** Spouse ages, retirement age, the four balance inputs, and the four monthly contribution inputs ship with **no HTML `value=""` defaults and no `min`/`max`/`step` constraints** — they render blank with a `placeholder="—"` until the adviser types. `parseAge(id, fallback)` is now a straight `isFinite(n) ? n : fallback` with no 18/64 clamp; every call site still passes `40` as the fallback, which is an internal NaN backstop (invisible because the HTML input is blank). The retirement-age block in `readInputs()` reads the raw integer and falls back to 65 only when the field is truly blank — no 50/75 clamp. The `retirement-age` blur handler calls `refresh()` directly (previously it was snapping values back into 50-75). Market assumption defaults (5% return / 5% CPI / 5% escalation) and the `project()` horizon-minimum (`years = max(1, retirementAge − refAge)`) are unchanged.
 
-**`data-goal-active` hide pattern.** Any surface that displays goal-progress (outcome-strip sub-line, compare-card meta row, print-summary row, export-deck answer slot) carries `data-goal-active="false"` in the markup. A single CSS rule `[data-goal-active="false"] { display: none !important; }` collapses them all. Renderers flip the attribute via the shared `setGoalActive(id, bool)` helper, driven by `computeGoalProgress(p)` which returns `null` when the goal is blank or zero.
+**`data-goal-active` hide pattern.** Any surface that displays goal-progress (outcome-strip sub-line, compare-card meta row, print-summary row) carries `data-goal-active="false"` in the markup. (The report deck shows the income goal as an amount, not a progress percentage, so it doesn't use this pattern.) A single CSS rule `[data-goal-active="false"] { display: none !important; }` collapses them all. Renderers flip the attribute via the shared `setGoalActive(id, bool)` helper, driven by `computeGoalProgress(p)` which returns `null` when the goal is blank or zero.
 
 ### 5. Rendering functions
 
@@ -301,51 +303,48 @@ At the bottom: input listeners on all household fields, age inputs, retirement-a
 
 **`loadSampleData()` (test scaffolding).** A convenience on the State-1 `.empty-cta`: populates a representative household and sets `projectionRequested = true` so one click lands in State 2, avoiding re-typing during testing. It writes the canonical inputs (via `setHpFormatted` for money, direct `.value` for ages/age/sliders), sets `spouseNames` + the family/client name, then calls `refresh()`. Not a product feature — hidden in print via `.empty-cta`; strip or gate it before a client-facing release.
 
-### 13. Export deck (A4 landscape, 12 pages)
+### 13. Report deck (A4 landscape, 3–4 pages) — Session 19
 
-An opt-in print mode that turns the calculator into a 12-page client-facing deliverable. Triggered by `#btn-export-report` in the plan-bar. The deck never appears in the normal portrait print path (canvas-foot Print/PDF or plain Cmd+P) — it's fully gated on two flags that only `startExport()` sets.
+An opt-in print mode that turns the calculator into a compact client-facing deliverable. Triggered by `#btn-export-report` ("Report") in the plan-bar. The deck never appears in the normal portrait print path (canvas-foot Print/PDF or plain Cmd+P) — it's fully gated on flags that only `runReportExport()` sets. The Session-19 redesign replaced the previous 12-page editorial deck (and its 5 print-time Chart.js canvases) with this 3–4 page deck whose income chart is **inline SVG** (sharp at any PDF zoom). The projection engine is untouched — this is a render/markup layer over `project()` / `incomeCurveData()`.
 
-**Gating model.** `startExport()` sets three things before calling `window.print()`:
+**Gating model.** `runReportExport(includeScenario)` sets three things before calling `window.print()`:
 
-1. `#calc-root[data-export-mode="true"]` — CSS rule hides every `#calc-root > :not(.export-deck)` and reveals `.export-deck`. This is the on-screen visibility swap.
-2. `<html class="export-printing">` — used only to scope the `html.export-printing .export-page { ... }` print-size overrides.
-3. A dynamically-injected `<style id="export-page-sheet">@page { size: A4 landscape; margin: 0; }</style>` in `<head>`. `@page` rules can't live inside selector scopes, so this is the only reliable way to change page size per print pass.
+1. `#calc-root[data-export-mode="true"]` — CSS hides every `#calc-root > :not(.report-deck)` and reveals `.report-deck`. The on-screen visibility swap.
+2. `<html class="export-printing">` — scopes the `html.export-printing .report-page { ... }` print-size overrides.
+3. A dynamically-injected `<style id="export-page-sheet">@page { size: A4 landscape; margin: 0; }</style>` in `<head>` (`ensureExportPageSheet()`). `@page` rules can't live inside selector scopes, so this is the only reliable per-pass page-size override.
 
-`afterprint` calls `teardownExport()`, which strips all three gates and destroys the export Chart.js instances. The existing portrait `@media print` rules at lines ~1143–1169 are unchanged and continue to win for non-export prints because none of these gates are set in that flow.
+`afterprint` calls `teardownExport()`, which strips all three gates. There are no Chart.js instances to destroy now (the chart is inert SVG). The existing portrait `@media print` rules are unchanged and continue to win for non-export prints.
 
-**The 12 pages** (in `<section class="export-deck">`, a direct sibling of `.print-summary`):
+**The pages** (scoped CSS under `.report-deck` with report-local `--r-*` custom properties; deck is a direct child of `#calc-root`, with the include-scenario modal as a sibling):
 
-1. Cover — family name (derived by `deriveFamilyName()` from last whitespace token of `#client-name`), prepared-for, date, adviser (FSP 50637).
-2. The Answer — eyebrow + Fraunces headline with `gold-under` accent on the monthly-income number + real capital stacked chart + three-cell outcome strip (primary cell also carries the `answer-goal` sub-line when the adviser has set an income goal). 6-row grid (topbar / eyebrow / headline / chart-card[1fr] / outcome-strip / foot); the narrative block was dropped in Session 10 because a 7-child grid was paginating across two physical sheets in Chrome print, leaving page 2 blank. The narrative is retained on the State 2 portrait print (working-copy PDF).
-3. Household — two-column editorial grid (balances, contributions, combined total per spouse) divided by a 1px hairline.
-4. Assumptions — two-column layout: 5-row editorial table (return / CPI / escalation / retirement trigger / safe withdrawal rate, the last bound to `a-drawrate`) + "Note to the household" aside.
-5. Projection — nominal stacked chart, full-width + three-cell foot strip (starting / real final / nominal final).
-6. Breakdown — two-column: 3-layer decomp chart + three slab cards (starting-compounded, cumulative contributions, growth on contributions), all in today's money.
-7. Capital events — **conditional on `eventsStore.length > 0`**. Summary strip (count, inflow total, outflow total) + itemised list (kind badge, age, year, basis, amount). Out-of-horizon events are muted but still listed for completeness.
-8. Compare — **conditional on `baseline !== null`**. Two side-by-side cards (baseline paper-2, scenario white with navy ring) with shared y-ceiling, gold delta chip on the scenario card, inline gold deltas on changed meta rows.
-9. Year-by-year — full-width table: year 0, every 5th year, and the retirement row (highlighted in navy). Columns: year label, Age A, Age B, retirement (nominal), discretionary (nominal), total (nominal), total (real).
-10. Methodology — two-column prose: how capital grows, PV conversion, the age-based safe withdrawal rate (dynamic `method-swr` bind), the three-part breakdown, capital events note (dynamic based on `eventsStore.length`), what the projection is not.
-11. Compliance — two-column prose: not-advice disclaimer, FSP 50637 + POPIA, scope of document, risk/market assumptions, tax treatment (pre-tax), review cadence.
-12. Next steps — closing page: "From projection to plan" eyebrow + `Let's turn this into your plan.` headline with gold-under + three cells (review / action / next review cadence) + branding foot.
+1. **Cover** (`data-page="cover"`, dark navy) — kicker, `cover-title` ("Retirement Income Projection for …"), and two stat cells: date prepared + "R X /mo · age N" projected income. No goal progress on the cover (per spec).
+2. **Projection** (`data-page="projection"`) — top navy `.income-chart-panel` holding `<svg id="report-income-chart" viewBox="0 0 940 350">`; bottom `.projection-summary` = a 4-box `.assumption-grid` (Income goal / Safe withdrawal rate / Expected return / Assumed inflation) + a 2-spouse `.household-grid` (age, retirement balance, discretionary balance, retirement contrib, discretionary contrib).
+3. **Scenario** (`data-page="scenario"`, **conditional**) — `.scenario-hero` two tiles (Current projection = baseline, Plan scenario = live `lastProjection` + signed income delta) and `.scenario-detail` = a `.change-table` (lever / current / planned / delta) plus three `.note` blocks (result / changed inputs / unchanged assumptions). Unchanged levers render **"unchanged"** explicitly; no attribution is inferred.
+4. **Methodology** (`data-page="methodology"`, dark navy, full-width) — two `.text-block`s (Methodology + Compliance note) with live assumptions interpolated into the first two methodology paragraphs.
 
-**Conditional-page logic.** Pages 7 and 8 carry `data-export-page-active="false"` in the markup. `buildExportDeck()` toggles that attribute based on `eventsStore.length` and `baseline`. CSS: `.export-page[data-export-page-active="false"] { display: none; }` hides them both on screen and in print. `renumberExportPages()` walks visible `.export-page` nodes, assigns lowercase roman numerals (`i.` `ii.` ...) and `NN / TT` page counts, so the document always reads as a coherent sequence (10, 11, 11, or 12 pages depending on state).
+Every page repeats the `.page-foot` brand line ("Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.") and a `.page-count` slot.
 
-**Dedicated export Chart.js instances.** Five new canvases (`export-chart-answer`, `export-chart-projection-nom`, `export-chart-breakdown`, `export-chart-compare-baseline`, `export-chart-compare-scenario`), held in module-scoped `exportCharts = { answer, proj, breakdown, cmpBase, cmpScen }`. Built in `buildExportCharts()` on button click against the (now visible, landscape-sized) DOM. Destroyed in `destroyExportCharts()` on `afterprint`. Chose dedicated canvases over reusing the screen charts because State 2/3 instances are sized for ~280–1000px card widths; landscape A4 content area is ~1588×1123px; `chart.resize()` on live screen instances is the fragile path that burned Sessions 2 and 3.
+**Conditional-page logic.** The scenario page carries `data-enabled="false"` in the markup. `runReportExport(includeScenario)` sets it to `"true"` only when `includeScenario && baseline`. CSS `.report-page[data-enabled="false"] { display: none; }` hides it on screen and in print. `renumberReportPages()` walks visible `.report-page` nodes and writes `NN / TT` page counts, so the document reads as 3 pages (no scenario) or 4 (with scenario).
 
-**Shared y-ceiling on compare charts.** `padSeries(series, targetLen)` extends the shorter baseline-year series with its last value so the two compare charts line up on the x-axis. The y-axis ceiling is `max(peak(baseReal.total), peak(planReal.total)) * 1.05` shared across both.
+**Include-scenario flow.** `#btn-export-report` → `startExport()`: if `baseline` is locked, open the styled modal `#report-scenario-modal` (Cancel / Export without scenario / Include scenario); otherwise call `runReportExport(false)` directly. The modal's two export buttons call `runReportExport(false|true)`. The modal is a `position: fixed` sibling of the deck, shown before export mode is entered (so the normal screen UI is still visible behind it).
 
-**JS entry points (all in the `Export deck` block in the script IIFE).**
+**Inline SVG income chart.** `renderReportIncomeChart(chartData)` rebuilds `#report-income-chart` from scratch each export: 5 gridlines + y labels, a dashed gold income-goal line (only when goal > 0), the white income path, a vertical marker + gold dot at the selected retirement age, a white callout (Age N + "R X /mo"), and ~6 x-axis age labels. Coordinates use a fixed `viewBox 0 0 940 350` with `xForAge`/`yForValue` and `niceChartMax` for the y-ceiling. Chose SVG over a print-time canvas because a viewBox is resolution-independent and needs no measurement/`resize()` dance — that fragility burned Sessions 2/3.
 
-- `startExport()` — guard on `lastProjection`, ensure `<style id="export-page-sheet">`, set gates, `buildExportDeck(...)`, `buildExportCharts(...)`, double-rAF → `window.print()`.
-- `teardownExport()` — strip gates, remove `<style>`, `destroyExportCharts()`.
-- `buildExportDeck(p, baseline, events, names)` — populates every `[data-bind="..."]` slot. Calls `populateEventsPage`, `populateComparePage`, `populateYearTable` for the three data-heavy pages, then `renumberExportPages()`.
-- `buildExportCharts(p, baseline)` — 3 or 5 Chart.js instances depending on whether `baseline` is locked.
-- `setBind(name, html)` / `setBindText(name, txt)` — bulk-assign innerHTML/textContent to every `[data-bind="name"]` node inside `.export-deck`.
-- Helpers: `toRoman(n)`, `deriveFamilyName(full)`, `escapeHtml(s)`, `renumberExportPages()`, `padSeries`, `peak`, `fadedStackedDatasets`, `stackedDatasets`, `exportBarOptions`, `exportCompareOptions`, `setMetaWithDelta`, `ensureExportPageSheet`, `removeExportPageSheet`.
+**JS entry points (in the `Report deck` block in the script IIFE).**
 
-**Refresh integration.** `refresh()` does NOT touch the export deck. The deck is populated only on button click; otherwise it holds placeholder text (`R —`, `——`, etc.) that never reaches print. This keeps per-keystroke cost unchanged.
+- `startExport()` — guard on `lastProjection`; if `baseline`, open the modal, else `runReportExport(false)`.
+- `runReportExport(includeScenario)` — close modal, `ensureExportPageSheet()`, set gates, toggle the scenario page's `data-enabled`, `populateReportDeck(buildReportData(...))`, `renumberReportPages()`, double-rAF → `window.print()`.
+- `teardownExport()` — strip gates, `removeExportPageSheet()`.
+- `buildReportData(p, baseline, events, names)` — **pure formatting adapter, no math.** Maps live state to report slots: names (spouse first names, family-name fallback via `deriveFamilyName(#client-name)` when both are defaults), cover income, the 4 assumptions, per-spouse household figures, chart points from `incomeCurveData(p.inputs)`, methodology prose with live assumptions, and (when `baseline`) the scenario comparison.
+- `buildScenarioComparison(p, baseline)` — deterministic `baseline.inputs` vs `p.inputs` lever table (retirement/discretionary contribs A+B, return, inflation, escalation, income goal, retirement age) + goal-progress pp via `computeGoalProgress`. Unchanged rows → "unchanged"; changed/unchanged note copy is derived from the same comparison.
+- `populateReportDeck(d)` — writes every `[data-bind="…"]` slot via `setBind`/`setBindText`, builds the scenario table rows, and calls `renderReportIncomeChart`.
+- `renderReportIncomeChart(chartData)`, `createSvgEl`, `niceChartMax`, `renumberReportPages` — SVG + numbering helpers.
+- `setBind(name, html)` / `setBindText(name, txt)` — bulk-assign innerHTML/textContent to every `[data-bind="name"]` node inside `.report-deck`.
+- Kept from the old deck: `deriveFamilyName`, `escapeHtml`, `ensureExportPageSheet`, `removeExportPageSheet`.
 
-**Em-dash rule.** Static deck prose (methodology, compliance, next-steps, assumptions aside, events list header) is em-dash-free. Placeholder slots like `<span data-bind="compliance-date">——</span>` contain em-dashes but are guaranteed to be overwritten by `setBindText()` from an em-dash-free source before print. JS tests enforce the static-prose invariant with zone-scoped regexes that strip `data-bind` spans before scanning.
+**Refresh integration.** `refresh()` does NOT touch the report deck. The deck is populated only on export; otherwise it holds placeholder text (`—`) that never reaches print. Per-keystroke cost is unchanged.
+
+**Em-dash rule.** Static deck prose (methodology, compliance, chart intro) is em-dash-free. `data-bind` slots hold `—` placeholders but are overwritten by `setBind`/`setBindText` from em-dash-free sources before print. A JS test scans the whole `.report-deck` markup for em-dashes after stripping `data-bind` nodes.
 
 ### 14. Save / Open plan (file-based persistence)
 

@@ -23,7 +23,7 @@ The cockpit's visual direction differs from the original warm-paper editorial sy
 
 3. **New "Current plan" recap card** (State 2, below the outcome strip). A two-column-per-spouse card echoing the State-1 two-column setup. Eyebrow `Current plan`. Each spouse column (header = the spouse's name) lists Retirement balance, Discretionary balance, Monthly retirement contributions, Monthly discretionary contributions. Below a divider, an assumptions row: Expected return · Assumed inflation · Escalation. It is a derived readout of the current inputs — the projected capital-at-retirement is deliberately **not** shown here (that's the chart + outcome strip's job). Standard surface / border / `--r-lg` / `--shadow-sm` chrome; stacks to one column at ≤820px; prints on page 1.
 
-4. **Appendix is now a single `Methodology & disclaimer` toggle box** that expands to methodology + disclaimer only. The former "Detail tables" sub-accordion (client/meeting, starting position, contributions & assumptions, projected outcome, capital events, baseline comparison) was removed — that detail now lives in the on-screen recap card and in the 12-page Report deck. This thins the portrait Cmd+P output: it keeps inputs via the recap card, outputs via the outcome strip + chart, plus methodology and disclaimer. The Report deck remains the full client deliverable.
+4. **Appendix is now a single `Methodology & disclaimer` toggle box** that expands to methodology + disclaimer only. The former "Detail tables" sub-accordion (client/meeting, starting position, contributions & assumptions, projected outcome, capital events, baseline comparison) was removed — that detail now lives in the on-screen recap card and in the Report deck. This thins the portrait Cmd+P output: it keeps inputs via the recap card, outputs via the outcome strip + chart, plus methodology and disclaimer. The Report deck remains the full client deliverable.
 
 5. **Canvas feet lost their action buttons.** State 2 dropped "Table view" and "Print / PDF"; State 3 dropped "Print / PDF". Table view is reachable from the chart-head Table toggle; exporting is the top-bar gold **"Report"** button. The "Illustrative only…" foot text remains.
 
@@ -269,39 +269,33 @@ Both call `resizeChartsToWrap()`, which iterates every chart container (main + b
 
 Every calculator must be reviewed in print preview before shipping. Print-only regressions are subtle and common.
 
-## Export deck (A4 landscape, 12 pages)
+## Report deck (A4 landscape, 3–4 pages) — Session 19
 
-A separate, opt-in print mode producing a client-facing deliverable. Triggered by the plan-bar **Export report** button; coexists with the portrait print path without touching it.
+A separate, opt-in print mode producing a client-facing deliverable. Triggered by the plan-bar **Report** button; coexists with the portrait print path without touching it. Session 19 replaced the previous 12-page editorial deck with this compact deck modelled on `new_report.html`, in the cockpit brand-blue (`#323E5D`) palette. The signature change is that the income chart is now **inline SVG** (resolution-independent — crisp at any PDF zoom) rather than a print-time Chart.js canvas.
 
 **Two print paths, two purposes.**
 
-- *Working copy* — canvas-foot "Print / PDF" or plain Cmd+P. Portrait. Client view on page 1, 3-accordion compliance appendix on pages 2+. Internal use, back-office.
-- *Client deliverable* — plan-bar "Export report". Landscape. 12-page deck, editorial voice, meant to be emailed or printed to hand over.
+- *Working copy* — canvas-foot "Print / PDF" or plain Cmd+P. Portrait. Client view on page 1, compliance appendix on pages 2+. Internal use, back-office.
+- *Client deliverable* — plan-bar "Report". Landscape. 3–4 page deck, meant to be emailed or printed to hand over.
 
-They never collide: export mode gates are set only by `startExport()` and cleared on `afterprint`. Working-copy flows never touch them, so the existing portrait `@media print` rules remain authoritative there.
+They never collide: export mode gates are set only by `runReportExport()` and cleared on `afterprint`. Working-copy flows never touch them, so the existing portrait `@media print` rules remain authoritative there.
 
-**The deck.** 12 pages, two conditional (auto-hidden when inactive):
+**The deck.** 4 pages, one conditional (the scenario page, shown only when a baseline is locked and the adviser opts in via the modal):
 
-1. **Cover** — `A plan for the [Family] family.` in Fraunces 300 / 82px with italic `family.` and a 2px gold underline on the family name. Foot strip: Prepared for / Prepared on / Adviser + FSP 50637 / page mark.
-2. **The Answer** — eyebrow + Fraunces 300 / 40px headline with `gold-under` on the monthly-income number. Full-width real-money stacked chart (gold discretionary / navy retirement). Outcome strip (navy-filled primary cell for monthly income; carries the green/red goal-progress sub-line when an income goal is set). Six-row grid (topbar / eyebrow / headline / chart / outcome strip / foot). The narrative block was removed in Session 10 because a 7-child grid paginated the page across two physical print sheets in Chrome, leaving the first sheet blank; the narrative is retained on the State 2 portrait print instead.
-3. **Household** — two-spouse editorial grid, 1px hairline divider down the middle. Each column: Fraunces 30px name + mono age, five label/value rows (retirement balance, discretionary balance, monthly retirement contribs, monthly discretionary contribs), and a navy-italic "Combined starting capital" total row above a 2px navy rule.
-4. **Assumptions** — 5-row editorial table (return / CPI / escalation / retirement trigger / safe withdrawal rate) + aside on warm `--paper-2` with a 3px gold left-rule and three short paragraphs ("long-term planning assumptions, not forecasts", stress-test cadence, today's money framing).
-5. **Projection** — full-width nominal stacked chart at 90mm height + three-cell foot strip (starting capital today / at retirement real / at retirement nominal).
-6. **Breakdown** — two-column: 3-layer decomp chart on the left (starting-compounded grey + cumulative contributions darker grey + growth-on-contribs gold) + three slab cards on the right, each with a coloured swatch + mono value + one-line serif explanation.
-7. **Capital events** (conditional) — summary strip (count, total inflows in green `--pos`, total outflows in red `--neg`) + tabular list with kind badge, age, year, basis ("Today's money" or "Future rands"), amount. Out-of-horizon events are listed at 55% opacity with an "(outside horizon)" marker.
-8. **Compare** (conditional, baseline locked) — two side-by-side cards. Baseline on `--paper-2`, muted hero number in `--ink-2` / weight 300. Scenario on white with a 1px navy border + navy ring shadow, hero in `--navy`. Gold delta chip (or red-pale `.neg` chip) above the scenario hero. 60mm charts, shared y-ceiling. Meta rows at the bottom with inline gold deltas beside changed values.
-9. **Year-by-year** — full-width table, every 5th year plus the retirement row highlighted in navy with paper text. Columns: year label (serif) + Age A + Age B + Retirement (nominal) + Discretionary (nominal) + Total nominal + Total real. Monospace numerics.
-10. **Methodology** — two-column prose: how the capital grows / future-rands-to-today's-money / the age-based safe withdrawal rate / the three-part breakdown / capital-events note (dynamic) / what this projection is not. h3 sub-heads in navy uppercase 10px, body in Fraunces 300 / 13px.
-11. **Compliance** — two-column prose: not advice + FSP 50637 + POPIA + scope, then risk assumptions + tax treatment (pre-tax) + review cadence. Ends with a tiny-mono footnote.
-12. **Next steps** — closing: eyebrow + Fraunces 300 / 72px headline `Let's turn this into your plan.` with italic `your` and gold-under on `your plan`. Three gold-left-ruled cells (Review & refine, Action, Next review). Foot with branded lockup and date.
+1. **Cover** (dark navy) — kicker + bold sans `Retirement Income Projection for [names].` (spouse first names, or "the [Family] household" fallback). Two stat cells: date prepared + "R X /mo · age N" projected income. No goal progress on the cover.
+2. **Projection** — top navy income-chart panel (SVG: white income line over age, dashed gold income-goal line, a vertical marker + gold dot at the selected retirement age, a white callout, faint white gridlines). Bottom: a 4-box assumptions grid (Income goal / Safe withdrawal rate / Expected return / Assumed inflation) on the left and a two-spouse household card (age, retirement & discretionary balances, retirement & discretionary contributions) on the right.
+3. **Scenario** (conditional) — two hero tiles (Current projection = baseline, Plan scenario = live projection, with a green income delta) over a "What changed" lever table and three notes (result / changed inputs / unchanged assumptions). Changed deltas are green/red; unchanged levers read **"unchanged"** in muted text. No attribution is inferred.
+4. **Methodology / Compliance** (dark navy, full-width) — two stacked text blocks (Methodology with live assumptions interpolated, Compliance note), separated by a faint hairline. No side-by-side white boxes.
 
-**Visual tokens.** No new tokens. The deck uses the existing `--paper`, `--navy`, `--gold`, `--gold-2`, `--ink`, `--ink-2`, `--mute`, `--hairline`, `--paper-2`, `--serif`, `--sans`, `--mono` vocabulary. The one new accent pattern is the Roman-numeral italic gold tag (`.export-rom` class) applied in page eyebrows, carrying the same editorial voice as the I./II./III. markers in the plan-bar drawer.
+Every page carries the repeating foot brand line ("Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.") and an `NN / TT` page count.
 
-**Page geometry.** `.export-page { width: 297mm; min-height: 210mm; padding: 14–16mm × 18–22mm; }`. On screen the pages are stacked vertically with a 14px hairline gap and a subtle box-shadow so the adviser can scroll-preview before printing. In print (`html.export-printing`), the shadow and gap are stripped; each page fills its printed sheet.
+**Visual tokens.** The deck is self-contained: report-local custom properties (`--r-brand`, `--r-gold`, `--r-ink`, `--r-muted`, `--r-line`, `--r-surface`, `--r-green`, `--r-red`, …) are declared on `.report-deck` so the report renders exactly to its reference and is immune to screen-token changes. The values mirror the cockpit palette (`--r-brand: #323E5D` = `--navy`, `--r-gold: #b98936` = `--gold`).
 
-**Conditional pages.** `.export-page[data-export-page-active="false"] { display: none; }`. Toggled by `buildExportDeck()` based on `eventsStore.length > 0` (events page) and `baseline !== null` (compare page). Pages renumber automatically so the document always reads as a coherent sequence: 10 pages default, 11 with events OR baseline, 12 with both.
+**Page geometry.** `.report-page { width: 297mm; height: 210mm; }` with a CSS-grid `auto 1fr auto` (header / body / foot). On screen the pages stack with an 18px gap and a soft box-shadow for scroll-preview. In print (`html.export-printing`), the shadow/gap are stripped and each page fills its sheet.
 
-**Em-dash rule — strictly enforced in static copy.** Methodology, compliance, next-steps, and the assumptions aside were hand-written specifically to avoid em-dashes; placeholder slots (`R —`, `——` inside `<span data-bind="...">`) are allowed because they're overwritten at runtime by `setBindText` from em-dash-free sources. JS tests (`export: static prose copy has no em-dashes`) assert this invariant with zone-scoped regexes that strip `data-bind` spans before scanning.
+**Conditional page + include-scenario modal.** The scenario page carries `data-enabled="false"`; `runReportExport(includeScenario)` flips it to `"true"` only when a baseline exists and the adviser chose to include it. Clicking **Report** with a locked baseline opens a small styled modal (`#report-scenario-modal`: Cancel / Export without scenario / Include scenario) matching the report palette; with no baseline the report goes straight to 3 pages. `renumberReportPages()` keeps the `NN / TT` counts coherent for 3- or 4-page output.
+
+**Em-dash rule — enforced in static copy.** The methodology/compliance prose and chart intro are hand-written em-dash-free; `data-bind` slots hold `—` placeholders but are overwritten at export by `setBind`/`setBindText` from em-dash-free sources. A JS test scans the whole `.report-deck` markup for em-dashes after stripping `data-bind` nodes.
 
 **When to update.** Any visual change to this deck goes through a print-preview review. The deck is the document the adviser hands to the client; a regression here is visible in a way a screen-only regression isn't.
 
