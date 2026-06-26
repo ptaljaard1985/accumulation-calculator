@@ -908,6 +908,103 @@ check('year table: reconciliation-flow columns present', () => {
     'growth should be the opening+contrib+event residual');
 });
 
+// ============================================================
+// Capital events — shared display helpers (screen + report)
+// ============================================================
+const capitalRowsFn = new Function(
+  extractFn(inline, 'fmtR') + extractFn(inline, 'capitalEventDisplayRows')
+  + '; return capitalEventDisplayRows;')();
+const capitalHtmlFn = new Function(
+  extractFn(inline, 'escapeHtml') + extractFn(inline, 'capitalEventsHtml')
+  + '; return capitalEventsHtml;')();
+
+check('capitalEventDisplayRows: empty / null input', () => {
+  const a = capitalRowsFn([]);
+  assert.ok(a.hasEvents === false && a.rows.length === 0 && a.extraCount === 0,
+    'empty array should produce no rows');
+  const b = capitalRowsFn(null);
+  assert.ok(b.hasEvents === false && b.rows.length === 0, 'null should be tolerated');
+});
+
+check('capitalEventDisplayRows: maps fields and caps at 3 rows', () => {
+  const d = capitalRowsFn([
+    { age: 55, amount: 500000, todaysMoney: true, kind: 'inflow' },
+    { age: 60, amount: 250000, todaysMoney: false, kind: 'outflow' },
+    { age: 62, amount: 100000, todaysMoney: true, kind: 'inflow' },
+    { age: 64, amount: 100000, todaysMoney: true, kind: 'inflow' },
+    { age: 66, amount: 100000, todaysMoney: true, kind: 'inflow' }
+  ]);
+  assert.ok(d.hasEvents === true, 'hasEvents should be true');
+  assert.strictEqual(d.rows.length, 3, 'should cap at 3 rows');
+  assert.strictEqual(d.extraCount, 2, 'should count the 2 extra events');
+  assert.strictEqual(d.rows[0].age, 'Age 55');
+  assert.strictEqual(d.rows[0].kind, 'Inflow');
+  assert.strictEqual(d.rows[0].basis, "Today's money");
+  assert.strictEqual(d.rows[1].kind, 'Outflow');
+  assert.strictEqual(d.rows[1].basis, 'Future rands');
+  assert.ok(/R\s?500\s?000/.test(d.rows[0].amount), 'amount should be formatted rands: ' + d.rows[0].amount);
+});
+
+check('capitalEventsHtml: empty case emits the empty class', () => {
+  const html = capitalHtmlFn(capitalRowsFn([]), 'row-x', 'empty-x', 'more-x');
+  assert.ok(/class="empty-x"/.test(html), 'empty class missing: ' + html);
+  assert.ok(/No capital events modelled\./.test(html), 'empty copy missing');
+});
+
+check('capitalEventsHtml: rows + additional-events line, em-dash free', () => {
+  const d = capitalRowsFn([
+    { age: 55, amount: 500000, todaysMoney: true, kind: 'inflow' },
+    { age: 60, amount: 250000, todaysMoney: false, kind: 'outflow' },
+    { age: 62, amount: 100000, todaysMoney: true, kind: 'inflow' },
+    { age: 64, amount: 100000, todaysMoney: true, kind: 'inflow' }
+  ]);
+  const html = capitalHtmlFn(d, 'row-x', 'empty-x', 'more-x');
+  assert.ok((html.match(/class="row-x"/g) || []).length === 3, 'should render 3 rows');
+  assert.ok(/event-kind-inflow/.test(html) && /event-kind-outflow/.test(html),
+    'kind classes missing');
+  assert.ok(/class="more-x">1 additional event modelled\./.test(html),
+    'additional-events line missing/wrong plural: ' + html);
+  assert.ok(html.indexOf(EM_DASH) === -1, 'em-dash found in events html: ' + html);
+});
+
+check('capitalEventsHtml: singular vs plural in extra-count line', () => {
+  const five = capitalRowsFn([1,2,3,4,5].map(a => (
+    { age: 50 + a, amount: 100000, todaysMoney: true, kind: 'inflow' })));
+  const html = capitalHtmlFn(five, 'row-x', 'empty-x', 'more-x');
+  assert.ok(/2 additional events modelled\./.test(html), 'plural extra-count missing: ' + html);
+});
+
+// ============================================================
+// Capital events — wiring into screen recap + report deck
+// ============================================================
+check('capital events: screen recap markup + binding present', () => {
+  assert.ok(/id="recap-events-list"/.test(html), '#recap-events-list missing');
+  assert.ok(/id="report-capital-events"/.test(html), '#report-capital-events missing');
+  assert.ok(/data-bind="report-events-list"/.test(html), 'report-events-list bind missing');
+  const recap = extractFn(inline, 'updateRecapCard');
+  assert.ok(/capitalEventsHtml\(/.test(recap) && /recap-events-list/.test(recap),
+    'updateRecapCard should populate the recap events list');
+});
+
+check('capital events: buildReportData returns a capitalEvents object', () => {
+  const src = extractFn(inline, 'buildReportData');
+  assert.ok(/capitalEvents:\s*capitalEvents/.test(src),
+    'buildReportData should return capitalEvents');
+  assert.ok(/capitalEventDisplayRows\(inputs\.events/.test(src),
+    'capitalEvents should be derived from the projection inputs (baseline-aware)');
+  // methodology note is conditional on whether events exist
+  assert.ok(/No capital events are modelled/.test(src)
+    && /applied at year-end to the discretionary portfolio/.test(src),
+    'conditional methodology events note missing');
+});
+
+check('capital events: populateReportDeck toggles strip + has-events class', () => {
+  const src = extractFn(inline, 'populateReportDeck');
+  assert.ok(/report-capital-events/.test(src), 'strip toggle missing');
+  assert.ok(/classList\.toggle\('has-events'/.test(src), 'has-events class toggle missing');
+  assert.ok(/setBind\('report-events-list'/.test(src), 'report events list not bound');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);
