@@ -5133,12 +5133,14 @@
     var root = document.getElementById('calc-root');
     root.setAttribute('data-export-mode', 'true');
     document.documentElement.classList.add('export-printing');
-    // When the scenario page is included, the report's "main" projection
-    // (cover + projection pages) is the LOCKED baseline, and the scenario
-    // page compares that baseline against the live plan (lastProjection).
-    // Without a scenario page, the main projection is whatever is live now.
-    var includeScenarioPage = includeScenario && baseline;
-    var mainProjection = includeScenarioPage ? baseline.p : lastProjection;
+    // Whenever a baseline is locked, the report's "main" projection (cover +
+    // Page 2) is ALWAYS that locked baseline — both with and without the
+    // scenario page. The live lastProjection only appears as the plan column
+    // on Page 3 (the scenario comparison). With no baseline, the main
+    // projection is the live current projection.
+    var hasBaseline = !!baseline;
+    var includeScenarioPage = includeScenario && hasBaseline;
+    var mainProjection = hasBaseline ? baseline.p : lastProjection;
     var comparisonBaseline = includeScenarioPage ? baseline : null;
     var scenPage = document.querySelector('.report-deck .scenario-page');
     if (scenPage) scenPage.setAttribute('data-enabled', includeScenarioPage ? 'true' : 'false');

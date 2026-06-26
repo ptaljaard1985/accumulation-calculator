@@ -390,14 +390,17 @@ check('report: buildReportData is a formatting adapter, not an engine', () => {
     'buildReportData should not re-implement the projection maths');
 });
 
-check('report: scenario export uses the locked baseline for the main pages', () => {
-  // Bug fix: with a scenario, cover/projection must use baseline.p (not the
-  // live lastProjection), and the scenario page compares baseline vs live plan.
+check('report: locked baseline always drives the main pages', () => {
+  // Bug fix: whenever a baseline is locked, the cover + Page 2 use baseline.p
+  // (not the live lastProjection) — including "Export without scenario". The
+  // live lastProjection only appears as the plan column on Page 3.
   const src = extractFn(inline, 'runReportExport');
-  assert.ok(/includeScenarioPage\s*=\s*includeScenario\s*&&\s*baseline/.test(src),
-    'runReportExport should gate on includeScenario && baseline');
-  assert.ok(/mainProjection\s*=\s*includeScenarioPage\s*\?\s*baseline\.p\s*:\s*lastProjection/.test(src),
-    'main projection should be baseline.p when the scenario page is included');
+  assert.ok(/includeScenarioPage\s*=\s*includeScenario\s*&&\s*hasBaseline/.test(src),
+    'scenario page should be gated on includeScenario && hasBaseline');
+  assert.ok(/mainProjection\s*=\s*hasBaseline\s*\?\s*baseline\.p\s*:\s*lastProjection/.test(src),
+    'main projection should be baseline.p whenever a baseline is locked');
+  assert.ok(/comparisonBaseline\s*=\s*includeScenarioPage\s*\?\s*baseline\s*:\s*null/.test(src),
+    'comparisonBaseline should only be set when the scenario page is included');
   assert.ok(/buildReportData\(\s*mainProjection\s*,\s*comparisonBaseline/.test(src),
     'runReportExport should pass mainProjection + comparisonBaseline to buildReportData');
   // The scenario comparison always plots the live plan as the "planned" side.
