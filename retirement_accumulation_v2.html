@@ -1277,759 +1277,328 @@
   }
 
   /* ============================================================
-     Export deck (A4 landscape) — opt-in via "Export report"
-     button in the plan-bar. Normal Cmd+P uses the existing
-     portrait rules above. The @page { size: landscape } override
-     is injected as a <style id="export-page-sheet"> by
-     startExport() and removed on afterprint.
+     Report deck (A4 landscape, 3–4 pages) — opt-in via the
+     "Report" button in the plan-bar. Replaces the old 12-page
+     export deck. Cover → Projection (SVG income chart) →
+     optional Scenario → Methodology/Compliance. Normal Cmd+P
+     uses the portrait rules above. The @page { size: landscape }
+     override is injected as a <style id="export-page-sheet"> by
+     runReportExport() and removed on afterprint. All selectors
+     are scoped under .report-deck so they never leak into the
+     screen UI; colours come from report-local custom properties.
      ============================================================ */
 
-  /* Hidden by default; shown when #calc-root has data-export-mode="true". */
-  .export-deck { display: none; }
+  .report-deck {
+    --r-brand:     #323E5D;
+    --r-gold:      #b98936;
+    --r-ink:       #101828;
+    --r-ink-2:     #344054;
+    --r-muted:     #667085;
+    --r-line:      #d9dfe8;
+    --r-paper:     #f4f6f9;
+    --r-surface:   #ffffff;
+    --r-surface-2: #f8fafc;
+    --r-green:     #28765b;
+    --r-red:       #a4493f;
+    --r-radius:    8px;
+  }
 
-  #calc-root[data-export-mode="true"] > :not(.export-deck) { display: none !important; }
-  #calc-root[data-export-mode="true"] .export-deck {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
+  /* Hidden by default; shown when #calc-root has data-export-mode="true". */
+  .report-deck { display: none; }
+
+  #calc-root[data-export-mode="true"] > :not(.report-deck) { display: none !important; }
+  #calc-root[data-export-mode="true"] .report-deck {
+    display: grid;
+    justify-content: center;
+    gap: 18px;
     background: var(--hairline);
     padding: 24px 0;
   }
 
-  /* Individual A4 landscape page container. */
-  .export-page {
+  .report-deck .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* Individual A4 landscape page. */
+  .report-deck .report-page {
     width: 297mm;
-    min-height: 210mm;
+    height: 210mm;
     box-sizing: border-box;
-    padding: 16mm 20mm 14mm;
-    background: var(--paper);
-    color: var(--ink);
+    background: var(--r-paper);
+    color: var(--r-ink);
     font-family: var(--sans);
     font-size: 13px;
-    line-height: 1.5;
-    position: relative;
+    line-height: 1.45;
+    border-radius: 2px;
     overflow: hidden;
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
     page-break-after: always;
     break-after: page;
   }
-  .export-page:last-of-type {
+  .report-deck .report-page:last-of-type {
     page-break-after: auto;
     break-after: auto;
   }
-  .export-page[data-export-page-active="false"] { display: none; }
+  .report-deck .report-page[data-enabled="false"] { display: none; }
 
-  #calc-root[data-export-mode="true"] .export-page {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  #calc-root[data-export-mode="true"] .report-page {
+    box-shadow: 0 18px 48px rgba(16, 24, 40, 0.12);
   }
 
-  /* Per-page layout primitives. */
-  .export-page-head {
+  /* Header (brand + meta). */
+  .report-deck .report-header {
+    min-height: 19mm;
+    padding: 8mm 13mm 0;
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--hairline);
-    padding-bottom: 10px;
-    margin-bottom: 18px;
-  }
-  .export-page-eyebrow {
-    font-family: var(--sans);
-    font-size: 10px;
-    letter-spacing: 2.4px;
-    text-transform: uppercase;
-    color: var(--mute);
-    font-weight: 500;
-  }
-  .export-page-mark {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--mute);
-    letter-spacing: 0.4px;
-  }
-  .export-page-title {
-    font-family: var(--serif);
-    font-weight: 300;
-    font-size: 38px;
-    line-height: 1.08;
-    letter-spacing: -0.6px;
-    color: var(--ink);
-    margin: 10px 0 6px;
-  }
-  .export-page-sub {
-    font-family: var(--serif);
-    font-weight: 300;
-    font-size: 15px;
-    color: var(--ink-2);
-    max-width: 680px;
-    margin: 0 0 14px;
-  }
-  .export-page-foot {
-    position: absolute;
-    left: 20mm;
-    right: 20mm;
-    bottom: 8mm;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--mute);
-    letter-spacing: 0.4px;
-    border-top: 1px solid var(--hairline);
-    padding-top: 6px;
-  }
-  .export-page-foot-brand {
-    font-family: var(--sans);
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-  }
-
-  /* Print-specific overrides. */
-  @media print {
-    html.export-printing body { background: var(--paper); }
-    html.export-printing .page {
-      padding: 0 !important;
-      margin: 0 !important;
-      max-width: 100% !important;
-    }
-    html.export-printing #calc-root[data-export-mode="true"] .export-deck {
-      display: block;
-      padding: 0;
-      gap: 0;
-      background: transparent;
-    }
-    html.export-printing .export-page {
-      box-shadow: none !important;
-      margin: 0 !important;
-      width: 297mm;
-      height: 210mm;
-      min-height: 210mm;
-    }
-  }
-
-  /* ---------- Shared editorial primitives (deck-wide) ---------- */
-  .export-rom {
-    color: var(--gold-2); font-family: var(--serif);
-    font-style: italic; font-weight: 400; font-size: 13px;
-    letter-spacing: 0; margin-right: 10px;
-  }
-  .export-h2 {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 40px; line-height: 1.08; letter-spacing: -0.6px;
-    color: var(--ink); margin: 8px 0 10px;
-  }
-  .export-h2 em {
-    font-style: italic; color: var(--navy); font-weight: 400;
-  }
-  .export-topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 12px; border-bottom: 1px solid var(--hairline);
-    margin-bottom: 22px;
-  }
-  .export-topbar-left { display: flex; align-items: center; gap: 14px; }
-  .export-topbar-logo {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--navy); color: var(--paper);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: 0.4px;
-  }
-  .export-topbar-tag {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.4px;
-    text-transform: uppercase; color: var(--ink); font-weight: 500;
-  }
-  .export-topbar-meta {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 1.4px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .export-topbar-meta .sep {
-    width: 1px; height: 11px; background: var(--hairline);
-    display: inline-block;
-  }
-
-  /* Override the default .export-page-head on pages that use the topbar. */
-  .export-page[data-export-page="answer"] .export-page-head,
-  .export-page[data-export-page="household"] .export-page-head,
-  .export-page[data-export-page="assumptions"] .export-page-head,
-  .export-page[data-export-page="projection"] .export-page-head,
-  .export-page[data-export-page="breakdown"] .export-page-head,
-  .export-page[data-export-page="events"] .export-page-head,
-  .export-page[data-export-page="compare"] .export-page-head,
-  .export-page[data-export-page="year-by-year"] .export-page-head,
-  .export-page[data-export-page="methodology"] .export-page-head,
-  .export-page[data-export-page="compliance"] .export-page-head,
-  .export-page[data-export-page="next-steps"] .export-page-head {
-    display: none;
-  }
-
-  /* ---------- Page 1 · Cover ---------- */
-  .export-page[data-export-page="cover"] {
-    padding: 20mm 22mm 12mm;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
     gap: 18px;
   }
-  .export-page[data-export-page="cover"] .export-page-head {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    border-bottom: none; padding-bottom: 0; margin-bottom: 0;
+  .report-deck .header-brand { display: flex; align-items: center; gap: 10px; }
+  .report-deck .header-mark {
+    width: 31px; height: 31px; border-radius: 4px;
+    background: var(--r-brand); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 850;
   }
-  .export-cover-brand {
-    font-family: var(--sans); font-size: 11px; letter-spacing: 2.6px;
-    text-transform: uppercase; color: var(--ink); font-weight: 500;
+  .report-deck .header-name {
+    font-size: 12px; font-weight: 850; line-height: 1.08; color: var(--r-ink);
   }
-  .export-cover-brand strong { color: var(--navy); font-weight: 700; }
-  .export-cover-doc {
-    text-align: right; font-family: var(--sans); font-size: 10px;
-    letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-2); font-weight: 500;
-  }
-  .export-cover-doc .faint { color: var(--mute); font-weight: 400; text-transform: none; letter-spacing: 0.3px; font-size: 11px; display: block; margin-top: 6px; }
-  .export-cover-mid { align-self: center; }
-  .export-cover-eyebrow {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.4px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    margin-bottom: 26px; display: flex; align-items: center;
-  }
-  .export-cover-title {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 82px; line-height: 1.04; letter-spacing: -1.4px;
-    color: var(--ink); margin: 0;
-  }
-  .export-cover-title .family-line { display: block; }
-  .export-cover-title em { font-style: italic; color: var(--navy); font-weight: 400; }
-  .export-cover-title .family-name {
-    font-style: italic; color: var(--navy); font-weight: 400;
-    border-bottom: 2px solid var(--gold); padding-bottom: 2px;
-  }
-  .export-cover-rule {
-    width: 140px; height: 2px; background: var(--gold); margin-top: 22px;
-  }
-  .export-cover-foot {
-    display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.3fr;
-    gap: 28px; padding-top: 16px; border-top: 1px solid var(--hairline);
-    align-items: end;
-  }
-  .export-cover-foot .label {
-    font-size: 9px; letter-spacing: 2.2px; text-transform: uppercase;
-    color: var(--mute); font-weight: 500; margin-bottom: 6px;
-  }
-  .export-cover-foot .val {
-    font-family: var(--serif); font-weight: 400; font-size: 17px; color: var(--ink);
-  }
-  .export-cover-foot .val em { font-style: italic; color: var(--ink-2); font-weight: 300; }
-  .export-cover-foot .val.num { font-family: var(--mono); font-size: 14px; letter-spacing: 0.2px; }
-  .export-cover-foot .sub {
-    font-family: var(--mono); font-size: 10px; color: var(--mute);
-    margin-top: 4px; letter-spacing: 0.3px;
-  }
-  .export-cover-page-num {
-    font-family: var(--serif); font-style: italic; font-weight: 400;
-    font-size: 26px; color: var(--gold-2); text-align: right;
-  }
-  .export-page[data-export-page="cover"] .export-page-foot { display: none; }
-
-  /* ---------- Page 2 · The Answer ---------- */
-  .export-page[data-export-page="answer"] {
-    padding-top: 14mm;
-    display: grid;
-    grid-template-rows: auto auto auto 1fr auto auto;
-    gap: 14px;
-  }
-  .export-answer-eyebrow {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.4px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    display: flex; align-items: center;
-  }
-  .export-answer-headline {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 40px; line-height: 1.1; letter-spacing: -0.6px;
-    color: var(--ink); margin: 0; max-width: 1050px;
-  }
-  .export-answer-headline .hero-num { font-weight: 400; color: var(--ink); }
-  .export-answer-headline .gold-under {
-    position: relative; display: inline-block; padding: 0 2px;
-  }
-  .export-answer-headline .gold-under::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: 4px;
-    height: 8px; background: var(--gold-soft); opacity: 0.55;
-    z-index: -1; border-radius: 1px;
-  }
-  .export-chart-card {
-    background: var(--surface); border: 1px solid var(--hairline);
-    border-radius: var(--r-lg); padding: 12px 18px 14px;
-    display: grid; grid-template-rows: auto 1fr; gap: 8px;
-  }
-  .export-chart-card-head {
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .export-chart-card-title {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 1.8px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-  }
-  .export-chart-legend {
-    display: flex; gap: 18px; font-family: var(--sans); font-size: 11px; color: var(--ink-2);
-  }
-  .export-chart-legend .k { display: inline-flex; align-items: center; gap: 6px; }
-  .export-chart-legend .sw {
-    width: 10px; height: 10px; display: inline-block; border-radius: 2px;
-  }
-  .export-chart-wrap {
-    position: relative; min-height: 0;
-  }
-  .export-chart-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
-
-  .export-page[data-export-page="answer"] .export-chart-wrap { height: 72mm; }
-
-  .export-outcome-strip {
-    display: grid; grid-template-columns: 1.2fr 1fr 1fr;
-    border: 1px solid var(--hairline); border-radius: var(--r-lg);
-    overflow: hidden; background: var(--surface);
-  }
-  .export-outcome-cell {
-    padding: 12px 18px; border-right: 1px solid var(--hairline);
-  }
-  .export-outcome-cell:last-child { border-right: none; }
-  .export-outcome-cell.primary {
-    background: var(--navy); color: var(--paper);
-  }
-  .export-outcome-cap {
-    font-family: var(--sans); font-size: 9px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500; margin-bottom: 4px;
-  }
-  .export-outcome-cell.primary .export-outcome-cap { color: rgba(250,247,240,0.68); }
-  .export-outcome-val {
-    font-family: var(--serif); font-weight: 400; font-size: 28px;
-    color: var(--ink); letter-spacing: -0.3px;
-  }
-  .export-outcome-cell.primary .export-outcome-val { color: var(--paper); font-size: 32px; }
-  .export-outcome-sub {
-    font-family: var(--sans); font-size: 11px; color: var(--mute); margin-top: 2px;
-  }
-  .export-outcome-cell.primary .export-outcome-sub { color: rgba(250,247,240,0.62); }
-
-  /* ---------- Page 3 · Household ---------- */
-  .export-page[data-export-page="household"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr; gap: 20px;
-  }
-  .export-household-grid {
-    display: grid; grid-template-columns: 1fr 1px 1fr; gap: 40px;
-    align-content: center;
-  }
-  .export-household-divider { background: var(--hairline); width: 1px; }
-  .export-spouse-col {}
-  .export-spouse-header {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding-bottom: 14px; border-bottom: 1px solid var(--hairline); margin-bottom: 18px;
-  }
-  .export-spouse-header .name {
-    font-family: var(--serif); font-weight: 300; font-size: 30px;
-    color: var(--ink); letter-spacing: -0.4px;
-  }
-  .export-spouse-header .age {
-    font-family: var(--sans); font-size: 11px; color: var(--mute);
-    letter-spacing: 1.2px; text-transform: uppercase;
-  }
-  .export-spouse-header .age .num {
-    font-family: var(--mono); font-size: 13px; color: var(--ink); font-weight: 500; margin-left: 4px;
-  }
-  .export-spouse-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 10px 0; border-bottom: 1px solid var(--hairline);
-  }
-  .export-spouse-row .label {
-    font-family: var(--sans); font-size: 12px; color: var(--mute); font-weight: 400;
-  }
-  .export-spouse-row .val {
-    font-family: var(--mono); font-size: 14px; color: var(--ink); font-weight: 500;
-  }
-  .export-spouse-row.total {
-    border-bottom: none; padding-top: 16px; margin-top: 6px; border-top: 2px solid var(--ink-2);
-  }
-  .export-spouse-row.total .label {
-    font-family: var(--serif); font-weight: 400; color: var(--ink);
-    font-size: 13px; font-style: italic;
-  }
-  .export-spouse-row.total .val { font-size: 18px; color: var(--navy); }
-
-  /* ---------- Page 4 · Assumptions ---------- */
-  .export-page[data-export-page="assumptions"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr; gap: 20px;
-  }
-  .export-assump-grid {
-    display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px;
-  }
-  .export-assump-table {
-    width: 100%; border-collapse: collapse; font-family: var(--sans);
-  }
-  .export-assump-table td {
-    padding: 16px 10px; border-bottom: 1px solid var(--hairline);
-    vertical-align: baseline;
-  }
-  .export-assump-table .lbl {
-    font-size: 11px; color: var(--mute); letter-spacing: 1.8px;
-    text-transform: uppercase; font-weight: 500; width: 32%;
-  }
-  .export-assump-table .val {
-    font-family: var(--mono); font-size: 18px; color: var(--ink); font-weight: 500; width: 22%;
-  }
-  .export-assump-table .note {
-    font-family: var(--serif); font-size: 13px; color: var(--ink-2);
-    line-height: 1.45; font-weight: 300;
-  }
-  .export-assump-aside {
-    background: var(--paper-2); border-radius: var(--r-lg);
-    padding: 22px 24px; border-left: 3px solid var(--gold);
-  }
-  .export-assump-aside .eyebrow {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    margin-bottom: 14px; display: flex; align-items: center;
-  }
-  .export-assump-aside .body {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 13px; line-height: 1.55; color: var(--ink-2);
-  }
-  .export-assump-aside .body strong { color: var(--ink); font-weight: 500; }
-  .export-assump-aside .rule {
-    height: 1px; background: var(--hairline); margin: 14px 0;
+  .report-deck .header-meta {
+    text-align: right; color: var(--r-muted); font-size: 11px; line-height: 1.5;
   }
 
-  /* ---------- Page 5 · Projection ---------- */
-  .export-page[data-export-page="projection"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr auto; gap: 18px;
+  .report-deck .page-body { padding: 7mm 13mm 10mm; min-height: 0; }
+
+  .report-deck .page-foot {
+    padding: 0 13mm 7mm;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; color: var(--r-muted); font-size: 10px;
   }
-  .export-projection-head {
-    display: flex; justify-content: space-between; align-items: flex-end;
-  }
-  .export-page[data-export-page="projection"] .export-chart-wrap { height: 90mm; }
-  .export-projection-foot-strip {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    border: 1px solid var(--hairline); border-radius: var(--r-lg); overflow: hidden;
-    background: var(--surface);
-  }
-  .export-projection-foot-strip .cell {
-    padding: 14px 20px; border-right: 1px solid var(--hairline);
-  }
-  .export-projection-foot-strip .cell:last-child { border-right: none; }
-  .export-projection-foot-strip .cap {
-    font-family: var(--sans); font-size: 9px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500; margin-bottom: 6px;
-  }
-  .export-projection-foot-strip .val {
-    font-family: var(--mono); font-size: 20px; color: var(--ink); font-weight: 500;
-  }
-  .export-projection-foot-strip .sub {
-    font-family: var(--sans); font-size: 11px; color: var(--mute); margin-top: 2px;
+  .report-deck .foot-line {
+    height: 1px; background: var(--r-line);
+    position: absolute; left: 13mm; right: 13mm; bottom: 14mm;
   }
 
-  /* ---------- Page 6 · Breakdown ---------- */
-  .export-page[data-export-page="breakdown"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr; gap: 18px;
+  /* ---------- Page 1 · Cover (dark) ---------- */
+  .report-deck .cover-page { background: var(--r-brand); color: #fff; }
+  .report-deck .cover-page::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 78% 30%, rgba(185, 137, 54, 0.30), transparent 24%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.10), transparent 42%);
   }
-  .export-breakdown-layout {
-    display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px;
+  .report-deck .cover-page .report-header,
+  .report-deck .cover-page .page-body,
+  .report-deck .cover-page .page-foot { position: relative; z-index: 1; }
+  .report-deck .cover-page .header-mark {
+    background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.86);
   }
-  .export-page[data-export-page="breakdown"] .export-chart-wrap { height: 110mm; }
-  .export-breakdown-stack {
-    display: flex; flex-direction: column; gap: 12px;
+  .report-deck .cover-page .header-name,
+  .report-deck .cover-page .header-meta,
+  .report-deck .cover-page .page-foot { color: rgba(255, 255, 255, 0.82); }
+
+  .report-deck .cover-layout {
+    height: 100%; display: grid; align-content: center; gap: 22px;
   }
-  .export-breakdown-slab {
-    border: 1px solid var(--hairline); border-radius: var(--r-lg);
-    padding: 14px 18px; background: var(--surface);
+  .report-deck .kicker {
+    color: rgba(255, 255, 255, 0.68); font-size: 10px;
+    text-transform: uppercase; font-weight: 850; margin-bottom: 8px;
   }
-  .export-breakdown-slab .cap {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: var(--sans); font-size: 11px; letter-spacing: 1.6px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500; margin-bottom: 8px;
+  .report-deck .cover-title {
+    margin: 0; font-size: 48px; line-height: 1.03; font-weight: 880; max-width: 900px;
   }
-  .export-breakdown-slab .cap .sw {
-    width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+  .report-deck .cover-stat-row {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px; max-width: 900px; margin-top: 10px; padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
   }
-  .export-breakdown-slab .val {
-    font-family: var(--mono); font-size: 22px; color: var(--ink); font-weight: 500;
-    letter-spacing: -0.2px;
+  .report-deck .cover-stat {
+    border-right: 1px solid rgba(255, 255, 255, 0.16); padding-right: 16px;
   }
-  .export-breakdown-slab .sub {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 12.5px; line-height: 1.45; color: var(--ink-2); margin-top: 6px;
+  .report-deck .cover-stat:last-child { border-right: 0; }
+  .report-deck .cover-stat span {
+    display: block; color: rgba(255, 255, 255, 0.62); font-size: 10px;
+    text-transform: uppercase; font-weight: 850; margin-bottom: 6px;
+  }
+  .report-deck .cover-stat strong { display: block; color: #fff; font-size: 18px; }
+
+  /* ---------- Page 2 · Projection ---------- */
+  .report-deck .projection-page-body {
+    display: grid; grid-template-rows: 112mm 1fr; gap: 12px; height: 100%; min-height: 0;
+  }
+  .report-deck .income-chart-panel {
+    background: var(--r-brand); border-radius: var(--r-radius); color: #fff;
+    overflow: hidden; display: grid; grid-template-rows: auto 1fr;
+  }
+  .report-deck .chart-panel-head { min-height: 18mm; padding: 13px 18px 0; }
+  .report-deck .chart-panel-head h1 {
+    margin: 0; font-size: 20px; line-height: 1.15; font-weight: 860;
+  }
+  .report-deck .chart-panel-head p {
+    margin: 5px 0 0; color: rgba(255, 255, 255, 0.70); font-size: 12px;
+  }
+  .report-deck .income-chart-wrap { min-height: 0; padding: 0 16px 14px; }
+  .report-deck .income-chart {
+    display: block; width: 100%; height: 100%; overflow: visible;
+  }
+  .report-deck .income-chart text { font-family: var(--sans); }
+
+  .report-deck .projection-summary {
+    display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 12px; min-height: 0;
+  }
+  .report-deck .white-card {
+    background: var(--r-surface); border: 1px solid var(--r-line);
+    border-radius: var(--r-radius); overflow: hidden; min-height: 0;
+  }
+  .report-deck .card-head {
+    min-height: 38px; padding: 0 13px; border-bottom: 1px solid var(--r-line);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .report-deck .card-head h2 { margin: 0; font-size: 12px; }
+  .report-deck .card-body { padding: 12px 13px; }
+
+  .report-deck .assumption-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+  }
+  .report-deck .metric {
+    border: 1px solid var(--r-line); border-radius: var(--r-radius);
+    padding: 9px 10px; background: var(--r-surface-2); min-height: 54px;
+  }
+  .report-deck .metric span {
+    display: block; color: var(--r-muted); font-size: 10px;
+    text-transform: uppercase; font-weight: 850; margin-bottom: 5px;
+  }
+  .report-deck .metric strong { color: var(--r-brand); font-size: 16px; line-height: 1; }
+
+  .report-deck .household-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .report-deck .spouse-mini h3 {
+    margin: 0 0 8px; font-size: 13px; display: flex; justify-content: space-between; gap: 12px;
+  }
+  .report-deck .spouse-mini h3 span { color: var(--r-muted); font-size: 11px; font-weight: 650; }
+  .report-deck .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+  }
+  .report-deck .summary-table td {
+    padding: 5px 0; border-bottom: 1px solid var(--r-line);
+    color: var(--r-muted); vertical-align: top;
+  }
+  .report-deck .summary-table tr:last-child td { border-bottom: 0; }
+  .report-deck .summary-table td:last-child {
+    text-align: right; color: var(--r-ink); font-family: var(--mono);
+    font-weight: 760; font-variant-numeric: tabular-nums; white-space: nowrap;
   }
 
-  /* ---------- Page 7 · Capital events ---------- */
-  .export-page[data-export-page="events"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto auto 1fr; gap: 18px;
+  /* ---------- Page 3 · Scenario ---------- */
+  .report-deck .scenario-body {
+    display: grid; grid-template-rows: auto 1fr; gap: 14px; height: 100%; min-height: 0;
   }
-  .export-events-summary {
-    display: grid; grid-template-columns: 1.4fr 1fr 1fr;
-    border: 1px solid var(--hairline); border-radius: var(--r-lg);
-    overflow: hidden; background: var(--surface);
+  .report-deck .scenario-hero {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   }
-  .export-events-summary .cell {
-    padding: 14px 20px; border-right: 1px solid var(--hairline);
+  .report-deck .scenario-tile {
+    background: var(--r-surface); border: 1px solid var(--r-line);
+    border-radius: var(--r-radius); padding: 15px; min-height: 92px;
   }
-  .export-events-summary .cell:last-child { border-right: none; }
-  .export-events-summary .cap {
-    font-family: var(--sans); font-size: 9px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500; margin-bottom: 4px;
+  .report-deck .scenario-tile span {
+    display: block; color: var(--r-muted); font-size: 10px;
+    text-transform: uppercase; font-weight: 850; margin-bottom: 8px;
   }
-  .export-events-summary .val {
-    font-family: var(--mono); font-size: 20px; color: var(--ink); font-weight: 500;
+  .report-deck .scenario-tile strong {
+    display: block; font-size: 30px; line-height: 1; color: var(--r-brand);
   }
-  .export-events-summary .val.pos { color: var(--pos); }
-  .export-events-summary .val.neg { color: var(--neg); }
-  .export-events-summary .sub {
-    font-family: var(--sans); font-size: 11px; color: var(--mute);
-    margin-top: 2px; line-height: 1.4;
+  .report-deck .scenario-tile p { margin: 7px 0 0; color: var(--r-muted); font-size: 12px; }
+  .report-deck .scenario-delta { color: var(--r-green); font-weight: 850; }
+
+  .report-deck .scenario-detail {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0;
+  }
+  .report-deck .change-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .report-deck .change-table th {
+    color: var(--r-muted); font-size: 10px; text-align: right; padding: 0 0 8px;
+    text-transform: uppercase; font-weight: 850; border-bottom: 1px solid var(--r-line);
+  }
+  .report-deck .change-table th:first-child { text-align: left; }
+  .report-deck .change-table td {
+    padding: 8px 0; border-bottom: 1px solid var(--r-line);
+    text-align: right; font-family: var(--mono); white-space: nowrap;
+  }
+  .report-deck .change-table td:first-child {
+    text-align: left; color: var(--r-muted); font-family: var(--sans);
+  }
+  .report-deck .change-table tr:last-child td { border-bottom: 0; }
+  .report-deck .delta-positive { color: var(--r-green); font-weight: 850; }
+  .report-deck .delta-negative { color: var(--r-red); font-weight: 850; }
+  .report-deck .delta-neutral { color: var(--r-muted); font-weight: 760; }
+
+  .report-deck .scenario-notes { display: grid; gap: 10px; }
+  .report-deck .note {
+    border: 1px solid var(--r-line); border-radius: var(--r-radius);
+    background: var(--r-surface-2); padding: 12px;
+  }
+  .report-deck .note strong { display: block; margin-bottom: 4px; color: var(--r-ink); }
+  .report-deck .note span { color: var(--r-muted); font-size: 12px; }
+
+  /* ---------- Page 4 · Methodology / Compliance (dark, full-width) ---------- */
+  .report-deck .methodology-page { background: var(--r-brand); color: #fff; }
+  .report-deck .methodology-page .header-mark {
+    background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.86);
+  }
+  .report-deck .methodology-page .header-name,
+  .report-deck .methodology-page .header-meta,
+  .report-deck .methodology-page .page-foot { color: rgba(255, 255, 255, 0.82); }
+  .report-deck .methodology-page .foot-line { background: rgba(255, 255, 255, 0.18); }
+
+  .report-deck .method-body {
+    display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 18px; height: 100%;
+  }
+  .report-deck .text-block {
+    color: rgba(255, 255, 255, 0.78); font-size: 13px; max-width: 920px;
+  }
+  .report-deck .text-block + .text-block {
+    border-top: 1px solid rgba(255, 255, 255, 0.18); padding-top: 18px;
+  }
+  .report-deck .text-block h2 { color: #fff; font-size: 20px; margin: 0 0 12px; }
+  .report-deck .text-block p { margin: 0 0 10px; }
+  .report-deck .text-block p:last-child { margin-bottom: 0; }
+
+  /* ---------- Include-scenario modal (sibling of .report-deck) ---------- */
+  .report-modal-backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(16, 24, 40, 0.42);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .report-modal-backdrop[data-open="true"] { display: flex; }
+  .report-modal {
+    width: min(520px, 100%); background: #fff; border-radius: 8px;
+    box-shadow: 0 22px 60px rgba(16, 24, 40, 0.26);
+    border: 1px solid #d9dfe8; padding: 22px; font-family: var(--sans);
+  }
+  .report-modal h2 { margin: 0 0 8px; font-size: 19px; color: #101828; }
+  .report-modal p { margin: 0; color: #667085; }
+  .report-modal-actions {
+    display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap;
   }
 
-  .export-events-list {
-    border: 1px solid var(--hairline); border-radius: var(--r-lg);
-    background: var(--surface); overflow: hidden;
+  /* Print-specific overrides for the report deck. */
+  @media print {
+    html.export-printing body { background: #fff; }
+    html.export-printing .page {
+      padding: 0 !important; margin: 0 !important; max-width: 100% !important;
+    }
+    html.export-printing #calc-root[data-export-mode="true"] .report-deck {
+      display: block; padding: 0; gap: 0; background: transparent;
+    }
+    html.export-printing .report-deck .report-page {
+      box-shadow: none !important; margin: 0 !important; border-radius: 0;
+      width: 297mm; height: 210mm;
+    }
+    .report-modal-backdrop { display: none !important; }
   }
-  .export-events-list-head {
-    display: grid; grid-template-columns: 72px 60px 1.2fr 1fr 100px;
-    gap: 16px; padding: 12px 20px; background: var(--paper-2);
-    border-bottom: 1px solid var(--hairline);
-    font-family: var(--sans); font-size: 9px; letter-spacing: 2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-  }
-  .export-event-row {
-    display: grid; grid-template-columns: 72px 60px 1.2fr 1fr 100px;
-    gap: 16px; padding: 14px 20px; align-items: center;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .export-event-row:last-child { border-bottom: none; }
-  .export-event-kind {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 1.6px;
-    text-transform: uppercase; font-weight: 500; padding: 3px 8px;
-    border-radius: 3px; display: inline-block;
-  }
-  .export-event-kind.inflow { background: rgba(47, 107, 58, 0.12); color: var(--pos); }
-  .export-event-kind.outflow { background: rgba(166, 66, 54, 0.12); color: var(--neg); }
-  .export-event-age {
-    font-family: var(--mono); font-size: 13px; color: var(--ink); font-weight: 500;
-  }
-  .export-event-desc {
-    font-family: var(--serif); font-weight: 300; font-size: 13px; color: var(--ink);
-  }
-  .export-event-basis {
-    font-family: var(--sans); font-size: 11px; color: var(--mute);
-  }
-  .export-event-amount {
-    font-family: var(--mono); font-size: 14px; color: var(--ink);
-    font-weight: 500; text-align: right;
-  }
-  .export-event-amount.pos { color: var(--pos); }
-  .export-event-amount.neg { color: var(--neg); }
-  .export-events-empty {
-    padding: 28px 20px; text-align: center; color: var(--mute);
-    font-family: var(--serif); font-weight: 300; font-size: 13px;
-  }
-
-  /* ---------- Page 8 · Compare ---------- */
-  .export-page[data-export-page="compare"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr auto; gap: 16px;
-  }
-  .export-compare-layout {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
-  }
-  .export-compare-card {
-    border: 1px solid var(--hairline); border-radius: var(--r-lg);
-    padding: 16px 20px; display: flex; flex-direction: column;
-    gap: 10px; background: var(--surface);
-  }
-  .export-compare-card.baseline { background: var(--paper-2); }
-  .export-compare-card.scenario {
-    border: 1px solid var(--navy);
-    box-shadow: 0 0 0 1px var(--navy), 0 4px 12px rgba(50, 62, 93, 0.06);
-  }
-  .export-compare-card .tag {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-  }
-  .export-compare-card.scenario .tag > span:first-child { color: var(--navy); }
-  .export-compare-card .tag .locked {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
-    color: var(--mute); text-transform: uppercase;
-  }
-  .export-compare-card .tag .delta-chip {
-    font-family: var(--mono); font-size: 11px;
-    padding: 2px 8px; border-radius: 3px;
-    background: var(--gold-pale); color: var(--gold-2);
-    letter-spacing: 0.2px; font-weight: 500;
-  }
-  .export-compare-card .tag .delta-chip.neg {
-    background: rgba(166, 66, 54, 0.14); color: var(--neg);
-  }
-  .export-compare-card .hero {
-    font-family: var(--serif); font-weight: 400; font-size: 46px;
-    line-height: 1.0; letter-spacing: -0.8px; margin: 4px 0 0;
-  }
-  .export-compare-card.baseline .hero { color: var(--ink-2); font-weight: 300; }
-  .export-compare-card.scenario .hero { color: var(--navy); }
-  .export-compare-card .hero-sub {
-    font-family: var(--sans); font-size: 11px; color: var(--mute);
-    letter-spacing: 0.4px; margin-bottom: 6px;
-  }
-  .export-compare-card .chart-wrap {
-    position: relative; height: 60mm;
-  }
-  .export-compare-card .chart-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
-  .export-compare-meta {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px;
-    padding-top: 10px; border-top: 1px solid var(--hairline);
-    font-family: var(--sans); font-size: 11px;
-  }
-  .export-compare-meta .row {
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-  .export-compare-meta .row > span:first-child { color: var(--mute); }
-  .export-compare-meta .row .v {
-    font-family: var(--mono); color: var(--ink); font-weight: 500;
-  }
-  .export-compare-meta .row .v em {
-    font-family: var(--mono); font-style: normal; font-size: 10px;
-    color: var(--gold-2); margin-left: 6px;
-  }
-  .export-compare-meta .row .v em.neg { color: var(--neg); }
-
-  /* ---------- Page 9 · Year by year ---------- */
-  .export-page[data-export-page="year-by-year"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr; gap: 18px;
-  }
-  .export-year-table {
-    width: 100%; border-collapse: collapse;
-    background: var(--surface); border: 1px solid var(--hairline);
-    border-radius: var(--r-lg); overflow: hidden;
-    font-family: var(--sans);
-  }
-  .export-year-table thead th {
-    font-family: var(--sans); font-size: 9px; letter-spacing: 1.8px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    background: var(--paper-2);
-    padding: 12px 14px; text-align: right;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .export-year-table thead th:first-child { text-align: left; }
-  .export-year-table tbody td {
-    font-family: var(--mono); font-size: 12px; color: var(--ink);
-    padding: 10px 14px; text-align: right;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .export-year-table tbody td:first-child {
-    text-align: left;
-    font-family: var(--serif); font-size: 13px; font-weight: 400;
-    color: var(--ink);
-  }
-  .export-year-table tbody tr:last-child td { border-bottom: none; }
-  .export-year-table tbody tr.milestone td {
-    background: var(--paper-2);
-  }
-  .export-year-table tbody tr.retirement td {
-    background: var(--navy); color: var(--paper);
-    font-weight: 500;
-  }
-  .export-year-table tbody tr.retirement td:first-child {
-    color: var(--paper);
-    font-style: italic;
-  }
-
-  /* ---------- Pages 10 + 11 · Methodology, Compliance (prose) ---------- */
-  .export-prose-layout {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 36px;
-    align-content: start;
-  }
-  .export-prose-col h3 {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--navy); font-weight: 500;
-    margin: 0 0 6px; padding-top: 12px;
-  }
-  .export-prose-col h3:first-child { padding-top: 0; }
-  .export-prose-col p {
-    font-family: var(--serif); font-weight: 300; font-size: 13px;
-    line-height: 1.55; color: var(--ink-2); margin: 0 0 10px;
-  }
-  .export-prose-col p strong { color: var(--ink); font-weight: 500; }
-  .export-prose-col ul {
-    margin: 0 0 10px; padding-left: 18px;
-    font-family: var(--serif); font-weight: 300; font-size: 13px;
-    line-height: 1.55; color: var(--ink-2);
-  }
-  .export-prose-col ul li { margin-bottom: 6px; }
-  .export-prose-col ul li strong { color: var(--ink); font-weight: 500; }
-  .export-prose-col .tiny {
-    font-family: var(--mono); font-size: 10px; color: var(--mute);
-    letter-spacing: 0.2px; line-height: 1.5;
-  }
-
-  .export-page[data-export-page="methodology"],
-  .export-page[data-export-page="compliance"] {
-    padding-top: 14mm;
-    display: grid; grid-template-rows: auto auto 1fr; gap: 18px;
-  }
-
-  /* ---------- Page 12 · Next steps (closing) ---------- */
-  .export-page[data-export-page="next-steps"] {
-    padding-top: 16mm;
-    display: grid; grid-template-rows: auto auto 1fr auto; gap: 26px;
-  }
-  .export-closing-eyebrow {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.4px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500;
-    display: flex; align-items: center;
-  }
-  .export-closing-title {
-    font-family: var(--serif); font-weight: 300;
-    font-size: 72px; line-height: 1.05; letter-spacing: -1.2px;
-    color: var(--ink); margin: 0;
-  }
-  .export-closing-title em { font-style: italic; color: var(--navy); font-weight: 400; }
-  .export-closing-title .gold-under {
-    position: relative; display: inline-block;
-  }
-  .export-closing-title .gold-under::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: 4px;
-    height: 10px; background: var(--gold-soft); opacity: 0.55;
-    z-index: -1; border-radius: 2px;
-  }
-  .export-closing-strip {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 22px; align-self: center;
-  }
-  .export-closing-strip .cell {
-    border-left: 2px solid var(--gold); padding: 4px 0 4px 18px;
-  }
-  .export-closing-strip .cap {
-    font-family: var(--sans); font-size: 10px; letter-spacing: 2.2px;
-    text-transform: uppercase; color: var(--mute); font-weight: 500; margin-bottom: 8px;
-  }
-  .export-closing-strip .val {
-    font-family: var(--serif); font-weight: 300; font-size: 15px;
-    line-height: 1.5; color: var(--ink);
-  }
-  .export-closing-strip .sub {
-    font-family: var(--sans); font-size: 11px; color: var(--mute); margin-top: 6px;
-  }
-  .export-closing-foot {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    padding-top: 12px; border-top: 1px solid var(--hairline);
-  }
-  .export-closing-brand {
-    font-family: var(--sans); font-size: 14px; letter-spacing: 2.4px;
-    text-transform: uppercase; color: var(--ink); font-weight: 500;
-  }
-  .export-closing-brand strong { color: var(--navy); font-weight: 700; }
-  .export-closing-meta {
-    text-align: right; font-family: var(--sans); font-size: 11px;
-    color: var(--mute); line-height: 1.7;
-  }
-  .export-closing-meta .num { font-family: var(--mono); color: var(--ink-2); }
 
   @media (max-width: 1000px) {
     .calc { padding: 20px 20px 32px; }
@@ -2722,686 +2291,231 @@
   </div>
 
   <!-- ========================================================
-       Export deck (A4 landscape, 12 pages). Hidden on screen +
-       portrait-print until startExport() sets data-export-mode
-       on #calc-root. Conditional pages (events, compare) carry
-       data-export-page-active="false" when inactive.
+       Report deck (A4 landscape, 3–4 pages). Hidden on screen +
+       portrait-print until runReportExport() sets data-export-mode
+       on #calc-root. The scenario page is conditional: data-enabled
+       is toggled by the include-scenario modal. All numbers are
+       written at export time by buildReportData() — no sample data.
        ======================================================== -->
-  <section class="export-deck" aria-hidden="true">
+  <section class="report-deck" aria-hidden="true">
 
     <!-- 01 · Cover -->
-    <section class="export-page" data-export-page="cover">
-      <div class="export-page-head">
-        <div class="export-cover-brand">simple<strong>wealth</strong></div>
-        <div class="export-cover-doc">
-          Retirement projection
-          <span class="faint">Prepared for private circulation</span>
+    <section class="report-page cover-page" data-page="cover">
+      <header class="report-header">
+        <div class="header-brand">
+          <div class="header-mark">SW</div>
+          <div class="header-name">Simple<br>Wealth</div>
         </div>
-      </div>
-
-      <div class="export-cover-mid">
-        <div class="export-cover-eyebrow"><span class="export-rom">§</span>Retirement plan</div>
-        <h1 class="export-cover-title">
-          <span class="family-line">A plan for</span>
-          <span class="family-line">the <span class="family-name" data-bind="cover-family-name">——</span></span>
-          <span class="family-line"><em>family.</em></span>
-        </h1>
-        <div class="export-cover-rule"></div>
-      </div>
-
-      <div class="export-cover-foot">
-        <div class="cell">
-          <div class="label">Prepared for</div>
-          <div class="val" data-bind="cover-prepared-for">——</div>
+        <div class="header-meta">
+          Retirement accumulation report<br>
+          Prepared for private circulation
         </div>
-        <div class="cell">
-          <div class="label">Prepared on</div>
-          <div class="val num" data-bind="cover-date">——</div>
-        </div>
-        <div class="cell">
-          <div class="label">Adviser</div>
-          <div class="val">Simple Wealth <em>(Pty) Ltd</em></div>
-          <div class="sub">FSP <span data-bind="cover-fsp">50637</span></div>
-        </div>
-        <div class="cell">
-          <div class="export-cover-page-num" data-bind="page-mark">i.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 02 · The Answer -->
-    <section class="export-page" data-export-page="answer">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">The answer</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div class="export-answer-eyebrow"><span class="export-rom">II.</span>Projected outcome at retirement</div>
-      <h1 class="export-answer-headline" data-bind="answer-headline">—</h1>
-
-      <div class="export-chart-card">
-        <div class="export-chart-card-head">
-          <span class="export-chart-card-title">Capital build-up · today's money</span>
-          <div class="export-chart-legend">
-            <span class="k"><span class="sw" style="background: #323E5D;"></span>Retirement fund</span>
-            <span class="k"><span class="sw" style="background: #b8893c;"></span>Discretionary</span>
-          </div>
-        </div>
-        <div class="export-chart-wrap">
-          <canvas id="export-chart-answer"></canvas>
-        </div>
-      </div>
-
-      <div class="export-outcome-strip">
-        <div class="export-outcome-cell primary">
-          <div class="export-outcome-cap">Monthly income</div>
-          <div class="export-outcome-val" data-bind="answer-income">R —</div>
-          <div class="export-outcome-sub">today's money · before tax</div>
-          <div class="export-outcome-sub" data-bind="answer-goal" data-goal-active="false"></div>
-        </div>
-        <div class="export-outcome-cell">
-          <div class="export-outcome-cap">Capital at retirement</div>
-          <div class="export-outcome-val" data-bind="answer-capital">R —</div>
-          <div class="export-outcome-sub" data-bind="answer-capital-sub">today's money</div>
-        </div>
-        <div class="export-outcome-cell">
-          <div class="export-outcome-cap">Horizon</div>
-          <div class="export-outcome-val" data-bind="answer-years">—</div>
-          <div class="export-outcome-sub" data-bind="answer-years-sub">—</div>
-        </div>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">ii.</span><span data-bind="page-count">02 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 03 · Household -->
-    <section class="export-page" data-export-page="household">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">The household</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">III.</span>The starting position, today</div>
-        <h2 class="export-h2">Where the household <em>stands</em>.</h2>
-      </div>
-
-      <div class="export-household-grid">
-        <div class="export-spouse-col">
-          <div class="export-spouse-header">
-            <div class="name" data-bind="hh-spA-name">Spouse A</div>
-            <div class="age">age <span class="num" data-bind="hh-spA-age">—</span></div>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Retirement balance</span>
-            <span class="val" data-bind="hh-spA-ret">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Discretionary balance</span>
-            <span class="val" data-bind="hh-spA-disc">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Monthly retirement contributions</span>
-            <span class="val" data-bind="hh-spA-ret-c">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Monthly discretionary contributions</span>
-            <span class="val" data-bind="hh-spA-disc-c">R —</span>
-          </div>
-          <div class="export-spouse-row total">
-            <span class="label">Combined starting capital</span>
-            <span class="val" data-bind="hh-spA-total">R —</span>
-          </div>
-        </div>
-
-        <div class="export-household-divider"></div>
-
-        <div class="export-spouse-col">
-          <div class="export-spouse-header">
-            <div class="name" data-bind="hh-spB-name">Spouse B</div>
-            <div class="age">age <span class="num" data-bind="hh-spB-age">—</span></div>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Retirement balance</span>
-            <span class="val" data-bind="hh-spB-ret">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Discretionary balance</span>
-            <span class="val" data-bind="hh-spB-disc">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Monthly retirement contributions</span>
-            <span class="val" data-bind="hh-spB-ret-c">R —</span>
-          </div>
-          <div class="export-spouse-row">
-            <span class="label">Monthly discretionary contributions</span>
-            <span class="val" data-bind="hh-spB-disc-c">R —</span>
-          </div>
-          <div class="export-spouse-row total">
-            <span class="label">Combined starting capital</span>
-            <span class="val" data-bind="hh-spB-total">R —</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">iii.</span><span data-bind="page-count">03 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 04 · Assumptions -->
-    <section class="export-page" data-export-page="assumptions">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Assumptions</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">IV.</span>The economic picture behind the numbers</div>
-        <h2 class="export-h2">The assumptions we are <em>making</em>.</h2>
-      </div>
-
-      <div class="export-assump-grid">
-        <table class="export-assump-table">
-          <tr>
-            <td class="lbl">Expected return</td>
-            <td class="val" data-bind="a-return">—</td>
-            <td class="note">Nominal, compounded monthly on both the retirement and discretionary pools.</td>
-          </tr>
-          <tr>
-            <td class="lbl">Inflation (CPI)</td>
-            <td class="val" data-bind="a-cpi">—</td>
-            <td class="note">Used to deflate future rands into today's money for headline figures.</td>
-          </tr>
-          <tr>
-            <td class="lbl">Contribution escalation</td>
-            <td class="val" data-bind="a-esc">—</td>
-            <td class="note">Applied annually to each spouse's monthly contributions, at year-end.</td>
-          </tr>
-          <tr>
-            <td class="lbl">Retirement trigger</td>
-            <td class="val" data-bind="a-retage">—</td>
-            <td class="note" data-bind="a-anchor-note">Anchored to the reference spouse reaching the retirement age.</td>
-          </tr>
-          <tr>
-            <td class="lbl">Safe withdrawal rate</td>
-            <td class="val" data-bind="a-drawrate">—</td>
-            <td class="note">Age-based rate applied to real capital at retirement to derive a sustainable monthly income in today's money, before tax. Rises with the retirement age.</td>
-          </tr>
-        </table>
-
-        <aside class="export-assump-aside">
-          <div class="eyebrow"><span class="export-rom">§</span>Note to the household</div>
-          <div class="body">
-            These are <strong>long-term planning assumptions</strong>, not forecasts. The rates reflect a diversified growth-oriented portfolio over a full accumulation horizon. Actual outcomes will vary year to year.
-          </div>
-          <div class="rule"></div>
-          <div class="body">
-            We <strong>stress-test</strong> these inputs at each review. If markets or your circumstances move meaningfully, we re-model with different return, CPI, and escalation bands.
-          </div>
-          <div class="rule"></div>
-          <div class="body">
-            All headline figures are shown in <strong>today's money</strong> unless marked otherwise, so the numbers you see are directly comparable to your cost of living today.
-          </div>
-        </aside>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">iv.</span><span data-bind="page-count">04 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 05 · Projection -->
-    <section class="export-page" data-export-page="projection">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Projection</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div class="export-projection-head">
-        <div>
-          <div class="export-answer-eyebrow"><span class="export-rom">V.</span>How capital builds over the horizon</div>
-          <h2 class="export-h2">Year by year, the <em>numbers</em> compound.</h2>
-        </div>
-        <div class="export-chart-legend">
-          <span class="k"><span class="sw" style="background: #323E5D;"></span>Retirement fund</span>
-          <span class="k"><span class="sw" style="background: #b8893c;"></span>Discretionary</span>
-        </div>
-      </div>
-
-      <div class="export-chart-wrap">
-        <canvas id="export-chart-projection-nom"></canvas>
-      </div>
-
-      <div class="export-projection-foot-strip">
-        <div class="cell">
-          <div class="cap">Starting capital (today)</div>
-          <div class="val" data-bind="p-start">R —</div>
-          <div class="sub">combined, before contributions</div>
-        </div>
-        <div class="cell">
-          <div class="cap">At retirement · today's money</div>
-          <div class="val" data-bind="p-end-real">R —</div>
-          <div class="sub" data-bind="p-end-real-sub">—</div>
-        </div>
-        <div class="cell">
-          <div class="cap">At retirement · future rands</div>
-          <div class="val" data-bind="p-end-nom">R —</div>
-          <div class="sub">before any drawdown</div>
-        </div>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">v.</span><span data-bind="page-count">05 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 06 · Breakdown -->
-    <section class="export-page" data-export-page="breakdown">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Breakdown</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">VI.</span>Where the final capital comes from</div>
-        <h2 class="export-h2">The three ingredients of the <em>result</em>.</h2>
-      </div>
-
-      <div class="export-breakdown-layout">
-        <div class="export-chart-wrap">
-          <canvas id="export-chart-breakdown"></canvas>
-        </div>
-
-        <div class="export-breakdown-stack">
-          <div class="export-breakdown-slab">
-            <div class="cap">
-              <span>Starting capital, compounded</span>
-              <span class="sw" style="background: rgba(154, 160, 169, 0.85);"></span>
+      </header>
+      <div class="page-body">
+        <div class="cover-layout">
+          <div>
+            <div class="kicker">Retirement projection</div>
+            <h1 class="cover-title" data-bind="cover-title">Retirement Income Projection.</h1>
+            <div class="cover-stat-row">
+              <div class="cover-stat"><span>Date prepared</span><strong data-bind="cover-date">—</strong></div>
+              <div class="cover-stat"><span>Projected starting retirement income in today's money (assumed to increase by inflation)</span><strong class="num" data-bind="cover-income">—</strong></div>
             </div>
-            <div class="val" data-bind="br-initial">R —</div>
-            <div class="sub">What today's balances become, left to grow without further contributions.</div>
           </div>
-          <div class="export-breakdown-slab">
-            <div class="cap">
-              <span>Cumulative contributions</span>
-              <span class="sw" style="background: rgba(94, 100, 112, 0.88);"></span>
+        </div>
+      </div>
+      <footer class="page-foot">
+        <span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span>
+        <span class="num page-count">01 / 03</span>
+      </footer>
+    </section>
+
+    <!-- 02 · Projection -->
+    <section class="report-page" data-page="projection">
+      <header class="report-header">
+        <div class="header-brand">
+          <div class="header-mark">SW</div>
+          <div class="header-name">Simple<br>Wealth</div>
+        </div>
+        <div class="header-meta">
+          <span data-bind="report-meta-names">—</span><br>
+          <span data-bind="report-meta-date">—</span>
+        </div>
+      </header>
+      <div class="page-body">
+        <div class="projection-page-body">
+          <section class="income-chart-panel">
+            <div class="chart-panel-head">
+              <div>
+                <h1>Starting retirement income by retirement age</h1>
+                <p>Values are shown in today's money and before tax. The vertical marker shows the selected retirement age.</p>
+              </div>
             </div>
-            <div class="val" data-bind="br-contribs">R —</div>
-            <div class="sub">Every rand paid in over the horizon, escalated annually.</div>
-          </div>
-          <div class="export-breakdown-slab">
-            <div class="cap">
-              <span>Growth on contributions</span>
-              <span class="sw" style="background: var(--gold);"></span>
+            <div class="income-chart-wrap">
+              <svg id="report-income-chart" class="income-chart" viewBox="0 0 940 350" role="img" aria-label="Starting retirement income by retirement age"></svg>
             </div>
-            <div class="val" data-bind="br-growth">R —</div>
-            <div class="sub">The compounding return earned on those contributions over time.</div>
-          </div>
+          </section>
+
+          <section class="projection-summary">
+            <article class="white-card">
+              <div class="card-head"><h2>Assumptions and outcome</h2></div>
+              <div class="card-body">
+                <div class="assumption-grid">
+                  <div class="metric"><span>Income goal</span><strong class="num" data-bind="assum-goal">—</strong></div>
+                  <div class="metric"><span>Safe withdrawal rate</span><strong class="num" data-bind="assum-swr">—</strong></div>
+                  <div class="metric"><span>Expected return</span><strong class="num" data-bind="assum-return">—</strong></div>
+                  <div class="metric"><span>Assumed inflation</span><strong class="num" data-bind="assum-cpi">—</strong></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="white-card">
+              <div class="card-head"><h2>Household inputs</h2></div>
+              <div class="card-body">
+                <div class="household-grid">
+                  <div class="spouse-mini">
+                    <h3><span data-bind="hh-a-name">Spouse A</span> <span data-bind="hh-a-age">Age —</span></h3>
+                    <table class="summary-table">
+                      <tbody>
+                        <tr><td>Retirement balance</td><td data-bind="hh-a-ret">—</td></tr>
+                        <tr><td>Discretionary balance</td><td data-bind="hh-a-disc">—</td></tr>
+                        <tr><td>Retirement contrib.</td><td data-bind="hh-a-retc">—</td></tr>
+                        <tr><td>Discretionary contrib.</td><td data-bind="hh-a-discc">—</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="spouse-mini">
+                    <h3><span data-bind="hh-b-name">Spouse B</span> <span data-bind="hh-b-age">Age —</span></h3>
+                    <table class="summary-table">
+                      <tbody>
+                        <tr><td>Retirement balance</td><td data-bind="hh-b-ret">—</td></tr>
+                        <tr><td>Discretionary balance</td><td data-bind="hh-b-disc">—</td></tr>
+                        <tr><td>Retirement contrib.</td><td data-bind="hh-b-retc">—</td></tr>
+                        <tr><td>Discretionary contrib.</td><td data-bind="hh-b-discc">—</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
         </div>
       </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">vi.</span><span data-bind="page-count">06 / —</span></span>
-      </div>
+      <div class="foot-line"></div>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">02 / 03</span></footer>
     </section>
 
-    <!-- 07 · Capital events (conditional on eventsStore.length) -->
-    <section class="export-page" data-export-page="events" data-export-page-active="false">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Capital events</span>
+    <!-- 03 · Scenario (conditional) -->
+    <section class="report-page scenario-page" data-page="scenario" data-enabled="false">
+      <header class="report-header">
+        <div class="header-brand">
+          <div class="header-mark">SW</div>
+          <div class="header-name">Simple<br>Wealth</div>
         </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
+        <div class="header-meta">
+          <span data-bind="report-meta-names">—</span><br>
+          <span data-bind="report-meta-date">—</span>
         </div>
-      </div>
+      </header>
+      <div class="page-body">
+        <div class="scenario-body">
+          <section class="scenario-hero">
+            <div class="scenario-tile">
+              <span>Current projection</span>
+              <strong class="num" data-bind="scen-current">—</strong>
+              <p>monthly income, today's money</p>
+            </div>
+            <div class="scenario-tile">
+              <span>Plan scenario</span>
+              <strong class="num" data-bind="scen-plan">—</strong>
+              <p>monthly income, today's money <span class="scenario-delta" data-bind="scen-delta"></span></p>
+            </div>
+          </section>
 
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">VII.</span>One-off inflows and outflows on the horizon</div>
-        <h2 class="export-h2">The moments capital <em>moves</em>.</h2>
-      </div>
+          <section class="scenario-detail">
+            <article class="white-card">
+              <div class="card-head"><h2>What changed</h2></div>
+              <div class="card-body">
+                <table class="change-table">
+                  <thead>
+                    <tr><th>Lever</th><th>Current</th><th>Planned</th><th>Delta</th></tr>
+                  </thead>
+                  <tbody data-bind="scen-table-body"></tbody>
+                </table>
+              </div>
+            </article>
 
-      <div class="export-events-summary">
-        <div class="cell">
-          <div class="cap">Summary</div>
-          <div class="val" data-bind="ev-summary-count">— events modelled</div>
-          <div class="sub">Applied at year-end to the discretionary portfolio, in the basis recorded per event.</div>
-        </div>
-        <div class="cell">
-          <div class="cap">Total inflows</div>
-          <div class="val pos" data-bind="ev-inflow-total">+ R —</div>
-          <div class="sub" data-bind="ev-inflow-sub">— event(s)</div>
-        </div>
-        <div class="cell">
-          <div class="cap">Total outflows</div>
-          <div class="val neg" data-bind="ev-outflow-total">− R —</div>
-          <div class="sub" data-bind="ev-outflow-sub">— event(s)</div>
-        </div>
-      </div>
-
-      <div class="export-events-list">
-        <div class="export-events-list-head">
-          <span>Kind</span>
-          <span>Age</span>
-          <span>Year</span>
-          <span>Basis</span>
-          <span style="text-align: right;">Amount</span>
-        </div>
-        <div data-bind="events-rows">
-          <div class="export-events-empty">No events modelled on the horizon.</div>
+            <article class="white-card">
+              <div class="card-head"><h2>Scenario notes</h2></div>
+              <div class="card-body">
+                <div class="scenario-notes">
+                  <div class="note">
+                    <strong>Result</strong>
+                    <span data-bind="scen-note-result">—</span>
+                  </div>
+                  <div class="note">
+                    <strong>Changed inputs</strong>
+                    <span data-bind="scen-note-changed">—</span>
+                  </div>
+                  <div class="note">
+                    <strong>Unchanged assumptions</strong>
+                    <span data-bind="scen-note-unchanged">—</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
         </div>
       </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">vii.</span><span data-bind="page-count">07 / —</span></span>
-      </div>
+      <div class="foot-line"></div>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">03 / 04</span></footer>
     </section>
 
-    <!-- 08 · Compare (conditional on baseline) -->
-    <section class="export-page" data-export-page="compare" data-export-page-active="false">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Compare</span>
+    <!-- 04 · Methodology / Compliance -->
+    <section class="report-page methodology-page" data-page="methodology">
+      <header class="report-header">
+        <div class="header-brand">
+          <div class="header-mark">SW</div>
+          <div class="header-name">Simple<br>Wealth</div>
         </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
+        <div class="header-meta">
+          <span data-bind="report-meta-names">—</span><br>
+          <span data-bind="report-meta-date">—</span>
         </div>
-      </div>
+      </header>
+      <div class="page-body">
+        <div class="method-body">
+          <article class="text-block">
+            <h2>Methodology</h2>
+            <p data-bind="method-p1">—</p>
+            <p data-bind="method-p2">—</p>
+            <p>The projected starting retirement income applies an age-based safe withdrawal rate to the combined real capital at retirement and divides the result by twelve. The safe withdrawal rate shown on the projection page is the rate used for the selected retirement age.</p>
+          </article>
 
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">VIII.</span>Baseline, set against the proposed plan</div>
-        <h2 class="export-h2">What <em>changes</em>, and what it buys you.</h2>
-      </div>
-
-      <div class="export-compare-layout">
-        <div class="export-compare-card baseline">
-          <div class="tag">
-            <span>Baseline · current plan</span>
-            <span class="locked">Locked</span>
-          </div>
-          <div class="hero" data-bind="cmp-base-hero">R —</div>
-          <div class="hero-sub" data-bind="cmp-base-sub">monthly income · — capital</div>
-          <div class="chart-wrap"><canvas id="export-chart-compare-baseline"></canvas></div>
-          <div class="export-compare-meta">
-            <div class="row"><span>Retirement /mo</span><span class="v" data-bind="cmp-base-cret">R —</span></div>
-            <div class="row"><span>Discretionary /mo</span><span class="v" data-bind="cmp-base-cdisc">R —</span></div>
-            <div class="row"><span>Return</span><span class="v" data-bind="cmp-base-ret">—</span></div>
-            <div class="row"><span>Retire at</span><span class="v" data-bind="cmp-base-age">—</span></div>
-          </div>
-        </div>
-
-        <div class="export-compare-card scenario">
-          <div class="tag">
-            <span>Planned scenario</span>
-            <span class="delta-chip" data-bind="cmp-delta-chip">—</span>
-          </div>
-          <div class="hero" data-bind="cmp-plan-hero">R —</div>
-          <div class="hero-sub" data-bind="cmp-plan-sub">monthly income · — capital</div>
-          <div class="chart-wrap"><canvas id="export-chart-compare-scenario"></canvas></div>
-          <div class="export-compare-meta">
-            <div class="row"><span>Retirement /mo</span><span class="v" data-bind="cmp-plan-cret">R —</span></div>
-            <div class="row"><span>Discretionary /mo</span><span class="v" data-bind="cmp-plan-cdisc">R —</span></div>
-            <div class="row"><span>Return</span><span class="v" data-bind="cmp-plan-ret">—</span></div>
-            <div class="row"><span>Retire at</span><span class="v" data-bind="cmp-plan-age">—</span></div>
-          </div>
+          <article class="text-block">
+            <h2>Compliance note</h2>
+            <p>This report is illustrative and depends on the assumptions entered at the time of the meeting. It should be read with a full financial plan and formal record of advice.</p>
+            <p>Actual outcomes may differ materially depending on investment returns, inflation, contribution levels, tax, fees, legislation, and personal circumstances. Simple Wealth (Pty) Ltd is an authorised financial services provider, FSP number 50637.</p>
+          </article>
         </div>
       </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">viii.</span><span data-bind="page-count">08 / —</span></span>
-      </div>
+      <div class="foot-line"></div>
+      <footer class="page-foot"><span>Simple Wealth Pty Ltd is a financial services provider. FSP number 50637.</span><span class="num page-count">04 / 04</span></footer>
     </section>
 
-    <!-- 09 · Year-by-year table -->
-    <section class="export-page" data-export-page="year-by-year">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Year by year</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
+  </section><!-- /.report-deck -->
+
+  <!-- Include-scenario prompt (shown before export when a baseline is locked) -->
+  <div class="report-modal-backdrop" id="report-scenario-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="report-scenario-modal-title">
+    <div class="report-modal">
+      <h2 id="report-scenario-modal-title">Include the scenario comparison?</h2>
+      <p>A locked baseline is available for this plan. Include it as a scenario page, or generate the shorter report without it.</p>
+      <div class="report-modal-actions">
+        <button class="btn ghost" id="report-modal-cancel" type="button">Cancel</button>
+        <button class="btn" id="report-export-without" type="button">Export without scenario</button>
+        <button class="btn primary" id="report-export-with" type="button">Include scenario</button>
       </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">IX.</span>Every fifth year, plus the retirement milestone</div>
-        <h2 class="export-h2">The numbers, laid out <em>plainly</em>.</h2>
-      </div>
-
-      <table class="export-year-table">
-        <thead>
-          <tr>
-            <th>Year</th>
-            <th>Age A</th>
-            <th>Age B</th>
-            <th>Retirement</th>
-            <th>Discretionary</th>
-            <th>Total (nominal)</th>
-            <th>Total (today&rsquo;s money)</th>
-          </tr>
-        </thead>
-        <tbody data-bind="year-table-body">
-          <!-- rows injected by buildExportDeck -->
-        </tbody>
-      </table>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">ix.</span><span data-bind="page-count">09 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 10 · Methodology -->
-    <section class="export-page" data-export-page="methodology">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Methodology</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">X.</span>How this projection was built</div>
-        <h2 class="export-h2">Methodology, in <em>plain English</em>.</h2>
-      </div>
-
-      <div class="export-prose-layout">
-        <div class="export-prose-col">
-          <h3>How the capital grows</h3>
-          <p>Each month, contributions from both spouses are added to their retirement and discretionary pools. The combined balance compounds at the expected nominal return, applied monthly.</p>
-          <p>Contributions <strong>escalate annually</strong> at the assumed rate, mirroring how payroll-linked savings typically keep pace with salary growth.</p>
-
-          <h3>From future rands to today&rsquo;s money</h3>
-          <p>All headline figures, the monthly income and the capital at retirement, are shown in <strong>today&rsquo;s purchasing power</strong>. We deflate the nominal projection by CPI for each year of the horizon.</p>
-          <p>Where future nominal rands appear, they are labelled explicitly.</p>
-
-          <h3>The retirement income figure</h3>
-          <p>The monthly-income result applies an <strong>age-based safe withdrawal rate</strong> to the real capital at retirement, divided by twelve. A shorter remaining horizon supports a higher sustainable draw, so the rate rises with the retirement age (about 4.2% at age 55, <span data-bind="method-swr">—</span> here). It is a planning-level guide to sustainable income, not a guaranteed payout.</p>
-        </div>
-
-        <div class="export-prose-col">
-          <h3>The three-part breakdown</h3>
-          <p>We decompose the final capital into three components:</p>
-          <ul>
-            <li><strong>Starting capital, compounded.</strong> Today&rsquo;s combined balances left to grow for the full horizon.</li>
-            <li><strong>Cumulative contributions.</strong> Every rand paid in, summed across the horizon.</li>
-            <li><strong>Growth on contributions.</strong> The compounding return earned on those contributions, calculated as the residual once the first two components are subtracted from the total.</li>
-          </ul>
-
-          <h3>Capital events</h3>
-          <p data-bind="m-events">No one-off inflows or outflows are modelled in this projection.</p>
-
-          <h3>What this projection is not</h3>
-          <p>It is not tax advice, not a forecast, and not a guarantee. Investment returns are uncertain and may differ materially from the assumptions used here.</p>
-          <p class="tiny">See the next page for full disclaimers and regulatory notes.</p>
-        </div>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">x.</span><span data-bind="page-count">10 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 11 · Compliance -->
-    <section class="export-page" data-export-page="compliance">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Compliance &amp; disclaimers</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-answer-eyebrow"><span class="export-rom">XI.</span>Regulatory notices and risk language</div>
-        <h2 class="export-h2">What you should <em>know</em>.</h2>
-      </div>
-
-      <div class="export-prose-layout">
-        <div class="export-prose-col">
-          <h3>Not advice, not a forecast</h3>
-          <p>This projection is illustrative. It has been prepared on the assumptions shown and is intended to support a conversation about your retirement plan, not to constitute financial, tax, or legal advice. <strong>Past performance is not a reliable indicator of future results.</strong></p>
-
-          <h3>Financial Services Provider</h3>
-          <p>Simple Wealth (Pty) Ltd is an authorised Financial Services Provider in terms of the Financial Advisory and Intermediary Services Act (FAIS), FSP number <strong>50637</strong>. A copy of the firm&rsquo;s conflict-of-interest and complaints policies is available on request. Personal information has been processed in line with the Protection of Personal Information Act (POPIA).</p>
-
-          <h3>Scope of this document</h3>
-          <p>This document has been prepared exclusively for the household named on the cover page. It may not be redistributed, reproduced, or relied upon by any other party without the written permission of Simple Wealth.</p>
-        </div>
-
-        <div class="export-prose-col">
-          <h3>Risk and market assumptions</h3>
-          <p>The expected return, inflation, and escalation figures used here are long-term planning assumptions for a diversified growth-oriented portfolio. Actual returns are volatile; sequence-of-returns risk is not modelled. The safe withdrawal rates used here are age-based planning heuristics, not guaranteed sustainable rates.</p>
-
-          <h3>Tax treatment</h3>
-          <p>Figures are shown <strong>before tax</strong>. Retirement-fund contributions, investment growth within retirement funds, and income drawn in retirement are each subject to different tax rules. Your personal tax position may change the effective outcome materially.</p>
-
-          <h3>Review cadence</h3>
-          <p>We recommend reviewing this projection at least annually, or whenever household circumstances, contribution rates, or market conditions shift meaningfully.</p>
-          <p class="tiny">Simple Wealth (Pty) Ltd · FSP 50637 · Prepared <span data-bind="compliance-date">——</span>.</p>
-        </div>
-      </div>
-
-      <div class="export-page-foot">
-        <span class="export-page-foot-brand">Simple Wealth · Retirement Projection</span>
-        <span><span class="export-rom" data-bind="page-mark">xi.</span><span data-bind="page-count">11 / —</span></span>
-      </div>
-    </section>
-
-    <!-- 12 · Next steps -->
-    <section class="export-page" data-export-page="next-steps">
-      <div class="export-topbar">
-        <div class="export-topbar-left">
-          <span class="export-topbar-logo">SW</span>
-          <span class="export-topbar-tag">Next steps</span>
-        </div>
-        <div class="export-topbar-meta">
-          <span data-bind="topbar-family">the — family</span>
-          <span class="sep"></span>
-          <span data-bind="topbar-date">——</span>
-        </div>
-      </div>
-
-      <div>
-        <div class="export-closing-eyebrow"><span class="export-rom">§</span>From projection to plan</div>
-        <h1 class="export-closing-title">
-          Let&rsquo;s turn this into<br>
-          <span class="gold-under"><em>your</em> plan</span>.
-        </h1>
-      </div>
-
-      <div class="export-closing-strip">
-        <div class="cell">
-          <div class="cap">Review and refine</div>
-          <div class="val">Pressure-test the assumptions together; adjust contributions, target age, or asset mix.</div>
-        </div>
-        <div class="cell">
-          <div class="cap">Action</div>
-          <div class="val">Set up contribution escalations, rebalance existing portfolios, and close any product gaps.</div>
-        </div>
-        <div class="cell">
-          <div class="cap">Next review</div>
-          <div class="val" data-bind="next-review">In twelve months, or sooner if anything changes materially.</div>
-          <div class="sub">Contact your adviser at any time between reviews.</div>
-        </div>
-      </div>
-
-      <div class="export-closing-foot">
-        <div class="export-closing-brand">simple<strong>wealth</strong></div>
-        <div class="export-closing-meta">
-          Simple Wealth (Pty) Ltd &nbsp;·&nbsp; FSP 50637<br>
-          <span class="num" data-bind="closing-date">——</span>
-          &nbsp;·&nbsp; <span data-bind="page-mark">xii.</span>
-          <span data-bind="page-count">12 / —</span>
-        </div>
-      </div>
-    </section>
-
-  </section><!-- /.export-deck -->
+    </div>
+  </div>
 
   <div class="footer-meta">
     Simple Wealth &nbsp;·&nbsp; Retirement Accumulation Projection &nbsp;·&nbsp; <span id="footer-date">—</span>
@@ -5363,23 +4477,20 @@
     requestAnimationFrame(resize);
   }
 
-  // ===== Export deck (A4 landscape, 12 pages) =====
-  // Opt-in print mode: plan-bar "Export report" → startExport().
-  // Sets two gates: #calc-root[data-export-mode="true"] swaps the
-  // screen layout to show .export-deck; <html class="export-printing">
-  // + a dynamically-injected <style id="export-page-sheet"> supply
-  // the @page { size: A4 landscape } override only for this print
-  // pass. afterprint removes both. The existing portrait @media print
-  // rules (Cmd+P / canvas-foot Print/PDF) never touch these gates.
-  var exportCharts = { answer: null, proj: null, breakdown: null, cmpBase: null, cmpScen: null };
+  // ===== Report deck (A4 landscape, 3–4 pages) =====
+  // Opt-in print mode: plan-bar "Report" → startExport(). Sets
+  // #calc-root[data-export-mode="true"] to swap the screen layout for
+  // .report-deck, and <html class="export-printing"> + an injected
+  // <style id="export-page-sheet"> for the @page landscape override.
+  // afterprint removes both. Portrait Cmd+P never touches these gates.
 
   // --- Bind helpers ---
   function setBind(name, html){
-    var nodes = document.querySelectorAll('.export-deck [data-bind="' + name + '"]');
+    var nodes = document.querySelectorAll('.report-deck [data-bind="' + name + '"]');
     for (var i = 0; i < nodes.length; i++){ nodes[i].innerHTML = html; }
   }
   function setBindText(name, txt){
-    var nodes = document.querySelectorAll('.export-deck [data-bind="' + name + '"]');
+    var nodes = document.querySelectorAll('.report-deck [data-bind="' + name + '"]');
     for (var i = 0; i < nodes.length; i++){ nodes[i].textContent = txt; }
   }
 
@@ -5615,494 +4726,342 @@
     input.click();
   }
 
-  function toRoman(num){
-    if (!(num > 0 && num < 4000)) return String(num);
-    var map = [
-      ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
-      ['C',  100], ['XC',  90], ['L',  50], ['XL',  40],
-      ['X',   10], ['IX',   9], ['V',   5], ['IV',   4],
-      ['I',    1]
-    ];
-    var out = '';
-    for (var i = 0; i < map.length; i++){
-      while (num >= map[i][1]){ out += map[i][0]; num -= map[i][1]; }
-    }
-    return out;
-  }
-
-  // Re-walks visible pages, assigns roman numerals and page counts.
-  function renumberExportPages(){
-    var pages = document.querySelectorAll('.export-deck .export-page');
-    var visible = [];
-    for (var i = 0; i < pages.length; i++){
-      if (pages[i].getAttribute('data-export-page-active') !== 'false'){
-        visible.push(pages[i]);
-      }
-    }
-    var total = visible.length;
-    for (var j = 0; j < visible.length; j++){
-      var num = j + 1;
-      var rom = toRoman(num).toLowerCase() + '.';
-      var marks = visible[j].querySelectorAll('[data-bind="page-mark"]');
-      for (var m = 0; m < marks.length; m++){ marks[m].textContent = rom; }
-      var counts = visible[j].querySelectorAll('[data-bind="page-count"]');
-      var countTxt = (num < 10 ? '0' + num : String(num)) + ' / ' + (total < 10 ? '0' + total : String(total));
-      for (var c = 0; c < counts.length; c++){ counts[c].textContent = countTxt; }
-    }
-  }
-
-  // Populate deck slots from current projection + household state.
-  function buildExportDeck(p, bline, events, names){
-    var inputs = p.inputs;
-
-    // Client meta (from hidden inputs maintained by the calculator).
-    var clientName = (document.getElementById('client-name').value || '').trim();
-    var clientDate = (document.getElementById('client-date').value || '').trim();
-    var adviserName = (document.getElementById('adviser-name').value || 'Simple Wealth (Pty) Ltd').trim();
-    if (!clientDate){
-      // Mirror the footer date pattern used elsewhere in the file.
-      var today = new Date();
-      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      clientDate = today.getDate() + ' ' + months[today.getMonth()] + ' ' + today.getFullYear();
-    }
-    var familyName = deriveFamilyName(clientName);
-
-    var anchorKey = resolveAnchorSpouseKey();
-    var anchorName = names[anchorKey];
-    var anchorRuleWord = anchor === 'youngest' ? 'younger' : 'older';
-
-    // ---- Cover ----
-    setBindText('cover-family-name', familyName);
-    setBindText('cover-prepared-for', clientName || '——');
-    setBindText('cover-date', clientDate);
-    setBindText('cover-fsp', '50637');
-
-    // ---- Topbar echoes (answer / household / assumptions / projection / breakdown / ...) ----
-    var familyTopbar = familyName === '——' ? 'the family' : ('the ' + familyName + ' family');
-    setBindText('topbar-family', familyTopbar);
-    setBindText('topbar-date', clientDate);
-
-    // ---- Answer ----
-    var hh = inputs.retA + inputs.retB + inputs.discA + inputs.discB;
-    setBind('answer-headline',
-      'At ' + escapeHtml(anchorName) + '&rsquo;s age <span class="hero-num">' + p.retirementAge +
-      '</span>, projected starting retirement income of <span class="gold-under"><span class="hero-num">' +
-      fmtR(p.monthlyIncomeReal) + '</span></span> per month, in today&rsquo;s money.'
-    );
-    setBindText('answer-income', fmtR(p.monthlyIncomeReal));
-    setBindText('answer-capital', fmtR(p.finalTotalReal));
-    setBindText('answer-capital-sub', 'today&rsquo;s money (' + fmtShort(p.finalTotalNom) + ' in future rands)');
-    setBindText('answer-years', p.years + ' years');
-    setBindText('answer-years-sub', 'to ' + anchorName + '&rsquo;s age ' + p.retirementAge);
-
-    var gpAnswer = computeGoalProgress(p);
-    var goalNodes = document.querySelectorAll('.export-deck [data-bind="answer-goal"]');
-    for (var gi = 0; gi < goalNodes.length; gi++){
-      if (gpAnswer){
-        var phrase = gpAnswer.pct >= 100 ? 'on track to' : 'covers';
-        var exportGoalCls = gpAnswer.pct >= 100 ? 'goal-progress-on-track' : 'goal-progress-behind';
-        goalNodes[gi].innerHTML = 'Goal ' + fmtR(gpAnswer.goal) + ' / mo &middot; <span class="' + exportGoalCls + '">' + phrase + ' ' + gpAnswer.pct + '% of target</span>';
-        goalNodes[gi].setAttribute('data-goal-active', 'true');
-      } else {
-        goalNodes[gi].textContent = '';
-        goalNodes[gi].setAttribute('data-goal-active', 'false');
-      }
-    }
-
-    // ---- Household ----
-    setBindText('hh-spA-name', names.A);
-    setBindText('hh-spA-age', inputs.ageA);
-    setBindText('hh-spA-ret', fmtR(inputs.retA));
-    setBindText('hh-spA-disc', fmtR(inputs.discA));
-    setBindText('hh-spA-ret-c', fmtR(inputs.contribRetA));
-    setBindText('hh-spA-disc-c', fmtR(inputs.contribDiscA));
-    setBindText('hh-spA-total', fmtR(inputs.retA + inputs.discA));
-    setBindText('hh-spB-name', names.B);
-    setBindText('hh-spB-age', inputs.ageB);
-    setBindText('hh-spB-ret', fmtR(inputs.retB));
-    setBindText('hh-spB-disc', fmtR(inputs.discB));
-    setBindText('hh-spB-ret-c', fmtR(inputs.contribRetB));
-    setBindText('hh-spB-disc-c', fmtR(inputs.contribDiscB));
-    setBindText('hh-spB-total', fmtR(inputs.retB + inputs.discB));
-
-    // ---- Assumptions ----
-    setBindText('a-return', fmtPct(inputs.rNom * 100));
-    setBindText('a-cpi', fmtPct(inputs.cpi * 100));
-    setBindText('a-esc', fmtPct(inputs.esc * 100));
-    setBindText('a-retage', 'Age ' + p.retirementAge);
-    var exSwrLabel = fmtSwr(p.refAge + p.years) + ' at age ' + (p.refAge + p.years);
-    setBindText('a-drawrate', exSwrLabel);
-    setBindText('method-swr', exSwrLabel);
-    setBindText('a-anchor-note',
-      'Anchored to the ' + anchorRuleWord + ' spouse (' + anchorName +
-      ') reaching the retirement age; the projection stops there.'
-    );
-
-    // ---- Projection ----
-    setBindText('p-start', fmtR(p.nominal.total[0]));
-    setBindText('p-end-real', fmtR(p.finalTotalReal));
-    setBindText('p-end-real-sub', 'at ' + anchorName + '&rsquo;s age ' + p.retirementAge);
-    setBindText('p-end-nom', fmtR(p.finalTotalNom));
-
-    // ---- Breakdown ----
-    var last = p.real.total.length - 1;
-    setBindText('br-initial', fmtR(p.real.breakdown.initial[last]));
-    setBindText('br-contribs', fmtR(p.real.breakdown.contribs[last]));
-    setBindText('br-growth', fmtR(p.real.breakdown.growth[last]));
-
-    // ---- Capital events (page 7, conditional) ----
-    var eventsPage = document.querySelector('.export-page[data-export-page="events"]');
-    var hasEvents = events && events.length > 0;
-    if (eventsPage){
-      eventsPage.setAttribute('data-export-page-active', hasEvents ? 'true' : 'false');
-      if (hasEvents) populateEventsPage(p, events);
-    }
-
-    // ---- Compare (page 8, conditional on baseline) ----
-    var comparePage = document.querySelector('.export-page[data-export-page="compare"]');
-    if (comparePage){
-      comparePage.setAttribute('data-export-page-active', bline ? 'true' : 'false');
-      if (bline) populateComparePage(p, bline);
-    }
-
-    // ---- Year-by-year table (page 9) ----
-    populateYearTable(p);
-
-    // ---- Methodology dynamic bit (page 10) ----
-    var eventsNote;
-    if (hasEvents){
-      var n = events.length;
-      eventsNote = 'This projection includes <strong>' + n + ' one-off ' + (n === 1 ? 'event' : 'events') +
-        '</strong>, listed on the capital events page. Events are applied at year-end to the discretionary portfolio. Inflows add proportionally to existing discretionary balances; outflows are capped at available discretionary and do not touch the retirement fund.';
-    } else {
-      eventsNote = 'No one-off inflows or outflows are modelled in this projection.';
-    }
-    setBind('m-events', eventsNote);
-
-    // ---- Compliance + closing date (pages 11 + 12) ----
-    setBindText('compliance-date', clientDate);
-    setBindText('closing-date', clientDate);
-
-    renumberExportPages();
-  }
-
-  // ---- Year-by-year table population ----
-  // Shows year 0 (today), every 5th year, and the retirement row (last)
-  // highlighted. Uses NOMINAL series for "Retirement / Discretionary /
-  // Total", plus a "Total real" column in today's money.
-  function populateYearTable(p){
-    var body = document.querySelector('.export-deck [data-bind="year-table-body"]');
-    if (!body) return;
-    var last = p.nominal.total.length - 1;
-    var indices = [];
-    indices.push(0);
-    for (var y = 5; y < last; y += 5){ indices.push(y); }
-    if (indices[indices.length - 1] !== last) indices.push(last);
-
-    var thisYear = new Date().getFullYear();
-    var rowsHTML = indices.map(function(i){
-      var offset = i;
-      var calYear = thisYear + offset;
-      var cls = '';
-      if (i === last) cls = ' class="retirement"';
-      else if (i > 0 && i % 10 === 0) cls = ' class="milestone"';
-      var label;
-      if (i === 0){
-        label = 'Today · ' + calYear;
-      } else if (i === last){
-        label = 'Retirement · ' + calYear;
-      } else {
-        label = 'Year ' + i + ' · ' + calYear;
-      }
-      return '<tr' + cls + '>' +
-        '<td>' + label + '</td>' +
-        '<td>' + p.ageA[i] + '</td>' +
-        '<td>' + p.ageB[i] + '</td>' +
-        '<td>' + fmtR(p.nominal.ret[i]) + '</td>' +
-        '<td>' + fmtR(p.nominal.disc[i]) + '</td>' +
-        '<td>' + fmtR(p.nominal.total[i]) + '</td>' +
-        '<td>' + fmtR(p.real.total[i]) + '</td>' +
-        '</tr>';
-    }).join('');
-    body.innerHTML = rowsHTML;
-  }
-
-  // ---- Events page population ----
-  function populateEventsPage(p, events){
-    var refAge = p.refAge;
-    var thisYear = new Date().getFullYear();
-    var inflowCount = 0, outflowCount = 0, inflowSum = 0, outflowSum = 0;
-
-    events.forEach(function(ev){
-      if (ev.kind === 'inflow'){ inflowCount++; inflowSum += ev.amount; }
-      else { outflowCount++; outflowSum += ev.amount; }
-    });
-
-    var sEv = function(n){ return n === 1 ? 'event' : 'events'; };
-    setBindText('ev-summary-count', events.length + ' ' + sEv(events.length) + ' modelled');
-    setBindText('ev-inflow-total', inflowCount > 0 ? '+ ' + fmtR(inflowSum) : '— ');
-    setBindText('ev-inflow-sub', inflowCount + ' ' + sEv(inflowCount));
-    setBindText('ev-outflow-total', outflowCount > 0 ? '− ' + fmtR(outflowSum) : '— ');
-    setBindText('ev-outflow-sub', outflowCount + ' ' + sEv(outflowCount));
-
-    // Itemised rows. Events outside [refAge+1 .. retirementAge] are
-    // silently ignored by project(); here we just list what the
-    // adviser entered, including out-of-horizon rows, so the
-    // document matches the form data. Order by age ascending.
-    var sorted = events.slice().sort(function(a, b){ return a.age - b.age; });
-    var rowsHTML = sorted.map(function(ev){
-      var yearOffset = ev.age - refAge;
-      var yearLabel = (thisYear + yearOffset);
-      var basisLabel = ev.todaysMoney ? "Today's money" : 'Future rands';
-      var kindClass = ev.kind === 'inflow' ? 'inflow' : 'outflow';
-      var amountSign = ev.kind === 'inflow' ? '+ ' : '− ';
-      var amountClass = ev.kind === 'inflow' ? 'pos' : 'neg';
-      var outOfHorizon = yearOffset < 1 || yearOffset > p.years;
-      var muteStyle = outOfHorizon ? ' style="opacity: 0.55;"' : '';
-      return '<div class="export-event-row"' + muteStyle + '>' +
-        '<span class="export-event-kind ' + kindClass + '">' + ev.kind + '</span>' +
-        '<span class="export-event-age">' + ev.age + '</span>' +
-        '<span class="export-event-desc">' + yearLabel + (outOfHorizon ? ' <em style="font-size: 10px; color: var(--mute);">(outside horizon)</em>' : '') + '</span>' +
-        '<span class="export-event-basis">' + basisLabel + '</span>' +
-        '<span class="export-event-amount ' + amountClass + '">' + amountSign + fmtR(ev.amount) + '</span>' +
-        '</div>';
-    }).join('');
-
-    setBind('events-rows', rowsHTML || '<div class="export-events-empty">No events modelled on the horizon.</div>');
-  }
-
-  // ---- Compare page population ----
-  function populateComparePage(p, bline){
-    var bp = bline.p;
-    var bInputs = bline.inputs;
-    var inputs = p.inputs;
-
-    // Hero numbers
-    setBindText('cmp-base-hero', fmtR(bp.monthlyIncomeReal) + ' / mo');
-    setBindText('cmp-base-sub', fmtShort(bp.finalTotalReal) + ' capital · today\'s money');
-    setBindText('cmp-plan-hero', fmtR(p.monthlyIncomeReal) + ' / mo');
-    setBindText('cmp-plan-sub', fmtShort(p.finalTotalReal) + ' capital · today\'s money');
-
-    // Delta chip
-    var incomeDelta = p.monthlyIncomeReal - bp.monthlyIncomeReal;
-    var chipText, chipClass;
-    if (Math.abs(incomeDelta) < 1){
-      chipText = 'no change';
-      chipClass = '';
-    } else {
-      chipText = (incomeDelta > 0 ? '+ ' : '− ') + fmtR(Math.abs(incomeDelta)) + ' / mo';
-      chipClass = incomeDelta < 0 ? 'neg' : '';
-    }
-    var chip = document.querySelector('.export-deck [data-bind="cmp-delta-chip"]');
-    if (chip){
-      chip.textContent = chipText;
-      chip.classList.toggle('neg', chipClass === 'neg');
-    }
-
-    // Baseline meta
-    setBindText('cmp-base-cret', fmtR(bInputs.contribRetA + bInputs.contribRetB));
-    setBindText('cmp-base-cdisc', fmtR(bInputs.contribDiscA + bInputs.contribDiscB));
-    setBindText('cmp-base-ret', fmtPct(bInputs.rNom * 100));
-    setBindText('cmp-base-age', 'Age ' + bInputs.retirementAge);
-
-    // Scenario meta with inline deltas
-    setMetaWithDelta('cmp-plan-cret',
-      fmtR(inputs.contribRetA + inputs.contribRetB),
-      (inputs.contribRetA + inputs.contribRetB) - (bInputs.contribRetA + bInputs.contribRetB),
-      function(v){ return fmtR(Math.abs(v)) + ' /mo'; },
-      1);
-    setMetaWithDelta('cmp-plan-cdisc',
-      fmtR(inputs.contribDiscA + inputs.contribDiscB),
-      (inputs.contribDiscA + inputs.contribDiscB) - (bInputs.contribDiscA + bInputs.contribDiscB),
-      function(v){ return fmtR(Math.abs(v)) + ' /mo'; },
-      1);
-    setMetaWithDelta('cmp-plan-ret',
-      fmtPct(inputs.rNom * 100),
-      (inputs.rNom - bInputs.rNom) * 100,
-      function(v){ return Math.abs(v).toFixed(2) + ' pp'; },
-      0.005);
-    setMetaWithDelta('cmp-plan-age',
-      'Age ' + inputs.retirementAge,
-      inputs.retirementAge - bInputs.retirementAge,
-      function(v){ return Math.abs(v) + ' yr'; },
-      0.5);
-  }
-
-  function setMetaWithDelta(bindName, valueHTML, delta, fmtDelta, threshold){
-    var el = document.querySelector('.export-deck [data-bind="' + bindName + '"]');
-    if (!el) return;
-    var deltaHTML = '';
-    if (Math.abs(delta) >= threshold){
-      var sign = delta > 0 ? '+ ' : '− ';
-      var cls = delta < 0 ? ' class="neg"' : '';
-      deltaHTML = ' <em' + cls + '>' + sign + fmtDelta(delta) + '</em>';
-    }
-    el.innerHTML = valueHTML + deltaHTML;
-  }
-
-  // Minimal HTML-escape for values interpolated into .innerHTML contexts.
   function escapeHtml(s){
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // --- Chart builders (dedicated print-only instances) ---
-  function buildExportCharts(p, bline){
-    destroyExportCharts();
-
-    var answerCtx = document.getElementById('export-chart-answer');
-    if (answerCtx){
-      exportCharts.answer = new Chart(answerCtx, {
-        data: { labels: p.labels, datasets: stackedDatasets(p.real.disc, p.real.ret) },
-        options: exportBarOptions({ height: 'answer' })
-      });
+  // Walk visible report pages (skip data-enabled="false"); write NN / TT counts.
+  function renumberReportPages(){
+    var pages = document.querySelectorAll('.report-deck .report-page');
+    var visible = [];
+    for (var i = 0; i < pages.length; i++){
+      if (pages[i].getAttribute('data-enabled') !== 'false') visible.push(pages[i]);
     }
-
-    var projCtx = document.getElementById('export-chart-projection-nom');
-    if (projCtx){
-      exportCharts.proj = new Chart(projCtx, {
-        data: { labels: p.labels, datasets: stackedDatasets(p.nominal.disc, p.nominal.ret) },
-        options: exportBarOptions({ height: 'projection' })
-      });
-    }
-
-    var brCtx = document.getElementById('export-chart-breakdown');
-    if (brCtx){
-      var br = p.real.breakdown;
-      var brDatasets = [
-        { label: 'Starting capital, compounded', data: br.initial, backgroundColor: 'rgba(154,160,169,0.85)', borderWidth: 0, type: 'bar', stack: 'b' },
-        { label: 'Cumulative contributions',     data: br.contribs, backgroundColor: 'rgba(94,100,112,0.88)', borderWidth: 0, type: 'bar', stack: 'b' },
-        { label: 'Growth on contributions',      data: br.growth,   backgroundColor: 'rgba(184,137,60,0.92)', borderWidth: 0, type: 'bar', stack: 'b' }
-      ];
-      exportCharts.breakdown = new Chart(brCtx, {
-        data: { labels: p.labels, datasets: brDatasets },
-        options: exportBarOptions({ height: 'breakdown' })
-      });
-    }
-
-    // Compare charts (only when baseline is locked). Shared y-ceiling
-    // so the two bar charts line up visually across cards.
-    if (bline){
-      var bp = bline.p;
-      // Pad short series to the scenario length so Chart.js labels align.
-      var scenarioLabels = p.labels;
-      var baseReal = padSeries(bp.real, scenarioLabels.length);
-      var planReal = p.real;
-      var maxY = Math.max(peak(baseReal.total), peak(planReal.total)) * 1.05;
-      var sharedY = {
-        stacked: true,
-        beginAtZero: true,
-        suggestedMax: maxY,
-        ticks: { callback: function(v){ return fmtShort(v); }, font: { size: 10, family: 'JetBrains Mono, monospace' }, color: '#7a8292' },
-        grid: { color: 'rgba(0,0,0,0.06)' }
-      };
-
-      var cmpBaseCtx = document.getElementById('export-chart-compare-baseline');
-      if (cmpBaseCtx){
-        exportCharts.cmpBase = new Chart(cmpBaseCtx, {
-          data: { labels: scenarioLabels, datasets: fadedStackedDatasets(baseReal.disc, baseReal.ret) },
-          options: exportCompareOptions(sharedY)
-        });
-      }
-      var cmpScenCtx = document.getElementById('export-chart-compare-scenario');
-      if (cmpScenCtx){
-        exportCharts.cmpScen = new Chart(cmpScenCtx, {
-          data: { labels: scenarioLabels, datasets: stackedDatasets(planReal.disc, planReal.ret) },
-          options: exportCompareOptions(sharedY)
-        });
-      }
+    var total = visible.length;
+    for (var j = 0; j < visible.length; j++){
+      var num = j + 1;
+      var txt = (num < 10 ? '0' + num : String(num)) + ' / ' + (total < 10 ? '0' + total : String(total));
+      var counts = visible[j].querySelectorAll('.page-count');
+      for (var c = 0; c < counts.length; c++) counts[c].textContent = txt;
     }
   }
 
-  function peak(arr){ var m = 0; for (var i = 0; i < arr.length; i++){ if (arr[i] > m) m = arr[i]; } return m; }
+  // ----- Report data adapter -------------------------------------------
+  // Map calculator outputs → report slots. No math here; formatting and
+  // selection only. Every number comes from the live projection / state.
+  function buildReportData(p, bline, events, names){
+    var inputs = p.inputs;
+    names = names || { A: 'Spouse A', B: 'Spouse B' };
 
-  function padSeries(series, targetLen){
-    // Copy series, pad each array to targetLen with last value.
-    var pad = function(a){
-      if (a.length >= targetLen) return a.slice(0, targetLen);
-      var out = a.slice();
-      var last = out.length ? out[out.length - 1] : 0;
-      while (out.length < targetLen) out.push(last);
-      return out;
-    };
-    return {
-      total: pad(series.total),
-      ret: pad(series.ret),
-      disc: pad(series.disc),
-      cumulContribs: pad(series.cumulContribs),
-      startBalance: pad(series.startBalance),
-      breakdown: {
-        initial: pad(series.breakdown.initial),
-        contribs: pad(series.breakdown.contribs),
-        growth: pad(series.breakdown.growth)
-      }
-    };
-  }
+    // Names: spouse first names; fall back to derived family name when both
+    // are still the defaults.
+    var nameA = (names.A || '').trim();
+    var nameB = (names.B || '').trim();
+    var defaultA = !nameA || nameA === 'Spouse A';
+    var defaultB = !nameB || nameB === 'Spouse B';
+    var clientName = (document.getElementById('client-name').value || '').trim();
+    var namesLine;
+    if (defaultA && defaultB){
+      var fam = deriveFamilyName(clientName);
+      namesLine = (fam && fam !== '——') ? 'the ' + fam + ' household' : 'your household';
+    } else {
+      namesLine = (nameA || 'Spouse A') + ' and ' + (nameB || 'Spouse B');
+    }
 
-  function fadedStackedDatasets(discData, retData){
-    // Baseline chart rendered at 35% alpha (per DESIGN.md).
-    return [
-      { label: 'Discretionary',   data: discData, backgroundColor: 'rgba(184,137,60,0.35)', borderWidth: 0, type: 'bar', stack: 'capital' },
-      { label: 'Retirement fund', data: retData,  backgroundColor: 'rgba(50,62,93,0.35)',  borderWidth: 0, type: 'bar', stack: 'capital' }
+    var dateStr = (document.getElementById('client-date').value || '').trim() || '—';
+    var goalSet = isFinite(inputs.incomeGoal) && inputs.incomeGoal > 0;
+
+    var coverTitle = 'Retirement Income Projection for ' + namesLine + '.';
+    var coverIncome = fmtR(p.monthlyIncomeReal) + ' /mo · age ' + p.retirementAge;
+
+    var assumptions = {
+      goal: goalSet ? fmtR(inputs.incomeGoal) : 'Not set',
+      swr: fmtSwr(p.retirementAge),
+      ret: fmtPct(inputs.rNom * 100),
+      cpi: fmtPct(inputs.cpi * 100)
+    };
+
+    var household = [
+      { name: nameA || 'Spouse A', age: 'Age ' + inputs.ageA,
+        ret: fmtR(inputs.retA), disc: fmtR(inputs.discA),
+        retc: fmtR(inputs.contribRetA), discc: fmtR(inputs.contribDiscA) },
+      { name: nameB || 'Spouse B', age: 'Age ' + inputs.ageB,
+        ret: fmtR(inputs.retB), disc: fmtR(inputs.discB),
+        retc: fmtR(inputs.contribRetB), discc: fmtR(inputs.contribDiscB) }
     ];
-  }
 
-  function exportCompareOptions(sharedY){
+    // Income-by-retirement-age curve (today's money). Single source of chart points.
+    var cd = incomeCurveData(inputs);
+    var points = cd.ages.map(function(age, i){ return { age: age, income: cd.incomeReal[i] }; });
+    var chart = {
+      points: points,
+      selectedAge: cd.markerAge,
+      selectedIncome: cd.incomeReal[cd.markerIndex],
+      incomeGoal: goalSet ? inputs.incomeGoal : 0
+    };
+
+    var method = {
+      p1: 'Contributions are modelled monthly and escalated annually at the stated contribution '
+        + 'escalation rate, shown here as ' + fmtPct(inputs.esc * 100) + ' p.a. Retirement and '
+        + 'discretionary balances compound at the selected nominal return, shown here as '
+        + fmtPct(inputs.rNom * 100) + ' p.a.',
+      p2: 'Values marked as today\'s money are deflated using the CPI assumption, shown here as '
+        + fmtPct(inputs.cpi * 100) + ' p.a. Capital events are included where they have been '
+        + 'captured in the calculator.'
+    };
+
+    var scenario = bline ? buildScenarioComparison(p, bline) : null;
+
     return {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: {
-        y: sharedY,
-        x: {
-          stacked: true,
-          ticks: { font: { size: 9, family: 'JetBrains Mono, monospace' }, color: '#7a8292', maxTicksLimit: 10, autoSkip: true },
-          grid: { display: false }
-        }
-      }
+      namesLine: namesLine, date: dateStr,
+      coverTitle: coverTitle, coverIncome: coverIncome,
+      assumptions: assumptions, household: household,
+      chart: chart, method: method, scenario: scenario
     };
   }
 
-  function stackedDatasets(discData, retData){
-    return [
-      { label: 'Discretionary',   data: discData, backgroundColor: 'rgba(184,137,60,0.92)',  borderWidth: 0, type: 'bar', stack: 'capital' },
-      { label: 'Retirement fund', data: retData,  backgroundColor: 'rgba(50,62,93,0.92)',    borderWidth: 0, type: 'bar', stack: 'capital' }
+  // Deterministic baseline-vs-scenario comparison. Current = locked baseline,
+  // Planned = live projection. Unchanged levers are labelled "unchanged"; no
+  // attribution is inferred.
+  function buildScenarioComparison(p, bline){
+    var cur = bline.inputs, plan = p.inputs;
+
+    function dMoney(a, b){
+      var d = Math.round(b) - Math.round(a);
+      if (d === 0) return { t: 'unchanged', c: 'delta-neutral' };
+      return { t: (d > 0 ? '+' : '−') + fmtR(Math.abs(d)), c: d > 0 ? 'delta-positive' : 'delta-negative' };
+    }
+    function dPct(a, b){
+      var d = Math.round((b - a) * 100) / 100;
+      if (Math.abs(d) < 0.005) return { t: 'unchanged', c: 'delta-neutral' };
+      return { t: (d > 0 ? '+' : '−') + Math.abs(d).toFixed(2) + '%', c: d > 0 ? 'delta-positive' : 'delta-negative' };
+    }
+    function dAge(a, b){
+      var d = b - a;
+      if (d === 0) return { t: 'unchanged', c: 'delta-neutral' };
+      var n = Math.abs(d);
+      return { t: (d > 0 ? '+' : '−') + n + ' yr' + (n === 1 ? '' : 's'), c: d > 0 ? 'delta-positive' : 'delta-negative' };
+    }
+    function dPP(a, b){
+      var d = b - a;
+      if (d === 0) return { t: 'unchanged', c: 'delta-neutral' };
+      return { t: (d > 0 ? '+' : '−') + Math.abs(d) + ' pp', c: d > 0 ? 'delta-positive' : 'delta-negative' };
+    }
+
+    var curRetC = cur.contribRetA + cur.contribRetB;
+    var planRetC = plan.contribRetA + plan.contribRetB;
+    var curDiscC = cur.contribDiscA + cur.contribDiscB;
+    var planDiscC = plan.contribDiscA + plan.contribDiscB;
+    var curGoalSet = isFinite(cur.incomeGoal) && cur.incomeGoal > 0;
+    var planGoalSet = isFinite(plan.incomeGoal) && plan.incomeGoal > 0;
+
+    var rows = [
+      { label: 'Retirement contributions', cur: fmtR(curRetC), plan: fmtR(planRetC), d: dMoney(curRetC, planRetC), input: true },
+      { label: 'Discretionary contributions', cur: fmtR(curDiscC), plan: fmtR(planDiscC), d: dMoney(curDiscC, planDiscC), input: true },
+      { label: 'Expected return', cur: fmtPct(cur.rNom * 100), plan: fmtPct(plan.rNom * 100), d: dPct(cur.rNom * 100, plan.rNom * 100), input: true },
+      { label: 'Assumed inflation', cur: fmtPct(cur.cpi * 100), plan: fmtPct(plan.cpi * 100), d: dPct(cur.cpi * 100, plan.cpi * 100), input: true },
+      { label: 'Contribution escalation', cur: fmtPct(cur.esc * 100), plan: fmtPct(plan.esc * 100), d: dPct(cur.esc * 100, plan.esc * 100), input: true },
+      { label: 'Income goal',
+        cur: curGoalSet ? fmtR(cur.incomeGoal) : 'Not set',
+        plan: planGoalSet ? fmtR(plan.incomeGoal) : 'Not set',
+        d: dMoney(curGoalSet ? cur.incomeGoal : 0, planGoalSet ? plan.incomeGoal : 0), input: true },
+      { label: 'Retirement age', cur: String(cur.retirementAge), plan: String(plan.retirementAge), d: dAge(cur.retirementAge, plan.retirementAge), input: true }
     ];
-  }
 
-  function exportBarOptions(){
+    // Goal progress (derived outcome, not an input lever).
+    var gpCur = computeGoalProgress(bline.p);
+    var gpPlan = computeGoalProgress(p);
+    if (gpCur || gpPlan){
+      var cPct = gpCur ? gpCur.pct : 0;
+      var pPct = gpPlan ? gpPlan.pct : 0;
+      rows.push({ label: 'Goal progress',
+        cur: gpCur ? cPct + '%' : '—',
+        plan: gpPlan ? pPct + '%' : '—',
+        d: (gpCur && gpPlan) ? dPP(cPct, pPct) : { t: '—', c: 'delta-neutral' },
+        input: false });
+    }
+
+    var changed = rows.filter(function(r){ return r.input && r.d.c !== 'delta-neutral'; }).map(function(r){ return r.label.toLowerCase(); });
+    var unchanged = rows.filter(function(r){ return r.input && r.d.c === 'delta-neutral'; }).map(function(r){ return r.label.toLowerCase(); });
+
+    var incomeDelta = Math.round(p.monthlyIncomeReal) - Math.round(bline.monthlyIncomeReal);
+    var deltaText;
+    if (incomeDelta === 0) deltaText = '(no change)';
+    else deltaText = '(' + (incomeDelta > 0 ? '+' : '−') + fmtR(Math.abs(incomeDelta)) + ')';
+
+    var resultNote;
+    if (incomeDelta > 0){
+      resultNote = 'The plan scenario shows projected starting income that is ' + fmtR(incomeDelta) + ' per month higher than the current projection.';
+    } else if (incomeDelta < 0){
+      resultNote = 'The plan scenario shows projected starting income that is ' + fmtR(Math.abs(incomeDelta)) + ' per month lower than the current projection.';
+    } else {
+      resultNote = 'The plan scenario shows the same projected starting income as the current projection.';
+    }
+
+    var changedNote = changed.length
+      ? joinList(changed) + ' changed between the two projections.'
+      : 'No inputs changed between the two projections.';
+    var unchangedNote = unchanged.length
+      ? joinList(unchanged) + (unchanged.length === 1 ? ' is unchanged.' : ' are unchanged.') + ' No attribution is shown unless the tool explicitly calculates it.'
+      : 'Every input changed between the two projections.';
+
     return {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false }
-      },
-      scales: {
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          ticks: { callback: function(v){ return fmtShort(v); }, font: { size: 11, family: 'JetBrains Mono, monospace' }, color: '#7a8292' },
-          grid: { color: 'rgba(0,0,0,0.06)' }
-        },
-        x: {
-          stacked: true,
-          ticks: { font: { size: 10, family: 'JetBrains Mono, monospace' }, color: '#7a8292', maxTicksLimit: 14, autoSkip: true },
-          grid: { display: false }
-        }
-      }
+      current: fmtR(bline.monthlyIncomeReal),
+      planned: fmtR(p.monthlyIncomeReal),
+      delta: deltaText,
+      rows: rows,
+      resultNote: resultNote,
+      changedNote: capitalise(changedNote),
+      unchangedNote: capitalise(unchangedNote)
     };
   }
 
-  function destroyExportCharts(){
-    Object.keys(exportCharts).forEach(function(k){
-      if (exportCharts[k]){ exportCharts[k].destroy(); exportCharts[k] = null; }
-    });
+  function joinList(arr){
+    if (arr.length === 1) return arr[0];
+    if (arr.length === 2) return arr[0] + ' and ' + arr[1];
+    return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+  }
+  function capitalise(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+  // ----- Populate deck slots + render chart ----------------------------
+  function populateReportDeck(d){
+    setBindText('cover-title', d.coverTitle);
+    setBindText('cover-date', d.date);
+    setBindText('cover-income', d.coverIncome);
+    setBindText('report-meta-names', d.namesLine);
+    setBindText('report-meta-date', d.date);
+
+    setBindText('assum-goal', d.assumptions.goal);
+    setBindText('assum-swr', d.assumptions.swr);
+    setBindText('assum-return', d.assumptions.ret);
+    setBindText('assum-cpi', d.assumptions.cpi);
+
+    setBindText('hh-a-name', d.household[0].name);
+    setBindText('hh-a-age', d.household[0].age);
+    setBindText('hh-a-ret', d.household[0].ret);
+    setBindText('hh-a-disc', d.household[0].disc);
+    setBindText('hh-a-retc', d.household[0].retc);
+    setBindText('hh-a-discc', d.household[0].discc);
+    setBindText('hh-b-name', d.household[1].name);
+    setBindText('hh-b-age', d.household[1].age);
+    setBindText('hh-b-ret', d.household[1].ret);
+    setBindText('hh-b-disc', d.household[1].disc);
+    setBindText('hh-b-retc', d.household[1].retc);
+    setBindText('hh-b-discc', d.household[1].discc);
+
+    setBindText('method-p1', d.method.p1);
+    setBindText('method-p2', d.method.p2);
+
+    if (d.scenario){
+      var s = d.scenario;
+      setBindText('scen-current', s.current);
+      setBindText('scen-plan', s.planned);
+      setBindText('scen-delta', s.delta);
+      var body = '';
+      for (var i = 0; i < s.rows.length; i++){
+        var r = s.rows[i];
+        body += '<tr><td>' + escapeHtml(r.label) + '</td><td>' + escapeHtml(r.cur)
+          + '</td><td>' + escapeHtml(r.plan) + '</td><td class="' + r.d.c + '">'
+          + escapeHtml(r.d.t) + '</td></tr>';
+      }
+      setBind('scen-table-body', body);
+      setBindText('scen-note-result', s.resultNote);
+      setBindText('scen-note-changed', s.changedNote);
+      setBindText('scen-note-unchanged', s.unchangedNote);
+    }
+
+    renderReportIncomeChart(d.chart);
   }
 
+  // ----- SVG income chart ----------------------------------------------
+  function createSvgEl(name, attrs, text){
+    var el = document.createElementNS('http://www.w3.org/2000/svg', name);
+    if (attrs){ for (var k in attrs){ if (attrs.hasOwnProperty(k)) el.setAttribute(k, attrs[k]); } }
+    if (text != null) el.textContent = text;
+    return el;
+  }
+  function niceChartMax(value){
+    var safe = Math.max(value, 1);
+    var magnitude = Math.pow(10, Math.floor(Math.log10(safe)));
+    var normalized = safe / magnitude;
+    var steps = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
+    var step = 10;
+    for (var i = 0; i < steps.length; i++){ if (normalized <= steps[i]){ step = steps[i]; break; } }
+    return step * magnitude;
+  }
+
+  function renderReportIncomeChart(data){
+    var svg = document.getElementById('report-income-chart');
+    if (!svg) return;
+    var points = data.points.slice().sort(function(a, b){ return a.age - b.age; });
+    if (!points.length) return;
+    var width = 940, height = 350;
+    var pad = { top: 22, right: 30, bottom: 38, left: 68 };
+    var chartW = width - pad.left - pad.right;
+    var chartH = height - pad.top - pad.bottom;
+    var minAge = points[0].age;
+    var maxAge = points[points.length - 1].age;
+    var ageSpan = (maxAge - minAge) || 1;
+    var selectedAge = data.selectedAge;
+    var selectedIncome = data.selectedIncome;
+    var goal = data.incomeGoal || 0;
+    var largest = Math.max(goal, selectedIncome);
+    for (var i = 0; i < points.length; i++) largest = Math.max(largest, points[i].income);
+    var maxIncome = niceChartMax(largest * 1.1);
+
+    function xForAge(age){ return pad.left + chartW * ((age - minAge) / ageSpan); }
+    function yForValue(v){ return pad.top + chartH * (1 - v / maxIncome); }
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // Horizontal gridlines + y labels (5 ticks).
+    for (var t = 0; t <= 4; t++){
+      var val = maxIncome * (1 - t / 4);
+      var y = yForValue(val);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: y, x2: width - pad.right, y2: y, stroke: 'rgba(255,255,255,0.16)', 'stroke-width': 1 }));
+      svg.appendChild(createSvgEl('text', { x: 14, y: y + 5, fill: 'rgba(255,255,255,0.65)', 'font-size': 15, 'font-weight': 600 }, fmtShort(val)));
+    }
+
+    // Income goal line (dashed) — only when a goal is set.
+    if (goal > 0){
+      var gy = yForValue(goal);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: gy, x2: width - pad.right, y2: gy, stroke: 'rgba(185,137,54,0.9)', 'stroke-width': 2, 'stroke-dasharray': '8 6' }));
+      svg.appendChild(createSvgEl('text', { x: width - pad.right - 6, y: gy - 8, fill: 'rgba(255,255,255,0.70)', 'font-size': 15, 'font-weight': 700, 'text-anchor': 'end' }, 'Income goal'));
+    }
+
+    // Income line.
+    var dPath = '';
+    for (var j = 0; j < points.length; j++){
+      dPath += (j === 0 ? 'M' : 'L') + ' ' + xForAge(points[j].age).toFixed(2) + ' ' + yForValue(points[j].income).toFixed(2) + ' ';
+    }
+    svg.appendChild(createSvgEl('path', { d: dPath.trim(), fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+
+    // Vertical marker + dot at the selected retirement age.
+    var sx = xForAge(selectedAge);
+    var sy = yForValue(selectedIncome);
+    svg.appendChild(createSvgEl('line', { x1: sx, y1: pad.top, x2: sx, y2: height - pad.bottom, stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 1.5 }));
+    svg.appendChild(createSvgEl('circle', { cx: sx, cy: sy, r: 6, fill: '#b98936' }));
+
+    // Callout box (flips left when near the right edge).
+    var calloutW = 196, calloutH = 56;
+    var cx = (sx + calloutW + 18 > width - pad.right) ? sx - calloutW - 18 : sx + 14;
+    var cy = Math.max(pad.top + 4, Math.min(sy - 40, height - pad.bottom - calloutH - 4));
+    svg.appendChild(createSvgEl('rect', { x: cx, y: cy, width: calloutW, height: calloutH, rx: 8, fill: '#ffffff' }));
+    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 22, fill: '#323E5D', 'font-size': 14, 'font-weight': 750 }, 'Age ' + selectedAge));
+    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 46, fill: '#323E5D', 'font-size': 18, 'font-weight': 850 }, fmtR(selectedIncome) + ' /mo'));
+
+    // X-axis age labels (about 6 evenly spaced).
+    var labelStep = Math.max(1, Math.ceil(points.length / 6));
+    for (var k = 0; k < points.length; k++){
+      var show = (k === 0 || k === points.length - 1 || k % labelStep === 0);
+      if (!show) continue;
+      svg.appendChild(createSvgEl('text', { x: xForAge(points[k].age), y: height - 12, fill: 'rgba(255,255,255,0.65)', 'font-size': 15, 'font-weight': 600, 'text-anchor': 'middle' }, points[k].age));
+    }
+  }
+
+  // ----- Export-mode plumbing + modal ----------------------------------
   function ensureExportPageSheet(){
     var sheet = document.getElementById('export-page-sheet');
     if (sheet) return sheet;
@@ -6112,24 +5071,41 @@
     document.head.appendChild(sheet);
     return sheet;
   }
-
   function removeExportPageSheet(){
     var sheet = document.getElementById('export-page-sheet');
     if (sheet && sheet.parentNode) sheet.parentNode.removeChild(sheet);
   }
 
+  function openReportModal(){
+    var m = document.getElementById('report-scenario-modal');
+    if (m) m.setAttribute('data-open', 'true');
+  }
+  function closeReportModal(){
+    var m = document.getElementById('report-scenario-modal');
+    if (m) m.setAttribute('data-open', 'false');
+  }
+
+  // Entry point (wired to #btn-export-report). If a baseline is locked, ask
+  // whether to include the scenario page; otherwise export the 3-page report.
   function startExport(){
     if (!lastProjection) return;
+    if (baseline) openReportModal();
+    else runReportExport(false);
+  }
+
+  function runReportExport(includeScenario){
+    if (!lastProjection) return;
+    closeReportModal();
     ensureExportPageSheet();
     var root = document.getElementById('calc-root');
     root.setAttribute('data-export-mode', 'true');
     document.documentElement.classList.add('export-printing');
-    // Populate slots first, so the deck is visible at correct size,
-    // then build charts against the visible canvases.
-    buildExportDeck(lastProjection, baseline, eventsStore, spouseNames);
-    buildExportCharts(lastProjection, baseline);
-    // Defer print() by two rAFs so layout + chart rendering has
-    // flushed before the browser snapshots for the print dialog.
+    var scenPage = document.querySelector('.report-deck .scenario-page');
+    if (scenPage) scenPage.setAttribute('data-enabled', (includeScenario && baseline) ? 'true' : 'false');
+    // Populate slots + render the SVG chart against the now-visible deck.
+    populateReportDeck(buildReportData(lastProjection, baseline, eventsStore, spouseNames));
+    renumberReportPages();
+    // Defer print() by two rAFs so layout has flushed before the snapshot.
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){ window.print(); });
     });
@@ -6140,8 +5116,16 @@
     root.removeAttribute('data-export-mode');
     document.documentElement.classList.remove('export-printing');
     removeExportPageSheet();
-    destroyExportCharts();
   }
+
+  (function wireReportModal(){
+    var cancel = document.getElementById('report-modal-cancel');
+    var without = document.getElementById('report-export-without');
+    var withScen = document.getElementById('report-export-with');
+    if (cancel) cancel.addEventListener('click', closeReportModal);
+    if (without) without.addEventListener('click', function(){ runReportExport(false); });
+    if (withScen) withScen.addEventListener('click', function(){ runReportExport(true); });
+  })();
 
   // ===== Print handlers — accordions forced open, charts resized =====
   var accordionStateBeforePrint = null;
