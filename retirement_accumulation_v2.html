@@ -873,6 +873,29 @@
     color: var(--mute); font-weight: 600;
   }
   .recap-assump .val { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .plan-recap-events {
+    border-top: 1px solid var(--hairline);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .plan-recap-events-head {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--mute); font-weight: 600; margin-bottom: 8px;
+  }
+  .plan-recap-events-list { display: grid; gap: 6px; }
+  .plan-recap-event-row {
+    display: grid;
+    grid-template-columns: 72px 80px 1fr 112px;
+    gap: 10px; align-items: baseline;
+    color: var(--mute); font-size: 12px;
+  }
+  .plan-recap-event-row .event-kind { color: var(--ink-2); font-weight: 600; }
+  .plan-recap-event-row .event-amount {
+    color: var(--ink); font-family: var(--mono); font-weight: 500;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .plan-recap-events-empty,
+  .plan-recap-events-more { color: var(--mute); font-size: 12px; font-style: italic; }
 
   /* ─── Compare grid (State 3) ──────────────── */
   .compare {
@@ -1432,6 +1455,11 @@
   .report-deck .projection-page-body {
     display: grid; grid-template-rows: 108mm 1fr; gap: 12px; height: 100%; min-height: 0;
   }
+  /* When a capital-events strip is present, shrink the chart and add a bottom
+     auto track for the strip. Without events the layout above is unchanged. */
+  .report-deck .projection-page-body.has-events {
+    grid-template-rows: 92mm minmax(0, 1fr) auto; gap: 9px;
+  }
   .report-deck .income-chart-panel {
     background: var(--r-brand); border-radius: var(--r-radius); color: #fff;
     overflow: hidden; display: grid; grid-template-rows: auto 1fr;
@@ -1499,6 +1527,43 @@
   /* Reset any width inherited from the global .summary-table rules. */
   .report-deck .summary-table td:first-child { width: auto; }
   .report-deck .summary-table tr:last-child td { border-bottom: 0; }
+
+  /* ---------- Page 2 · Capital-events strip ---------- */
+  .report-deck .report-events-card {
+    display: grid; grid-template-columns: 48mm minmax(0, 1fr);
+    align-items: center; gap: 10px; min-height: 17mm; padding: 8px 13px;
+  }
+  .report-deck .report-events-inline-head {
+    border-right: 1px solid var(--r-line); padding-right: 10px;
+  }
+  .report-deck .report-events-inline-head h2 {
+    margin: 0 0 2px; font-size: 12px; line-height: 1.2;
+  }
+  .report-deck .report-events-inline-head span {
+    color: var(--r-muted); font-size: 9.5px; line-height: 1.25; white-space: nowrap;
+  }
+  .report-deck .report-events-inline-list {
+    display: flex; align-items: center; gap: 0; min-width: 0; overflow: visible;
+  }
+  .report-deck .report-event-chip {
+    display: inline-flex; gap: 6px; align-items: baseline;
+    color: var(--r-muted); font-size: 10.5px; white-space: nowrap;
+  }
+  .report-deck .report-event-chip:not(:last-child)::after {
+    content: "\2726"; color: var(--r-gold); font-size: 7px; line-height: 1;
+    margin: 0 9px 0 3px; transform: translateY(-1px);
+  }
+  .report-deck .report-event-chip .event-kind { color: var(--r-ink-2); font-weight: 760; }
+  .report-deck .report-event-chip .event-kind-inflow { color: var(--r-green); }
+  .report-deck .report-event-chip .event-kind-outflow { color: var(--r-red); }
+  .report-deck .report-event-chip .event-amount {
+    color: var(--r-ink); font-family: var(--mono); font-weight: 760; white-space: nowrap;
+  }
+  .report-deck .report-event-chip .event-basis { color: var(--r-muted); font-size: 10px; }
+  .report-deck .report-events-inline-list .report-events-empty,
+  .report-deck .report-events-more {
+    color: var(--r-muted); font-size: 10.5px; font-style: italic;
+  }
   .report-deck .summary-table td:last-child {
     text-align: right; color: var(--r-ink); font-family: var(--mono);
     font-weight: 760; font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -2213,6 +2278,12 @@
         <div class="recap-assump"><span class="label">Assumed inflation</span><span class="val num" id="recap-cpi">—</span></div>
         <div class="recap-assump"><span class="label">Escalation</span><span class="val num" id="recap-esc">—</span></div>
       </div>
+      <div class="plan-recap-events" id="recap-events">
+        <div class="plan-recap-events-head">Capital events</div>
+        <div class="plan-recap-events-list" id="recap-events-list">
+          <div class="plan-recap-events-empty">No capital events modelled.</div>
+        </div>
+      </div>
     </div>
 
     <div class="canvas-foot">
@@ -2434,6 +2505,15 @@
                 </div>
               </div>
             </article>
+          </section>
+          <section class="white-card report-events-card" id="report-capital-events">
+            <div class="report-events-inline-head">
+              <h2>Capital events</h2>
+              <span>Applied to discretionary capital</span>
+            </div>
+            <div class="report-events-inline-list" data-bind="report-events-list">
+              <div class="report-events-empty">No capital events modelled.</div>
+            </div>
           </section>
         </div>
       </div>
@@ -3134,6 +3214,13 @@
     set('recap-return', fmtPct(i.rNom * 100));
     set('recap-cpi', fmtPct(i.cpi * 100));
     set('recap-esc', fmtPct(i.esc * 100));
+    var recapEventsList = document.getElementById('recap-events-list');
+    if (recapEventsList){
+      recapEventsList.innerHTML = capitalEventsHtml(
+        capitalEventDisplayRows(i.events || []),
+        'plan-recap-event-row', 'plan-recap-events-empty', 'plan-recap-events-more'
+      );
+    }
   }
 
   // Closing-the-gap card. Always shows the contribution-leverage line when the
@@ -4770,6 +4857,57 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Shared display adapter for capital events. Turns stored events into at most
+  // three display rows for both the on-screen recap card and the PDF report
+  // (formatting only, no math). Extra events beyond three are counted.
+  function capitalEventDisplayRows(events){
+    var sourceEvents = Array.isArray(events) ? events : [];
+    var rows = [];
+    for (var i = 0; i < sourceEvents.length && rows.length < 3; i += 1){
+      var event = sourceEvents[i];
+      if (!event) continue;
+      rows.push({
+        age: 'Age ' + event.age,
+        kind: event.kind === 'outflow' ? 'Outflow' : 'Inflow',
+        amount: fmtR(event.amount),
+        basis: event.todaysMoney ? "Today's money" : 'Future rands'
+      });
+    }
+    return {
+      rows: rows,
+      extraCount: Math.max(0, sourceEvents.length - rows.length),
+      hasEvents: sourceEvents.length > 0
+    };
+  }
+
+  // Render a capital-events display (from capitalEventDisplayRows) to HTML.
+  // Class names are passed in so the same helper serves the screen recap rows
+  // and the report chips.
+  function capitalEventsHtml(eventDisplay, rowClassName, emptyClassName, moreClassName){
+    var display = eventDisplay || { rows: [], extraCount: 0, hasEvents: false };
+    if (!display.hasEvents){
+      return '<div class="' + emptyClassName + '">No capital events modelled.</div>';
+    }
+    var html = '';
+    for (var i = 0; i < display.rows.length; i += 1){
+      var row = display.rows[i];
+      var kindClass = row.kind === 'Outflow' ? ' event-kind-outflow' : ' event-kind-inflow';
+      html += '<div class="' + rowClassName + '">'
+        + '<span>' + escapeHtml(row.age) + '</span>'
+        + '<span class="event-kind' + kindClass + '">' + escapeHtml(row.kind) + '</span>'
+        + '<span class="event-amount">' + escapeHtml(row.amount) + '</span>'
+        + '<span class="event-basis">' + escapeHtml(row.basis) + '</span>'
+        + '</div>';
+    }
+    if (display.extraCount > 0){
+      html += '<div class="' + moreClassName + '">'
+        + display.extraCount + ' additional '
+        + (display.extraCount === 1 ? 'event' : 'events')
+        + ' modelled.</div>';
+    }
+    return html;
+  }
+
   // Walk visible report pages (skip data-enabled="false"); write NN / TT counts.
   function renumberReportPages(){
     var pages = document.querySelectorAll('.report-deck .report-page');
@@ -4840,14 +4978,20 @@
       incomeGoal: goalSet ? inputs.incomeGoal : 0
     };
 
+    var capitalEvents = capitalEventDisplayRows(inputs.events || []);
+    var eventsMethodNote = capitalEvents.hasEvents
+      ? 'Capital events are applied at year-end to the discretionary portfolio. Inflows add '
+        + 'to discretionary capital; outflows are capped at available discretionary capital '
+        + 'and do not draw from retirement funds.'
+      : 'No capital events are modelled in this projection.';
+
     var method = {
       p1: 'Contributions are modelled monthly and escalated annually at the stated contribution '
         + 'escalation rate, shown here as ' + fmtPct(inputs.esc * 100) + ' p.a. Retirement and '
         + 'discretionary balances compound at the selected nominal return, shown here as '
         + fmtPct(inputs.rNom * 100) + ' p.a.',
       p2: 'Values marked as today\'s money are deflated using the CPI assumption, shown here as '
-        + fmtPct(inputs.cpi * 100) + ' p.a. Capital events are included where they have been '
-        + 'captured in the calculator.'
+        + fmtPct(inputs.cpi * 100) + ' p.a. ' + eventsMethodNote
     };
 
     // Scenario page always compares the locked baseline (current column)
@@ -4859,7 +5003,8 @@
       namesLine: namesLine, date: dateStr,
       coverTitle: coverTitle, coverIncome: coverIncome,
       assumptions: assumptions, household: household,
-      chart: chart, method: method, scenario: scenario
+      chart: chart, method: method, scenario: scenario,
+      capitalEvents: capitalEvents
     };
   }
 
@@ -5018,6 +5163,15 @@
       setBindText('scen-note-changed', s.changedNote);
       setBindText('scen-note-unchanged', s.unchangedNote);
     }
+
+    var reportCapitalEvents = document.getElementById('report-capital-events');
+    var projectionBody = document.querySelector('.report-deck .projection-page-body');
+    var hasEvents = !!(d.capitalEvents && d.capitalEvents.hasEvents);
+    if (reportCapitalEvents) reportCapitalEvents.style.display = hasEvents ? '' : 'none';
+    if (projectionBody) projectionBody.classList.toggle('has-events', hasEvents);
+    setBind('report-events-list', capitalEventsHtml(
+      d.capitalEvents, 'report-event-chip', 'report-events-empty', 'report-events-more'
+    ));
 
     renderReportIncomeChart(d.chart);
   }
