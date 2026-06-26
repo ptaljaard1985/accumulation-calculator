@@ -4550,7 +4550,46 @@
     updateBaselineControls();
     refresh();
   }
+  // Pure: maps a locked baseline.inputs object back onto the canonical input
+  // ids, bucketed by how each field must be written — `money` fields go through
+  // setHpFormatted (space-separated thousands, matching the hp-* blur handler),
+  // `plain` fields are written straight to .value. No DOM access and no
+  // locale-dependent formatting, so the Node test harness can exercise it.
+  function baselineRestoreFields(bi){
+    return {
+      money: {
+        'hp-ret-A': bi.retA, 'hp-ret-B': bi.retB,
+        'hp-disc-A': bi.discA, 'hp-disc-B': bi.discB,
+        'hp-ret-contrib-A': bi.contribRetA, 'hp-ret-contrib-B': bi.contribRetB,
+        'hp-disc-contrib-A': bi.contribDiscA, 'hp-disc-contrib-B': bi.contribDiscB,
+        'income-goal': bi.incomeGoal
+      },
+      plain: {
+        'hp-age-A': bi.ageA, 'hp-age-B': bi.ageB,
+        'return': bi.rNom * 100, 'cpi': bi.cpi * 100, 'esc': bi.esc * 100,
+        'retirement-age': bi.retirementAge
+      }
+    };
+  }
+
   function clearBaseline(){
+    // True revert. The scenario levers wrote their adjustments back onto the
+    // canonical inputs as they were dragged (applyScenarioContrib/Return/RetAge),
+    // so the live DOM now holds the scenario, not the locked plan. Restore
+    // baseline.inputs onto the inputs BEFORE nulling the baseline, otherwise
+    // refresh() -> readInputs() reads the adjusted DOM and State 2 shows the
+    // scenario instead of the plan that was locked. (Events are never touched by
+    // the levers, so eventsStore is left alone.)
+    if (baseline && baseline.inputs){
+      var bi = baseline.inputs;
+      var f = baselineRestoreFields(bi);
+      Object.keys(f.money).forEach(function(id){ setHpFormatted(id, f.money[id]); });
+      Object.keys(f.plain).forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.value = f.plain[id];
+      });
+      setAnchor(bi.anchor);   // restores anchor var + youngest/oldest toggle
+    }
     baseline = null;
     scenarioAnchors = null;
     showScenarioRow(false);

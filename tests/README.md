@@ -31,9 +31,11 @@ Expected output: `47 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 50 tests.
+Location: `tests/js/`. 54 tests.
 
-These exercise the actual JS inside `retirement_accumulation.html` by extracting `project()` via brace-matching and running it under Node. No Jest dependency — just `node run.js` and the built-in `assert` module.
+These exercise the actual JS inside `retirement_accumulation_v2.html` (the primary file — see CLAUDE.md) by extracting pure functions (`project()`, `swrForAge()`, `incomeCurveData()`, `solveGapRoutes()`, `baselineRestoreFields()`, etc.) via brace-matching and running them under Node, plus regex assertions against the raw HTML/inline-script string for markup + wiring. No Jest dependency — just `node run.js` and the built-in `assert` module. The harness has no DOM, so only DOM-free logic is directly callable; DOM-bound render functions are checked structurally (markup ids present, function defined, called in `refresh()`).
+
+Recent additions: `baselineRestoreFields` (Clear-baseline true-revert map + ordering), the "Current plan" recap card wiring, and the reconciliation-flow year table columns.
 
 The point is **real-code validation**. Anything the JS actually does is what these tests exercise. Scope issues, closure bugs, typos — these show up here.
 
@@ -46,7 +48,7 @@ node run.js
 
 Exit code 0 = all pass. Any failure prints a stack trace and exits non-zero.
 
-Expected output: `50 passed, 0 failed`.
+Expected output: `54 passed, 0 failed`.
 
 ## When to add a test
 
