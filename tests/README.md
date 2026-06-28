@@ -31,7 +31,7 @@ Expected output: `47 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 66 tests.
+Location: `tests/js/`. 72 tests.
 
 These exercise the actual JS inside `retirement_accumulation_v2.html` (the primary file — see CLAUDE.md) by extracting pure functions (`project()`, `swrForAge()`, `incomeCurveData()`, `solveGapRoutes()`, `baselineRestoreFields()`, etc.) via brace-matching and running them under Node, plus regex assertions against the raw HTML/inline-script string for markup + wiring. No Jest dependency — just `node run.js` and the built-in `assert` module. The harness has no DOM, so only DOM-free logic is directly callable; DOM-bound render functions are checked structurally (markup ids present, function defined, called in `refresh()`).
 
