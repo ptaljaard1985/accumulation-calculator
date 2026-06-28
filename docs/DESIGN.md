@@ -209,9 +209,13 @@ The old 18px navy thumb / 4px track is gone.
 
 ### Capital events list
 
-Rendered inside the drawer's column 2. One row per event, 4-column grid: kind dropdown, age input, a flex cell holding `R`-prefix amount input + today's-money checkbox + year label, delete button. The year label reads `y+5 · 2031` (offset + calendar year). Head row uses 10px uppercase mute labels.
+One event row is a 5-column grid (Session 24): an optional **name** input (left-aligned sans, `Name (optional)` placeholder, max 20 chars), kind dropdown, age input, a flex cell holding `R`-prefix amount input + today's-money checkbox + year label, and a delete button. The year label reads `y+5 · 2031` (offset + calendar year). Head row uses 10px uppercase mute labels. Default new event: inflow of R500k at reference-age + 10, in today's money, no name.
 
-Adding an event auto-opens the drawer if it's closed. Default new event: inflow of R500k at reference-age + 10, in today's money.
+**Where it renders (Session 24).** The editor row renders in two full-width surfaces: the State-1 `.empty-events-panel` inline editor, and the **capital-events modal** (`#events-modal`). The modal clones the report-modal vocabulary (`.report-modal-backdrop` / `data-open`, dismissed by backdrop click or the Done button) but is wider — `width: min(820px, 100%)` — so every field has room. It is the only event editor reachable from States 2/3.
+
+The **Edit-info drawer** no longer holds an inline editor (its narrow column II made entry cramped). Column IV now shows a compact **read-only summary** (`#drawer-events-summary`, the same `Name (Inflow) · amount` rows the recap card uses) plus a **"Manage capital events"** button that opens the modal. The drawer summary repaints when the modal's Done button is clicked.
+
+**Name in summaries.** On the recap card and the report Page-2 strip, a named event reads `<Name> (Inflow)` / `<Name> (Outflow)` — the name in ink, the parenthesised kind keeping its green/red inflow/outflow colour. An unnamed event reads the bare `Inflow` / `Outflow` with no parens, identical to pre-Session-24 output.
 
 ### Delta chip
 

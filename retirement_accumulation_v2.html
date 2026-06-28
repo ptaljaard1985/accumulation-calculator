@@ -885,10 +885,11 @@
   .plan-recap-events-list { display: grid; gap: 6px; }
   .plan-recap-event-row {
     display: grid;
-    grid-template-columns: 72px 80px 1fr 112px;
+    grid-template-columns: 56px 1fr auto 104px;
     gap: 10px; align-items: baseline;
     color: var(--mute); font-size: 12px;
   }
+  .plan-recap-event-row .event-name { color: var(--ink); font-weight: 600; }
   .plan-recap-event-row .event-kind { color: var(--ink-2); font-weight: 600; }
   .plan-recap-event-row .event-amount {
     color: var(--ink); font-family: var(--mono); font-weight: 500;
@@ -1094,7 +1095,7 @@
   }
   .event-row {
     display: grid;
-    grid-template-columns: 110px 72px 1fr 28px;
+    grid-template-columns: 1.4fr 120px 64px 1.6fr 28px;
     gap: 8px;
     align-items: center;
     padding: 6px 0;
@@ -1137,6 +1138,12 @@
     font-variant-numeric: tabular-nums;
   }
   .event-row .event-input-wrap input:focus { outline: none; }
+  .event-row .event-name-wrap input {
+    font-family: var(--sans);
+    text-align: left;
+    font-variant-numeric: normal;
+  }
+  .event-row .event-name-wrap input::placeholder { color: var(--faint); }
   .event-row .event-cell {
     display: flex; align-items: center; gap: 8px;
     font-size: 11px; color: var(--mute);
@@ -1553,6 +1560,7 @@
     content: "\2726"; color: var(--r-gold); font-size: 7px; line-height: 1;
     margin: 0 9px 0 3px; transform: translateY(-1px);
   }
+  .report-deck .report-event-chip .event-name { color: var(--r-ink); font-weight: 760; }
   .report-deck .report-event-chip .event-kind { color: var(--r-ink-2); font-weight: 760; }
   .report-deck .report-event-chip .event-kind-inflow { color: var(--r-green); }
   .report-deck .report-event-chip .event-kind-outflow { color: var(--r-red); }
@@ -1657,6 +1665,9 @@
     box-shadow: 0 22px 60px rgba(16, 24, 40, 0.26);
     border: 1px solid #d9dfe8; padding: 22px; font-family: var(--sans);
   }
+  .report-modal.events-modal { width: min(820px, 100%); }
+  .report-modal.events-modal .events-list { margin: 14px 0 0; }
+  .report-modal.events-modal .add-btn { margin-top: 10px; }
   .report-modal h2 { margin: 0 0 8px; font-size: 19px; color: #101828; }
   .report-modal p { margin: 0; color: #667085; }
   .report-modal-actions {
@@ -2109,8 +2120,10 @@
           <span class="plan-drawer-meta" id="drawer-events-meta">none</span>
         </div>
         <div class="event-helper-note">One-off inflows or outflows. Ages are anchored to <span class="events-ref-spouse">Spouse A</span>'s age.</div>
-        <div class="events-list" id="events-list"></div>
-        <button class="add-btn" id="add-event-btn" type="button">+ Add an event</button>
+        <div class="plan-recap-events-list" id="drawer-events-summary">
+          <div class="plan-recap-events-empty">No capital events modelled.</div>
+        </div>
+        <button class="add-btn" id="drawer-manage-events-btn" type="button">Manage capital events</button>
 
         <div class="plan-drawer-head" style="margin-top: 24px;">
           <span class="rom">V.</span> Household goal
@@ -2634,6 +2647,19 @@
     </div>
   </div>
 
+  <!-- Capital-events editor (roomy alternative to the cramped drawer column) -->
+  <div class="report-modal-backdrop events-modal-backdrop" id="events-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="events-modal-title">
+    <div class="report-modal events-modal">
+      <h2 id="events-modal-title">Capital events</h2>
+      <p>One-off inflows or outflows. Ages are anchored to <span class="events-ref-spouse">Spouse A</span>'s age.</p>
+      <div class="events-list" id="modal-events-list"></div>
+      <button class="add-btn" id="modal-add-event-btn" type="button">+ Add an event</button>
+      <div class="report-modal-actions">
+        <button class="btn primary" id="events-modal-done" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="footer-meta">
     Simple Wealth &nbsp;·&nbsp; Retirement Accumulation Projection &nbsp;·&nbsp; <span id="footer-date">—</span>
   </div>
@@ -2811,6 +2837,7 @@
     var defaultAge = currentAnchorSpouseAge + 10;
     return {
       id: 'ev-' + (eventSeq++),
+      name: '',
       age: defaultAge,
       amount: 500000,
       todaysMoney: true,
@@ -2823,6 +2850,7 @@
       html = '<div class="events-empty">No capital events yet.</div>';
     } else {
       html = '<div class="event-row head">' +
+        '<span>Name</span>' +
         '<span>Kind</span>' +
         '<span>Age</span>' +
         '<span>Amount · basis · year</span>' +
@@ -2832,7 +2860,7 @@
         html += buildEventRow(eventsStore[i]);
       }
     }
-    var ids = ['events-list', 'empty-events-list'];
+    var ids = ['empty-events-list', 'modal-events-list'];
     for (var j = 0; j < ids.length; j++){
       var list = document.getElementById(ids[j]);
       if (!list) continue;
@@ -2844,6 +2872,11 @@
         list.addEventListener('click', onEventClick);
       }
     }
+    // Drawer shows a compact read-only summary (editing happens in the modal).
+    var summary = document.getElementById('drawer-events-summary');
+    if (summary) summary.innerHTML = capitalEventsHtml(
+      capitalEventDisplayRows(eventsStore),
+      'plan-recap-event-row', 'plan-recap-events-empty', 'plan-recap-events-more');
   }
   function buildEventRow(ev){
     var currentYear = new Date().getFullYear();
@@ -2853,8 +2886,10 @@
     var yearFromNow = ev.age - refAge;
     var calYear = currentYear + Math.max(0, yearFromNow);
     var amountStr = Math.round(ev.amount).toLocaleString('en-ZA').replace(/,/g, ' ');
+    var nameStr = escapeHtml(ev.name || '');
     return (
       '<div class="event-row" data-id="' + ev.id + '">' +
+        '<div class="event-input-wrap event-name-wrap"><input type="text" data-field="name" maxlength="20" value="' + nameStr + '" placeholder="Name (optional)"></div>' +
         '<select data-field="kind">' +
           '<option value="inflow"'  + (ev.kind === 'inflow'  ? ' selected' : '') + '>Inflow (+)</option>' +
           '<option value="outflow"' + (ev.kind === 'outflow' ? ' selected' : '') + '>Outflow (−)</option>' +
@@ -2878,7 +2913,8 @@
     var ev = eventsStore.find(function(x){ return x.id === id; });
     if (!ev) return;
     var field = t.dataset.field;
-    if (field === 'kind') ev.kind = t.value;
+    if (field === 'name') ev.name = (t.value || '').slice(0, 20);
+    else if (field === 'kind') ev.kind = t.value;
     else if (field === 'age') {
       var n = parseInt(t.value, 10);
       if (isFinite(n)) ev.age = n;
@@ -2912,6 +2948,7 @@
   function readEvents(){
     return eventsStore.map(function(ev){
       return {
+        name: ev.name || '',
         age: ev.age,
         amount: ev.amount,
         todaysMoney: ev.todaysMoney,
@@ -4867,6 +4904,7 @@
       var event = sourceEvents[i];
       if (!event) continue;
       rows.push({
+        name: (event.name || '').slice(0, 20),
         age: 'Age ' + event.age,
         kind: event.kind === 'outflow' ? 'Outflow' : 'Inflow',
         amount: fmtR(event.amount),
@@ -4892,9 +4930,13 @@
     for (var i = 0; i < display.rows.length; i += 1){
       var row = display.rows[i];
       var kindClass = row.kind === 'Outflow' ? ' event-kind-outflow' : ' event-kind-inflow';
+      var label = row.name
+        ? '<span class="event-name">' + escapeHtml(row.name) + '</span> '
+          + '<span class="event-kind' + kindClass + '">(' + escapeHtml(row.kind) + ')</span>'
+        : '<span class="event-kind' + kindClass + '">' + escapeHtml(row.kind) + '</span>';
       html += '<div class="' + rowClassName + '">'
         + '<span>' + escapeHtml(row.age) + '</span>'
-        + '<span class="event-kind' + kindClass + '">' + escapeHtml(row.kind) + '</span>'
+        + '<span class="event-label">' + label + '</span>'
         + '<span class="event-amount">' + escapeHtml(row.amount) + '</span>'
         + '<span class="event-basis">' + escapeHtml(row.basis) + '</span>'
         + '</div>';
@@ -5285,6 +5327,14 @@
     var m = document.getElementById('report-scenario-modal');
     if (m) m.setAttribute('data-open', 'false');
   }
+  function openEventsModal(){
+    var m = document.getElementById('events-modal');
+    if (m) m.setAttribute('data-open', 'true');
+  }
+  function closeEventsModal(){
+    var m = document.getElementById('events-modal');
+    if (m) m.setAttribute('data-open', 'false');
+  }
 
   // Entry point (wired to #btn-export-report). If a baseline is locked, ask
   // whether to include the scenario page; otherwise export the 3-page report.
@@ -5431,15 +5481,20 @@
     window.scrollTo(0, 0);
   });
   document.getElementById('btn-load-sample').addEventListener('click', loadSampleData);
-  document.getElementById('add-event-btn').addEventListener('click', function(){
+  // Drawer column II carries only a read-only summary; editing happens in the
+  // roomy modal where each field has horizontal space.
+  document.getElementById('drawer-manage-events-btn').addEventListener('click', openEventsModal);
+  document.getElementById('modal-add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());
     renderEvents();
-    // Ensure the drawer is open so the adviser sees the new row
-    var bar = document.getElementById('plan-bar');
-    if (bar && bar.getAttribute('data-open') !== 'true'){
-      document.getElementById('btn-edit-plan').click();
-    }
     refresh();
+  });
+  document.getElementById('events-modal-done').addEventListener('click', function(){
+    renderEvents();   // repaint the drawer summary with any name edits
+    closeEventsModal();
+  });
+  document.getElementById('events-modal').addEventListener('click', function(e){
+    if (e.target === this) closeEventsModal();   // backdrop click dismisses
   });
   document.getElementById('empty-add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());
