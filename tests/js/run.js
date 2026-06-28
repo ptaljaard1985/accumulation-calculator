@@ -556,10 +556,11 @@ check('state-1 events: empty-events-list container + add-event button exist', ()
     '.empty-events-panel wrapper missing');
 });
 
-check('state-1 events: renderEvents paints both #events-list and #empty-events-list', () => {
-  // The refactored renderEvents iterates an array of container IDs.
-  assert.ok(/\[['"]events-list['"]\s*,\s*['"]empty-events-list['"]\]/.test(inline),
-    'renderEvents should iterate [events-list, empty-events-list]');
+check('events: renderEvents paints #empty-events-list and #modal-events-list', () => {
+  // Drawer inline list was replaced by a summary + modal; renderEvents now
+  // paints the State-1 inline editor and the modal editor.
+  assert.ok(/\[['"]empty-events-list['"]\s*,\s*['"]modal-events-list['"]\]/.test(inline),
+    'renderEvents should iterate [empty-events-list, modal-events-list]');
 });
 
 check('state-1 events: events-ref-spouse is a class shared by drawer + State 1', () => {
@@ -583,6 +584,42 @@ check('state-1 events: #empty-add-event-btn click pushes onto eventsStore', () =
     'handler should call renderEvents()');
   assert.ok(/refresh\(\)/.test(m[1]),
     'handler should call refresh()');
+});
+
+// ============================================================
+// Capital events — name field + roomy editor modal
+// ============================================================
+check('events: newEvent and readEvents carry a name field', () => {
+  const ne = extractFn(inline, 'newEvent');
+  assert.ok(/name:\s*''/.test(ne), "newEvent should default name: ''");
+  const re = extractFn(inline, 'readEvents');
+  assert.ok(/name:\s*ev\.name/.test(re), 'readEvents should expose ev.name (so it reaches p.inputs.events)');
+});
+
+check('events: buildEventRow emits a name input capped at 20 chars', () => {
+  const src = extractFn(inline, 'buildEventRow');
+  assert.ok(/data-field="name"/.test(src), 'name input missing from event row');
+  assert.ok(/maxlength="20"/.test(src), 'name input should cap at maxlength="20"');
+});
+
+check('events: drawer shows a summary + manage button, no inline editor', () => {
+  assert.ok(/id="drawer-events-summary"/.test(html), '#drawer-events-summary missing');
+  assert.ok(/id="drawer-manage-events-btn"/.test(html), '#drawer-manage-events-btn missing');
+  assert.ok(!/id="events-list"/.test(html), 'old drawer #events-list should be gone');
+  assert.ok(!/id="add-event-btn"/.test(html), 'old drawer #add-event-btn should be gone');
+});
+
+check('events: roomy editor modal markup + wiring present', () => {
+  assert.ok(/id="events-modal"/.test(html), '#events-modal backdrop missing');
+  assert.ok(/id="modal-events-list"/.test(html), '#modal-events-list editor missing');
+  assert.ok(/id="modal-add-event-btn"/.test(html), '#modal-add-event-btn missing');
+  assert.ok(/id="events-modal-done"/.test(html), '#events-modal-done missing');
+  // Manage button opens the modal; Done repaints the drawer summary.
+  assert.ok(/getElementById\('drawer-manage-events-btn'\)\.addEventListener\('click',\s*openEventsModal\)/.test(inline),
+    'manage button should open the events modal');
+  const done = inline.match(/getElementById\('events-modal-done'\)\.addEventListener\('click',\s*function\s*\(\)\s*\{([\s\S]*?)\}\)/);
+  assert.ok(done && /renderEvents\(\)/.test(done[1]) && /closeEventsModal\(\)/.test(done[1]),
+    'Done should renderEvents() then closeEventsModal()');
 });
 
 check('goal colors: on-track uses --pos, behind uses --neg', () => {
@@ -926,9 +963,9 @@ check('capitalEventDisplayRows: empty / null input', () => {
   assert.ok(b.hasEvents === false && b.rows.length === 0, 'null should be tolerated');
 });
 
-check('capitalEventDisplayRows: maps fields and caps at 3 rows', () => {
+check('capitalEventDisplayRows: maps fields (incl. name) and caps at 3 rows', () => {
   const d = capitalRowsFn([
-    { age: 55, amount: 500000, todaysMoney: true, kind: 'inflow' },
+    { name: 'Inheritance', age: 55, amount: 500000, todaysMoney: true, kind: 'inflow' },
     { age: 60, amount: 250000, todaysMoney: false, kind: 'outflow' },
     { age: 62, amount: 100000, todaysMoney: true, kind: 'inflow' },
     { age: 64, amount: 100000, todaysMoney: true, kind: 'inflow' },
@@ -938,11 +975,20 @@ check('capitalEventDisplayRows: maps fields and caps at 3 rows', () => {
   assert.strictEqual(d.rows.length, 3, 'should cap at 3 rows');
   assert.strictEqual(d.extraCount, 2, 'should count the 2 extra events');
   assert.strictEqual(d.rows[0].age, 'Age 55');
+  assert.strictEqual(d.rows[0].name, 'Inheritance');
   assert.strictEqual(d.rows[0].kind, 'Inflow');
   assert.strictEqual(d.rows[0].basis, "Today's money");
+  assert.strictEqual(d.rows[1].name, '', 'missing name should map to empty string');
   assert.strictEqual(d.rows[1].kind, 'Outflow');
   assert.strictEqual(d.rows[1].basis, 'Future rands');
   assert.ok(/R\s?500\s?000/.test(d.rows[0].amount), 'amount should be formatted rands: ' + d.rows[0].amount);
+});
+
+check('capitalEventDisplayRows: name is capped at 20 chars', () => {
+  const d = capitalRowsFn([
+    { name: 'A name that is far too long to fit', age: 55, amount: 1, todaysMoney: true, kind: 'inflow' }
+  ]);
+  assert.strictEqual(d.rows[0].name.length, 20, 'name should be truncated to 20 chars');
 });
 
 check('capitalEventsHtml: empty case emits the empty class', () => {
@@ -972,6 +1018,20 @@ check('capitalEventsHtml: singular vs plural in extra-count line', () => {
     { age: 50 + a, amount: 100000, todaysMoney: true, kind: 'inflow' })));
   const html = capitalHtmlFn(five, 'row-x', 'empty-x', 'more-x');
   assert.ok(/2 additional events modelled\./.test(html), 'plural extra-count missing: ' + html);
+});
+
+check('capitalEventsHtml: named event renders "Name (Kind)", unnamed renders bare kind', () => {
+  const named = capitalHtmlFn(
+    capitalRowsFn([{ name: 'Inheritance', age: 55, amount: 1, todaysMoney: true, kind: 'inflow' }]),
+    'row-x', 'empty-x', 'more-x');
+  assert.ok(/class="event-name">Inheritance</.test(named), 'event-name span missing: ' + named);
+  assert.ok(/event-kind-inflow">\(Inflow\)</.test(named), 'kind should be parenthesised when named: ' + named);
+
+  const bare = capitalHtmlFn(
+    capitalRowsFn([{ age: 55, amount: 1, todaysMoney: true, kind: 'outflow' }]),
+    'row-x', 'empty-x', 'more-x');
+  assert.ok(!/event-name/.test(bare), 'no event-name span when unnamed: ' + bare);
+  assert.ok(/event-kind-outflow">Outflow</.test(bare), 'bare kind (no parens) when unnamed: ' + bare);
 });
 
 // ============================================================

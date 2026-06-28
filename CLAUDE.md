@@ -99,7 +99,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 66 tests
+# JS tests (actual shipped JS) — 72 tests
 cd tests/js
 node run.js
 ```
@@ -116,7 +116,7 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (47 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (66 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (72 tests).
 
 ## What not to do
 
@@ -134,6 +134,22 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 24 — 2026-06-28
+
+**Shipped (capital-events entry modal + event names):** two real-meeting fixes to capital events. No engine change — names never reach `project()`, so the Python suite is unchanged.
+
+1. **Cramped drawer fixed with a roomy modal.** Capital events were unusable in the Edit-info drawer: they sat in column II (`1fr` of a `1.2fr 1fr 1fr` grid) with each row packing kind/age/amount/basis/year/delete into one narrow `1fr` cell. The drawer's inline editor is replaced by a compact **read-only summary** (`#drawer-events-summary`, painted by `renderEvents()` via the shared `capitalEventsHtml`) plus a **"Manage capital events"** button (`#drawer-manage-events-btn`) that opens a new wide editor modal (`#events-modal`, cloned from the `#report-scenario-modal` pattern, `width: min(820px, 100%)`, `data-open` toggling; `openEventsModal`/`closeEventsModal`, backdrop-click + Done dismiss). The modal hosts `#modal-events-list` + `#modal-add-event-btn`. The **first screen keeps its full-width inline editor** (`#empty-events-list`) — it always had room (user pick: modal for the drawer only). `renderEvents()` now iterates `['empty-events-list', 'modal-events-list']` (drawer's `#events-list`/`#add-event-btn` removed); the old drawer add handler was deleted.
+
+2. **Optional event name (max 20 chars).** New `name` field on each event. `newEvent()` defaults `name:''`; `buildEventRow` renders a left-aligned sans name input (`data-field="name" maxlength="20"`, leading column — the row grid is now `1.4fr 120px 64px 1.6fr 28px`); `onEventInput` handles it (slice-capped at 20); `readEvents()` now carries `name` into `p.inputs.events` (the key wiring detail — recap/report read events from there, not the raw store; `project()` ignores the extra field). Persistence round-trips it for free (deep-clone). On the recap card and **the report Page-2 strip**, the shared `capitalEventDisplayRows`/`capitalEventsHtml` now render `<name> (Inflow)` / `<name> (Outflow)` when named, and the bare `Inflow`/`Outflow` (no parens) when blank — so both screen and PDF pick up names with no separate code. Added `.event-name` (screen) + `.report-deck .report-event-chip .event-name` (report) styling, widened the recap row grid to `56px 1fr auto 104px`.
+
+**Decisions (and why):** modal for the drawer only (first screen already worked, less churn); 20-char cap (protects the report's one-line, 3-event strip); name added to `readEvents()` output rather than read from `eventsStore` directly, so every summary surface stays driven by the single `p.inputs.events` source.
+
+**Tests:** 72 JS (66 + 6 new: name in `capitalEventDisplayRows`/`capitalEventsHtml`, 20-char cap, `newEvent`/`readEvents` name field, `buildEventRow` name input, drawer summary+manage / no inline editor, modal markup + wiring; the `renderEvents` containers test retargeted) + 47 Python (unchanged), all green. Inline script parses clean.
+
+**Docs updated:** `CLAUDE.md` (this entry + JS count 66 → 72), `README.md` + `tests/README.md` (count), `docs/ARCHITECTURE.md` (events §3 containers + modal + `readEvents` name + display helpers), `docs/DESIGN.md` (drawer = summary + button, modal, name display).
+
+**Known caveat:** No headless browser this session. The no-name path is byte-identical to Session 23, so existing output is safe, but the modal layout, the name-column fit in the State-1 inline editor, and three named events fitting the report strip want a browser print-preview. Eyeball: (a) drawer shows summary + "Manage capital events"; clicking opens the wide modal; add/edit/delete + 20-char name all work; (b) recap card + report Page 2 show `Name (Inflow)` when named, plain `Inflow` when not; (c) Save → Open round-trips names; (d) Cmd+P / landscape Report show no modal artifact.
 
 ### Session 23 — 2026-06-26
 
