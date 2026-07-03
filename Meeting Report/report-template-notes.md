@@ -6,6 +6,8 @@ Current template:
 
 `report_master.html`
 
+**Ported into the tool (2026-07-03):** `report_master.html` now also lives inside the planning tool as the scoped `.review-report` 8-page deck, data-bound and rendered from a loaded `sw-review-data` file plus the live projection, with the estate page rebuilt to schema 1.3.0. `report_master.html` remains the standalone design reference.
+
 Current local logo assets:
 
 - `assets/simple-wealth-logo-standard.png`
