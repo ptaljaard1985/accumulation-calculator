@@ -187,21 +187,47 @@ One row per person/insurer. **Benefit→column mapping is `lib/risk/benefit-colu
 | `totalsByPerson[]` | array | 🧮 | Per-person column sums (active policies) |
 | `comments` | string/null | `client_groups.risk_review_comment` ✅ | Maintained on the Risk Planning tab |
 
-### 5.8 `estate` — ✅ CRM (`estate_plans` + `clients`)
+### 5.8 `estate` — ✅ CRM (`estate_plans` + `estate_items` + `clients`)
+
+Schema 1.3.0 carries **three lists**: `willRows` (one per member), `powersOfAttorney`, and `trusts`. There is no `willOnFile` field and no per-will-row `powerOfAttorney` field; POA and trusts are their own lists sourced from `estate_items`.
+
+**`willRows[]`** — one per member (`estate_plans` joined to `clients`):
 
 | Report field | Type | Source | Mapping |
 |---|---|---|---|
 | `willRows[].personId` | string | `estate_plans.client_id` | — |
 | `willRows[].name` | string | `clients.first_name` | — |
 | `willRows[].maritalRegime` | string/null | `estate_plans.estate_data.marital_regime` (JSONB) | Enum → human wording (`in_community`/`anc_with_accrual`/`anc_without_accrual`) |
-| `willRows[].willOnFile` | string/null | `estate_plans.has_will` | Boolean → "Yes"/"No" (signed/unsigned nuance not captured) |
+| `willRows[].willStatus` | string/null | `estate_plans.will_status` | `On file` / `On file — unsigned` / `Has one — not seen` / `None` / `Not discussed`. Replaces the old boolean `willOnFile` (captures the signed/unsigned nuance). |
 | `willRows[].willDate` | string/null | `estate_plans.will_date` | Year or ISO date |
 | `willRows[].executor` | string/null | `estate_plans.executor` | Direct (`executor_contact` also available) |
-| `willRows[].beneficiaryHeirs` | string/null | `estate_plans.beneficiary_heirs` ✅ | **Now structured** (migration 023) |
+| `willRows[].beneficiaryHeirs` | string/null | `estate_plans.beneficiary_heirs` ✅ | **Structured** (migration 023) |
 | `willRows[].guardians` | string/null | `estate_plans.guardian_nominations` | Direct |
-| `willRows[].powerOfAttorney` | string/null | `estate_plans.power_of_attorney` ✅ | **Now structured** (migration 023) |
-| `trusts.hasTrust` | boolean | `estate_plans.has_trust` | Direct |
-| `trusts.summary` | string | `estate_plans.trust_name` + `trust_notes` | Free text |
+| `willRows[].testamentaryTrustForMinors` | boolean | `estate_plans.testamentary_trust` | Will provides a testamentary trust if minor children inherit (schema 1.2.0) |
+
+**`powersOfAttorney[]`** — zero or more across the family (`estate_items`):
+
+| Report field | Type | Source | Mapping |
+|---|---|---|---|
+| `powersOfAttorney[].personId` | string | `estate_items.client_id` | Person granting the POA |
+| `powersOfAttorney[].name` | string | `clients.first_name` | — |
+| `powersOfAttorney[].poaType` | string | `estate_items.poa_type` | Display string (e.g. `General`, `Healthcare`) |
+| `powersOfAttorney[].agent` | string | `estate_items.agent` | Appointed agent/attorney |
+| `powersOfAttorney[].status` | string | `estate_items.status` | Display string (e.g. `On file`, `On file — unsigned`) |
+
+**`trusts[]`** — zero or more, household or per-member (`estate_items`). This is an **array**, not the old `trusts.hasTrust`/`trusts.summary` object:
+
+| Report field | Type | Source | Mapping |
+|---|---|---|---|
+| `trusts[].name` | string | `estate_items.trust_name` | Trust name |
+| `trusts[].ownerName` | string | `estate_items.client_id` → member name, else `Household` | `Household` for a group-level trust, or the owning member |
+| `trusts[].trustType` | string | `estate_items.trust_type` | Display string (e.g. `Inter vivos (living)`, `Testamentary`) |
+| `trusts[].trustees` | string/null | `estate_items.trustees` | Free text; `null` if unknown |
+
+**Estate comments:**
+
+| Report field | Type | Source | Mapping |
+|---|---|---|---|
 | `estateLiquidityComment` | string/null | `client_groups.estate_liquidity_comment` ✅ | Maintained on the Estate Planning tab |
 | `comments` | string/null | `client_groups.estate_planning_comment` ✅ | Maintained on the Estate Planning tab |
 
@@ -277,7 +303,7 @@ One JSON file per client family, written to the family's Dropbox folder. It is a
 ```jsonc
 {
   "kind": "sw-review-data",            // tool guard recognises this and routes to the mapping screen
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.3.0",            // tool treats 1.x tolerantly: accept unknown extra fields, hard-branch only on a future major
   "exportedAt": "2026-07-01T09:30:00+02:00",
   "exportedBy": "Pierre Taljaard",
   "firm": { "name": "Simple Wealth Pty Ltd", "fspNumber": "50637" },
@@ -305,8 +331,23 @@ One JSON file per client family, written to the family's Dropbox folder. It is a
   ],
   "netWorthItems": [ /* balance_sheet_items that feed net worth only: property, business, debt */ ],
   "risk": { "policyBenefitRows": [ /* ... */ ], "comments": "..." },
-  "estate": { "willRows": [ /* ... */ ], "trusts": { /* ... */ },
-              "estateLiquidityComment": "...", "comments": "..." },
+  "estate": {                           // 1.3.0: three lists — willRows, powersOfAttorney, trusts (trusts is an ARRAY)
+    "willRows": [
+      { "personId": "...", "name": "David", "maritalRegime": "ANC with accrual",
+        "willStatus": "On file",        // On file | On file — unsigned | Has one — not seen | None | Not discussed
+        "willDate": "2023-06-01", "executor": "...", "beneficiaryHeirs": "...",
+        "guardians": "...", "testamentaryTrustForMinors": true }
+    ],
+    "powersOfAttorney": [
+      { "personId": "...", "name": "David", "poaType": "Healthcare",
+        "agent": "Sarah", "status": "On file" }
+    ],
+    "trusts": [
+      { "name": "Bennett Family Trust", "ownerName": "Household",
+        "trustType": "Inter vivos (living)", "trustees": "..." }
+    ],
+    "estateLiquidityComment": "...", "comments": "..."
+  },
   "assumptionSeeds": {                  // optional pre-fills for the tool's assumptions
     "expectedInflation": 0.05, "expectedReturn": 0.08, "lifeExpectancy": 95,
     "incomeGoalMonthly": null

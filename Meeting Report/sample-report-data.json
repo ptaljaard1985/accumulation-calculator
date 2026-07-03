@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.3.0",
   "snapshotId": "review-2026-david-sarah-bennett",
   "preparedDate": "2026-06-28",
   "preparedBy": "Pierre Taljaard",
@@ -537,29 +537,42 @@
         "personId": "david",
         "name": "David",
         "maritalRegime": "ANC with accrual",
-        "willOnFile": "Yes, unsigned",
-        "willDate": "2015",
+        "willStatus": "On file",
+        "willDate": "2023-06-01",
         "executor": "Sarah, failing Keri-Lee",
         "beneficiaryHeirs": "Sarah, failing children in trust until age 25",
         "guardians": "Keri-Lee",
-        "powerOfAttorney": "No"
+        "testamentaryTrustForMinors": true
       },
       {
         "personId": "sarah",
         "name": "Sarah",
         "maritalRegime": "ANC with accrual",
-        "willOnFile": "No",
-        "willDate": "2015",
+        "willStatus": "Has one — not seen",
+        "willDate": null,
         "executor": "David, failing Keri-Lee",
         "beneficiaryHeirs": "David, failing children in trust until age 25",
         "guardians": "Keri-Lee",
-        "powerOfAttorney": "No"
+        "testamentaryTrustForMinors": true
       }
     ],
-    "trusts": {
-      "hasTrust": false,
-      "summary": "No active family trust is currently recorded. If a trust exists, this section should describe its purpose, the intended beneficiaries, and any trustee or liquidity points that should be confirmed."
-    },
+    "powersOfAttorney": [
+      {
+        "personId": "david",
+        "name": "David",
+        "poaType": "Healthcare",
+        "agent": "Sarah",
+        "status": "On file"
+      }
+    ],
+    "trusts": [
+      {
+        "name": "Bennett Family Trust",
+        "ownerName": "Household",
+        "trustType": "Inter vivos (living)",
+        "trustees": "David & Sarah Bennett, independent trustee"
+      }
+    ],
     "estateLiquidityComment": "Estate liquidity should be reviewed against expected debts, estate costs, tax, executor fees, and any cash needs that may arise before assets can be transferred or sold. The meeting should confirm whether life cover, available cash, and beneficiary nominations provide enough practical liquidity.",
     "comments": "The wills appear to be in place, but the meeting should confirm whether guardians, executors, beneficiaries, and any trust provisions still reflect the family’s wishes. If there have been material asset, family, or residency changes, the estate documents should be reviewed formally before relying on this summary."
   },

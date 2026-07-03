@@ -1065,6 +1065,110 @@ check('capital events: populateReportDeck toggles strip + has-events class', () 
   assert.ok(/setBind\('report-events-list'/.test(src), 'report events list not bound');
 });
 
+// ============================================================
+// CRM review-data import + per-account mapping (Stage 4/5)
+// ============================================================
+const reviewAgg = new Function(
+  ['resolveMemberSlots', 'normalizeReviewBucket', 'accountOwnerSlot',
+   'defaultAccountDecisions', 'aggregateReviewData']
+    .map(n => extractFn(inline, n)).join('\n') +
+  '; return { resolveMemberSlots, normalizeReviewBucket, accountOwnerSlot,' +
+  ' defaultAccountDecisions, aggregateReviewData };'
+)();
+
+const realReview = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', '..', 'Meeting Report',
+    'dean-andre-and-justine-lesley-review-data-2026-07-02.json'), 'utf8'));
+
+check('review import: kind dispatch routes sw-review-data to the mapping screen', () => {
+  const src = extractFn(inline, 'handlePlanText');
+  assert.ok(/obj\.kind === REVIEW_KIND/.test(src) && /openReviewData\(obj\)/.test(src),
+    'handlePlanText should route sw-review-data to openReviewData');
+  assert.ok(/applyPlanFile\(obj\)/.test(src), 'non-review files still go to applyPlanFile');
+  assert.ok(/REVIEW_KIND = 'sw-review-data'/.test(inline), 'REVIEW_KIND constant missing/renamed');
+});
+
+check('review import: applyPlanFile still rejects unknown kinds (guard intact)', () => {
+  const src = extractFn(inline, 'applyPlanFile');
+  assert.ok(/obj\.kind !== PLAN_KIND/.test(src) && /not a Simple Wealth accumulation plan/.test(src),
+    'the plan-file guard must be unchanged (existing Save/Open round-trip)');
+});
+
+check('review import: aggregate produces the real per-spouse golden numbers', () => {
+  const { resolveMemberSlots, defaultAccountDecisions, aggregateReviewData } = reviewAgg;
+  const slots = resolveMemberSlots(realReview.clientFamily.members);
+  const dec = defaultAccountDecisions(realReview.accounts, slots);
+  const t = aggregateReviewData(realReview.accounts, dec);
+  const r2 = n => Math.round(n * 100) / 100;
+  assert.strictEqual(r2(t.A.ret), 4630416.00);
+  assert.strictEqual(r2(t.A.retC), 1458.35);
+  assert.strictEqual(r2(t.A.disc), 1676196.08);
+  assert.strictEqual(r2(t.A.discC), 2628.71);
+  assert.strictEqual(r2(t.B.ret), 3189960.68);
+  assert.strictEqual(r2(t.B.retC), 765.77);
+  assert.strictEqual(r2(t.B.disc), 838496.65);
+  assert.strictEqual(r2(t.B.discC), 2428.71);
+  assert.strictEqual(r2(t.excludedTotal), 407937.68);   // Lucy + Logan TFIs, default-Ignored
+});
+
+check('review import: children default to Ignore (not dropped, split, or mis-routed)', () => {
+  const { resolveMemberSlots, defaultAccountDecisions, accountOwnerSlot } = reviewAgg;
+  const slots = resolveMemberSlots(realReview.clientFamily.members);
+  const dec = defaultAccountDecisions(realReview.accounts, slots);
+  const childAccts = realReview.accounts.filter(a => accountOwnerSlot(a, slots) === 'other');
+  assert.strictEqual(childAccts.length, 2);
+  childAccts.forEach(a => assert.strictEqual(dec[a.accountId].bucket, 'excluded'));
+});
+
+check('review import: joint account defaults to a 50/50 split; null value counts as zero', () => {
+  const { resolveMemberSlots, defaultAccountDecisions, aggregateReviewData } = reviewAgg;
+  const members = [{ personId: 'p', role: 'primary', firstName: 'P', age: 40 },
+                   { personId: 's', role: 'spouse', firstName: 'S', age: 40 }];
+  const joint = [{ accountId: 'j', ownerPersonId: null, value: 200000,
+                   monthlyContribution: 1000, suggestedBucket: 'retirementAssets' }];
+  let slots = resolveMemberSlots(members);
+  let dec = defaultAccountDecisions(joint, slots);
+  assert.strictEqual(dec.j.attributeTo, 'split');
+  let t = aggregateReviewData(joint, dec);
+  assert.strictEqual(t.A.ret, 100000); assert.strictEqual(t.B.ret, 100000);
+
+  const solo = [{ accountId: 'h', ownerPersonId: 'p', value: null,
+                  monthlyContribution: 0, suggestedBucket: 'retirementAssets' }];
+  slots = resolveMemberSlots([members[0]]);
+  t = aggregateReviewData(solo, defaultAccountDecisions(solo, slots));
+  assert.strictEqual(t.A.ret, 0);
+});
+
+check('review import: mapping modal markup + wiring present', () => {
+  assert.ok(/id="mapping-modal"/.test(html), '#mapping-modal missing');
+  assert.ok(/id="mapping-list"/.test(html), '#mapping-list missing');
+  assert.ok(/id="mapping-confirm-btn"/.test(html), '#mapping-confirm-btn missing');
+  assert.ok(/id="mapping-assumptions-note"/.test(html), 'assumptions note missing');
+  assert.ok(/getElementById\('mapping-confirm-btn'\)\.addEventListener\('click', confirmMapping\)/.test(inline),
+    'confirm button not wired');
+  assert.ok(/getElementById\('mapping-list'\)\.addEventListener\('click', onMappingClick\)/.test(inline),
+    'mapping seg clicks not wired');
+});
+
+check('review import: buildMappingRow tags children/held-away, shows dash for null value', () => {
+  const src = extractFn(inline, 'buildMappingRow');
+  assert.ok(/map-tag-child/.test(src), 'child tag missing');
+  assert.ok(/held-away/.test(src), 'held-away tag missing');
+  assert.ok(/value == null/.test(src) && src.indexOf("'—'") !== -1, 'null value should render a dash');
+  assert.ok(/map-seg-btn/.test(src) && /data-bucket/.test(src), 'bucket seg buttons missing');
+});
+
+check('review import: confirmMapping sets the eight hp-* inputs + ages + seeds + builds', () => {
+  const src = extractFn(inline, 'confirmMapping');
+  ['hp-ret-A', 'hp-ret-contrib-A', 'hp-disc-A', 'hp-disc-contrib-A',
+   'hp-ret-B', 'hp-ret-contrib-B', 'hp-disc-B', 'hp-disc-contrib-B']
+    .forEach(id => assert.ok(new RegExp("setHpFormatted\\('" + id + "'").test(src), id + ' not set'));
+  assert.ok(/hp-age-A/.test(src) && /hp-age-B/.test(src), 'ages not set');
+  assert.ok(/applyAssumptionSeeds\(/.test(src), 'assumption seeds not applied');
+  assert.ok(/projectionRequested = true/.test(src) && /refresh\(\)/.test(src),
+    'confirm should build the projection');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);
