@@ -100,6 +100,8 @@ It writes the result as the **review-data JSON file** (`kind: "sw-review-data"`,
 
 ## Stage 4: Tool Opens the Review-Data File
 
+**Built (2026-07-03):** the Open flow now dispatches on file `kind`: an `sw-review-data` file routes to the mapping screen (Stage 5) instead of the plan-restore path.
+
 The planning tool's existing "Open a saved plan" flow (`applyPlanFile`) learns a second file `kind`: `sw-review-data`.
 
 - The tool's current guard rejects any file whose `kind` isn't its own plan kind — so this new branch is required.
@@ -107,6 +109,8 @@ The planning tool's existing "Open a saved plan" flow (`applyPlanFile`) learns a
 - No CRM-side review screen exists. Mapping is done in the tool, per account, and is **not** saved back to the CRM — the one-directional flow means the CRM re-emits its default suggestions on the next export and the advisor re-confirms.
 
 ## Stage 5: Per-Account Mapping Screen (in the tool)
+
+**Built (2026-07-03):** a mapping modal renders each account and aggregates the confirmed choices per (spouse, bucket) into the planning inputs, with child/dependant-owned accounts defaulting to Ignore (a fix over the 2-slot brief).
 
 The tool renders every account from the loaded file with its owner and its CRM-suggested bucket. The advisor sets each account to one of:
 
@@ -119,6 +123,8 @@ On confirm, the tool aggregates per (owner, bucket) into the planning inputs it 
 The non-planning data (per-account detail, risk, estate, comments) is retained in tool memory to feed the report pages. The tool's projection produces: projected starting income, goal progress, chart series, capital at retirement, contribution leverage.
 
 ## Stage 6: Report Generation → Dropbox
+
+**Built (2026-07-03):** the `.review-report` 8-page deck is rendered in the tool from the loaded CRM facts plus the live projection, with the estate page rebuilt to schema 1.3.0. Save-to-Dropbox remains manual print-to-PDF.
 
 Once the advisor is happy with the mapping and scenario:
 

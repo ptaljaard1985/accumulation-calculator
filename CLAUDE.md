@@ -6,7 +6,7 @@ This file is read first by Claude Code on every session. It tells you what this 
 
 A standalone HTML retirement accumulation calculator for Simple Wealth (Pty) Ltd, a South African authorised financial services provider (FSP 50637). A single HTML file opens by double-click, prints to PDF cleanly, and is used by the adviser (Pierre) with pre-retiree clients in real meetings.
 
-**Primary file (since Session 18): `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky full-bleed top bar). It shares the original's projection engine but is the file all active work now targets. The original `retirement_accumulation.html` is retained as a secondary reference. Below, "the file" / "the calculator" means the v2 file unless a section is explicitly about the original. The same non-negotiable constraints apply to both.
+**Primary file (since Session 18): `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky full-bleed top bar). Since Session 25 it lives in the `Meeting Report/` folder (`Meeting Report/retirement_accumulation_v2.html`) alongside the CRM-integration docs and the review-data files; the test harness reads it there. It shares the original's projection engine but is the file all active work now targets. The original `retirement_accumulation.html` is retained as a secondary reference. Below, "the file" / "the calculator" means the v2 file unless a section is explicitly about the original. The same non-negotiable constraints apply to both.
 
 The calculator projects household capital from today to a configurable retirement age, for a two-spouse household with both retirement-fund and discretionary portfolios. Primary output is projected monthly income in today's money, computed by applying an age-based safe withdrawal rate (a schedule that rises with the retirement age, e.g. 4.8% at 65) to the combined capital at retirement, divided by twelve, before tax. Secondary outputs: capital at retirement (real and nominal), cumulative contributions, year-by-year trajectory, "lock as baseline" comparison, and an optional capital-events mechanism for one-off inflows and outflows.
 
@@ -95,16 +95,16 @@ Run through this checklist:
 ## Running tests
 
 ```bash
-# Python tests (math audits) — 47 tests
+# Python tests (math audits) — 60 tests
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 72 tests
+# JS tests (actual shipped JS) — 87 tests
 cd tests/js
 node run.js
 ```
 
-Both must pass before any change ships. See `tests/README.md`. The JS harness reads `retirement_accumulation_v2.html` (the current primary file — see below).
+Both must pass before any change ships. See `tests/README.md`. The JS harness reads `Meeting Report/retirement_accumulation_v2.html` (the current primary file — see below; it moved into the `Meeting Report/` folder in Session 25).
 
 ## File inventory
 
@@ -115,8 +115,8 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/ARCHITECTURE.md` — code structure in detail.
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
-- `tests/python/` — math audits in Python (47 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML, now `retirement_accumulation_v2.html` (72 tests).
+- `tests/python/` — math audits in Python (60 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (87 tests).
 
 ## What not to do
 
@@ -134,6 +134,31 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 25 — 2026-07-03
+
+**Shipped (CRM review-data import + 8-page pre-meeting report):** built the CRM → tool → report pipeline the design docs described but that was never implemented. Before this session the tool rejected the CRM export outright (`applyPlanFile` only accepted `kind: 'sw-accumulation-plan'`); `report_master.html` was a static "David and Sarah" mockup with no renderer. All three tool-side integration stages (4, 5, 6) now exist. Engine (`project()`) unchanged; the aggregation is a new, audited data transform.
+
+**Context / file move:** the primary tool moved from the repo root into `Meeting Report/retirement_accumulation_v2.html` (the user's canonical location, alongside the CRM-integration docs, `report_master.html`, and the real + sample `sw-review-data` JSON). The root copy is deleted; `tests/js/run.js` was repointed to the Meeting Report path. A local `Meeting Report/backup.html` (the user's safety copy) and `Meeting Report/review-report-preview.html` (a generated preview embedding client data) are git-ignored.
+
+1. **Stage 4 — recognise `sw-review-data` on Open.** `handlePlanText` now dispatches on `obj.kind`: `sw-review-data` → `openReviewData` (mapping screen); anything else → `applyPlanFile` (which still rejects unknown kinds with the friendly alert, so the existing plan Save/Open round-trip is unchanged). `applyPlanFile` also clears any loaded review state (a plan file carries only inputs, not CRM facts).
+
+2. **Stage 5 — per-account mapping screen + aggregation.** A wide modal (`#mapping-modal`, mirroring the events-modal) lists every imported account with owner + provider·type + account + value (null → "—") + monthly + a bucket seg (Retirement / Discretionary / Ignore, pre-seeded from `suggestedBucket`) + an attribute-to selector for joint/child rows. On Confirm the confirmed buckets are summed per (spouse, bucket) into the eight `hp-*` inputs, ages + names come from `members[]` (primary→A, spouse→B), and `assumptionSeeds` seed the return/CPI/goal sliders when present (a banner warns when they are null). **Correctness fix over the brief:** accounts owned by a `child`/`dependant`/`other` member (which the primary→A/spouse→B rule had no slot for) default to **Ignore**, are tagged on the row, and never silently drop, 50/50-split, or crash — on the real Dean/Justine file this correctly holds back the two children's R407 937.68 of tax-free investments. Joint (`ownerPersonId: null`) accounts default to a 50/50 split. Pure, audited helpers: `resolveMemberSlots`, `normalizeReviewBucket`, `accountOwnerSlot`, `defaultAccountDecisions`, `aggregateReviewData`.
+
+3. **Stage 6 — 8-page pre-meeting review report.** A new "Review report" button (shown once a review file is mapped) prints an 8-page A4-landscape report (`report_master.html` design ported into the tool as a scoped `.review-report` deck: `rr-*` classes, `--rr-*` tokens, a new `data-export-mode="review"` gate separate from the existing 3-4 page deck). Pages: cover, agenda ×2 (static), accounts, projection, risk, estate, notes. The accounts page is data-driven (one row per account grouped by owner, per-owner subtotals, household total, the CONFIRMED bucket per row, a net-worth strip so `netWorthItems` is surfaced). The projection page reuses the tested `buildReportData` + income-curve SVG. **The estate page is rebuilt to schema 1.3.0** (a `willStatus` + testamentary-trust wills table, a SEPARATE powers-of-attorney table, a SEPARATE trusts table, and an estate-readiness note flagging unsigned / not-discussed wills, unsigned POAs, trustee-less trusts) — not the old `willOnFile` / per-row-POA shape. Risk table shows impairment and omits the waiting-period column (no data field for it).
+
+**Also done:** the four out-of-date design docs were brought up to schema 1.3.0 (estate shape + version literals) and the brief gained the child-owner rule (§4.4) + a second acceptance fixture; CRM-side defects that are NOT tool bugs (null `assumptionSeeds`, `Dr Dean Inc` value 0, missing `waitingPeriod`/`status`, null `policyNumber`, firm-name inconsistency) were captured in a new `Meeting Report/crm-side-todos.md`. A full independent review of the whole integration is in `Meeting Report/REVIEW-crm-import-and-report-2026-07-02.md`.
+
+**Decisions (and why):**
+- **Modal, not a fourth view state, for the mapping screen** — the tool's three-state machine (`deriveViewState`) is driven by `baseline`/`projectionRequested`; a transient confirm-then-apply step fits the existing modal pattern with zero risk to the state machine.
+- **Child accounts default to Ignore, not attributed** — a minor's tax-free investment is not the parents' retirement capital; defaulting to Ignore (visible + overridable) is safe and honest, where the old 2-slot rule had undefined behaviour.
+- **Second export mode + scoped `.review-report`, not a rewrite of the existing deck** — the 3-4 page live deck and the 8-page CRM report answer different questions and have different data sources; keeping them separate (and the report classes `rr-`prefixed) avoids CSS collisions with the screen UI and the existing deck.
+
+**Tests:** 87 JS (72 + 8 review-import + 7 review-report) + 60 Python (47 + 13 in `test_review_aggregation.py`, which reimplements the aggregation from scratch and locks the real Dean/Justine golden numbers), all green. Verified end-to-end via fake-DOM smokes: the import→confirm path sets all eight `hp-*` inputs to the correct values, and the report render produces the correct summary cards, 18-row accounts table, R26 293 007 net worth, 1.3.0 estate tables, and readiness flags.
+
+**Docs updated:** `CLAUDE.md` (this entry + counts + primary-file path), `README.md`, `tests/README.md`, `Meeting Report/report-integration-plan.md` + `crm-report-integration-status-2026-07-01.md` (Stages 4-6 marked built), `report-template-notes.md` (report ported into the tool), plus the four spec docs brought to 1.3.0.
+
+**Known caveat:** No headless browser this session (Chrome extension not connected), so page-fit / overflow of the 8-page report (the 18-row accounts table on page 4 and the 5-section estate page 7 are the tightest) and the mapping-modal layout still want a browser print-preview. Content correctness is covered by the fake-DOM smokes + tests; a faithful static render (real data, including the live income-curve chart) is at `Meeting Report/review-report-preview.html` for an eyeball. Also: Save/Open a plan built from a review file loses the CRM facts (the plan file stores inputs only), so the Review-report button is intentionally cleared on plan-restore — re-open the review-data file to regenerate the report.
 
 ### Session 24 — 2026-06-28
 

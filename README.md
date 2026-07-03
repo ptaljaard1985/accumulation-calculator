@@ -2,7 +2,7 @@
 
 An interactive retirement projection tool for two-spouse pre-retiree South African households, built for use in client advisory meetings by Simple Wealth (Pty) Ltd, FSP 50637.
 
-> **Primary file: `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). It shares the original's projection engine and is the file all active work targets. The original `retirement_accumulation.html` is retained as a secondary reference. Some feature descriptions below predate the v2 redesign and reflect the original layout.
+> **Primary file: `Meeting Report/retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). It shares the original's projection engine and is the file all active work targets. The original `retirement_accumulation.html` is retained as a secondary reference. Some feature descriptions below predate the v2 redesign and reflect the original layout.
 
 ## What it does
 
@@ -14,9 +14,11 @@ Given two spouses' current retirement-fund and discretionary balances, their mon
 
 Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer, a landscape **Report** — a compact 3–4 page client deliverable (cover, projection with a crisp SVG income-by-retirement-age chart, an optional scenario comparison when a baseline is locked, and a methodology/compliance page), and **Save / Open plan** — file-based persistence that writes the client's inputs to a portable `.json` file and restores them later (opt-in restore only; a plain refresh always starts blank, so one client's numbers never leak into the next session).
 
+The tool can also **import a CRM `sw-review-data` export**: opening one routes to a per-account mapping screen where each account is set to Retirement, Discretionary, or Ignore (child/dependant-owned accounts default to Ignore); the confirmed buckets are summed per spouse into the planning inputs. From the loaded CRM facts plus the live projection the tool then generates an **8-page pre-meeting review report**.
+
 ## Running it
 
-Open `retirement_accumulation_v2.html` (the primary file) in a browser. That's it — no build, no server, no install.
+Open `Meeting Report/retirement_accumulation_v2.html` (the primary file) in a browser. That's it — no build, no server, no install.
 
 External runtime deps (loaded via `<link>` / `<script>` tags): Chart.js from `cdnjs.cloudflare.com`, and the Fraunces / Inter Tight / JetBrains Mono webfont families from `fonts.googleapis.com`. Everything else — tokens, styles, logic — is inline. The file opens and computes offline; webfonts and the chart library fall back gracefully if the network is unavailable.
 
@@ -25,7 +27,8 @@ Tested on recent Safari and Chrome.
 ## Project structure
 
 ```
-retirement_accumulation_v2.html the primary deliverable (single file, cockpit redesign)
+Meeting Report/
+  retirement_accumulation_v2.html the primary deliverable (single file, cockpit redesign)
 retirement_accumulation.html    the original warm-paper deliverable (secondary)
 
 CLAUDE.md                       read first by Claude Code
@@ -36,8 +39,8 @@ docs/
   DESIGN.md                     visual system
 tests/
   README.md                     how to run tests
-  python/                       math audits (pytest, 47 tests)
-  js/                           JS tests against the shipped v2 HTML (node, 72 tests)
+  python/                       math audits (pytest, 60 tests)
+  js/                           JS tests against the shipped v2 HTML (node, 87 tests)
 ```
 
 ## Running the tests
