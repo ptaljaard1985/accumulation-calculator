@@ -23,3 +23,6 @@ Thumbs.db
 
 # Local tests and scratch
 /tmp/
+
+# User's local safety backup of the tool — never commit or modify
+Meeting Report/backup.html

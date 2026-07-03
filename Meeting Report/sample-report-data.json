@@ -1,0 +1,587 @@
+{
+  "schemaVersion": "1.0.0",
+  "snapshotId": "review-2026-david-sarah-bennett",
+  "preparedDate": "2026-06-28",
+  "preparedBy": "Pierre Taljaard",
+  "firm": {
+    "name": "Simple Wealth Pty Ltd",
+    "fspNumber": "50637",
+    "footerText": "Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637."
+  },
+  "clientFamily": {
+    "groupId": "client-group-david-sarah-bennett",
+    "displayName": "David and Sarah",
+    "fullReportTitle": "David and Sarah",
+    "members": [
+      {
+        "personId": "david",
+        "firstName": "David",
+        "role": "primary",
+        "age": 48,
+        "dateOfBirth": "1978-04-15"
+      },
+      {
+        "personId": "sarah",
+        "firstName": "Sarah",
+        "role": "spouse",
+        "age": 46,
+        "dateOfBirth": "1980-09-10"
+      }
+    ]
+  },
+  "report": {
+    "type": "preMeetingReview",
+    "coverKicker": "Pre-meeting review document",
+    "coverTitle": "David and Sarah",
+    "coverSubtitle": "Prepared on 28 June 2026 for your annual planning review. This brief is intended to focus the meeting on the questions we need to answer together.",
+    "pageCount": 8,
+    "includePages": [
+      "cover",
+      "agendaPrimary",
+      "agendaSecondary",
+      "accounts",
+      "retirementProjection",
+      "risk",
+      "estate",
+      "notes"
+    ]
+  },
+  "agenda": {
+    "introText": "These items form the checklist for the annual review. Some may take only a moment to confirm; others may lead to specific advice or follow-up work.",
+    "sections": [
+      {
+        "sectionId": "lifePlanning",
+        "title": "Life planning",
+        "subtitle": "Family, transitions, decisions, and anything material changing soon.",
+        "style": "gold",
+        "page": 2,
+        "items": [
+          {
+            "number": 1,
+            "text": "Confirm any important family updates since the last review."
+          },
+          {
+            "number": 2,
+            "text": "Discuss upcoming transitions expected in the next 12 to 24 months."
+          },
+          {
+            "number": 3,
+            "text": "Identify any big family decisions that need to be made."
+          },
+          {
+            "number": 4,
+            "text": "Note any personal priorities that should shape the financial plan."
+          }
+        ]
+      },
+      {
+        "sectionId": "cashFlow",
+        "title": "Cash flow planning",
+        "subtitle": "Income, expenses, savings capacity, and known capital needs.",
+        "style": "standard",
+        "page": 2,
+        "items": [
+          {
+            "number": 5,
+            "text": "Confirm expected income or expense changes in the coming year."
+          },
+          {
+            "number": 6,
+            "text": "Confirm monthly surplus after household expenses."
+          },
+          {
+            "number": 7,
+            "text": "Review emergency fund and short-term cash buffer."
+          },
+          {
+            "number": 8,
+            "text": "Review whether debt is being serviced appropriately."
+          },
+          {
+            "number": 9,
+            "text": "Decide whether contributions can increase."
+          },
+          {
+            "number": 10,
+            "text": "Capture upcoming expenses, withdrawals, or capital needs."
+          }
+        ]
+      },
+      {
+        "sectionId": "investmentPlanning",
+        "title": "Investment planning",
+        "subtitle": "Portfolio structure, contribution split, risk, fees, and platform use.",
+        "style": "standard",
+        "page": 2,
+        "items": [
+          {
+            "number": 11,
+            "text": "Confirm the portfolio still supports the plan."
+          },
+          {
+            "number": 12,
+            "text": "Review the retirement and discretionary asset split."
+          },
+          {
+            "number": 13,
+            "text": "Check whether asset allocation remains appropriate."
+          },
+          {
+            "number": 14,
+            "text": "Review fees, platform use, and simplification opportunities."
+          }
+        ]
+      },
+      {
+        "sectionId": "retirementProjections",
+        "title": "Retirement projections",
+        "subtitle": "Income goal, retirement age, capital events, and scenarios.",
+        "style": "standard",
+        "page": 2,
+        "items": [
+          {
+            "number": 15,
+            "text": "Confirm the income goal is still appropriate."
+          },
+          {
+            "number": 16,
+            "text": "Review projected income at the planned retirement age."
+          },
+          {
+            "number": 17,
+            "text": "Compare projected income with current living expenses."
+          },
+          {
+            "number": 18,
+            "text": "Decide whether a scenario should become the new baseline."
+          },
+          {
+            "number": 19,
+            "text": "Confirm capital events included in the projection."
+          }
+        ]
+      },
+      {
+        "sectionId": "riskPlanning",
+        "title": "Risk planning",
+        "subtitle": "Cover levels, income protection, beneficiaries, and ownership.",
+        "style": "standard",
+        "page": 3,
+        "items": [
+          {
+            "number": 20,
+            "text": "Confirm income, debt, family, or employment changes."
+          },
+          {
+            "number": 21,
+            "text": "Review whether life and disability cover remain appropriate."
+          },
+          {
+            "number": 22,
+            "text": "Check income protection and critical illness cover."
+          },
+          {
+            "number": 23,
+            "text": "Review provision for future healthcare needs."
+          },
+          {
+            "number": 24,
+            "text": "Confirm beneficiaries and policy ownership where relevant."
+          }
+        ]
+      },
+      {
+        "sectionId": "estatePlanning",
+        "title": "Estate planning",
+        "subtitle": "Wills, beneficiaries, estate liquidity, and family changes.",
+        "style": "standard",
+        "page": 3,
+        "items": [
+          {
+            "number": 25,
+            "text": "Confirm wills still reflect your wishes."
+          },
+          {
+            "number": 26,
+            "text": "Review beneficiary nominations and estate liquidity."
+          },
+          {
+            "number": 27,
+            "text": "Confirm living will or power of attorney documents if relevant."
+          },
+          {
+            "number": 28,
+            "text": "Confirm guardians, trusts, or special arrangements if relevant."
+          },
+          {
+            "number": 29,
+            "text": "Check whether major family or asset changes affect the plan."
+          }
+        ]
+      },
+      {
+        "sectionId": "taxPlanning",
+        "title": "Tax planning",
+        "subtitle": "Contribution allowances, tax-year planning, and tax admin.",
+        "style": "standard",
+        "page": 3,
+        "items": [
+          {
+            "number": 30,
+            "text": "Check whether recent tax or legislative changes affect the plan."
+          },
+          {
+            "number": 31,
+            "text": "Review whether RA, TFSA, or CGT allowances should be used."
+          },
+          {
+            "number": 32,
+            "text": "Note any tax-year top-up opportunity."
+          },
+          {
+            "number": 33,
+            "text": "Check whether PAYE, CGT, or tax admin needs attention."
+          },
+          {
+            "number": 34,
+            "text": "Confirm documents needed for tax season."
+          }
+        ]
+      },
+      {
+        "sectionId": "other",
+        "title": "Other",
+        "subtitle": "",
+        "style": "standard",
+        "page": 3,
+        "items": [
+          {
+            "number": 35,
+            "text": "Anything else we haven’t covered."
+          }
+        ]
+      }
+    ],
+    "seasonalCheckIns": {
+      "title": "Seasonal check-ins",
+      "summary": "Between annual reviews, we also help with:",
+      "items": [
+        {
+          "title": "Tax year-end",
+          "text": "Contribution opportunities before the tax year closes."
+        },
+        {
+          "title": "Tax season",
+          "text": "Tax information summaries and available certificates."
+        },
+        {
+          "title": "Life changes",
+          "text": "Urgent planning issues caused by major personal changes."
+        }
+      ]
+    }
+  },
+  "accounts": {
+    "summary": {
+      "totalInvestmentAssets": 5000000,
+      "retirementAssets": 4000000,
+      "discretionaryAssets": 1000000,
+      "monthlyContributions": 36000
+    },
+    "rows": [
+      {
+        "accountId": "asset-david-ra",
+        "ownerPersonId": "david",
+        "ownerName": "David",
+        "provider": "Allan Gray",
+        "type": "Retirement",
+        "accountName": "Retirement annuity",
+        "value": 2000000,
+        "monthlyContribution": 15000,
+        "growthAssetsPercent": 0.82,
+        "offshoreAssetsPercent": 0.41,
+        "planningBucket": "retirementAssets",
+        "includeInProjection": true,
+        "overrideReason": null
+      },
+      {
+        "accountId": "asset-david-ut",
+        "ownerPersonId": "david",
+        "ownerName": "David",
+        "provider": "Allan Gray",
+        "type": "Discretionary",
+        "accountName": "Unit trust",
+        "value": 500000,
+        "monthlyContribution": 3000,
+        "growthAssetsPercent": 0.99,
+        "offshoreAssetsPercent": 1,
+        "planningBucket": "discretionaryAssets",
+        "includeInProjection": true,
+        "overrideReason": null
+      },
+      {
+        "accountId": "asset-sarah-ra",
+        "ownerPersonId": "sarah",
+        "ownerName": "Sarah",
+        "provider": "Allan Gray",
+        "type": "Retirement",
+        "accountName": "Retirement annuity",
+        "value": 2000000,
+        "monthlyContribution": 15000,
+        "growthAssetsPercent": 0.82,
+        "offshoreAssetsPercent": 0.41,
+        "planningBucket": "retirementAssets",
+        "includeInProjection": true,
+        "overrideReason": null
+      },
+      {
+        "accountId": "asset-sarah-ut",
+        "ownerPersonId": "sarah",
+        "ownerName": "Sarah",
+        "provider": "Allan Gray",
+        "type": "Discretionary",
+        "accountName": "Unit trust",
+        "value": 500000,
+        "monthlyContribution": 3000,
+        "growthAssetsPercent": 0.99,
+        "offshoreAssetsPercent": 1,
+        "planningBucket": "discretionaryAssets",
+        "includeInProjection": true,
+        "overrideReason": null
+      }
+    ],
+    "totalsByPerson": [
+      {
+        "personId": "david",
+        "personName": "David",
+        "value": 2500000,
+        "monthlyContribution": 18000,
+        "growthAssetsPercent": 0.85,
+        "offshoreAssetsPercent": 0.53
+      },
+      {
+        "personId": "sarah",
+        "personName": "Sarah",
+        "value": 2500000,
+        "monthlyContribution": 18000,
+        "growthAssetsPercent": 0.85,
+        "offshoreAssetsPercent": 0.53
+      }
+    ],
+    "householdTotal": {
+      "value": 5000000,
+      "monthlyContribution": 36000,
+      "growthAssetsPercent": 0.85,
+      "offshoreAssetsPercent": 0.53
+    }
+  },
+  "retirementProjection": {
+    "basis": "todaysMoney",
+    "plannedRetirementAge": 65,
+    "incomeGoalMonthly": 100000,
+    "projectedStartingIncomeMonthly": 97130,
+    "goalProgressPercent": 0.9713,
+    "safeWithdrawalRate": 0.048,
+    "expectedReturn": 0.09,
+    "expectedInflation": 0.05,
+    "chartSeries": [
+      {
+        "age": 46,
+        "monthlyIncome": 15000
+      },
+      {
+        "age": 51,
+        "monthlyIncome": 30000
+      },
+      {
+        "age": 56,
+        "monthlyIncome": 54000
+      },
+      {
+        "age": 61,
+        "monthlyIncome": 85000
+      },
+      {
+        "age": 65,
+        "monthlyIncome": 97130
+      },
+      {
+        "age": 71,
+        "monthlyIncome": 155000
+      },
+      {
+        "age": 75,
+        "monthlyIncome": 225000
+      }
+    ],
+    "planningSnapshot": {
+      "retirementAssets": {
+        "currentBalance": 4000000,
+        "monthlyContribution": 30000
+      },
+      "discretionaryAssets": {
+        "currentBalance": 1000000,
+        "monthlyContribution": 6000
+      },
+      "expectedReturn": 0.09,
+      "expectedInflation": 0.05
+    },
+    "capitalEvents": [
+      {
+        "eventId": "event-overseas-outflow",
+        "age": 47,
+        "label": "Overseas",
+        "direction": "outflow",
+        "amount": 100000,
+        "basis": "todaysMoney",
+        "appliesTo": "discretionaryCapital"
+      },
+      {
+        "eventId": "event-inheritance-inflow",
+        "age": 56,
+        "label": "Inheritance",
+        "direction": "inflow",
+        "amount": 2000000,
+        "basis": "todaysMoney",
+        "appliesTo": "discretionaryCapital"
+      }
+    ],
+    "contributionLeverage": {
+      "extraMonthlyContribution": 1000,
+      "incomeIncreaseMonthly": 1229,
+      "basis": "todaysMoney",
+      "assumesAnnualEscalation": true,
+      "text": "Each extra R1 000 a month saved until retirement, escalating annually, is projected to add about R1 229 a month of starting retirement income in today’s money."
+    }
+  },
+  "risk": {
+    "policyBenefitRows": [
+      {
+        "personId": "david",
+        "personName": "David",
+        "insurer": "Discovery Life",
+        "policyNumber": "DL-001",
+        "lifeCover": 4500000,
+        "incomeDisabilityMonthly": 45000,
+        "capitalDisability": 3000000,
+        "criticalIllness": 1250000,
+        "impairment": null,
+        "waitingPeriod": "30 days",
+        "beneficiary": "Sarah"
+      },
+      {
+        "personId": "david",
+        "personName": "David",
+        "insurer": "Old Mutual",
+        "policyNumber": "OM-001",
+        "lifeCover": 500000,
+        "incomeDisabilityMonthly": null,
+        "capitalDisability": null,
+        "criticalIllness": null,
+        "impairment": null,
+        "waitingPeriod": null,
+        "beneficiary": "Estate"
+      },
+      {
+        "personId": "sarah",
+        "personName": "Sarah",
+        "insurer": "Discovery Life",
+        "policyNumber": "DL-002",
+        "lifeCover": 2500000,
+        "incomeDisabilityMonthly": null,
+        "capitalDisability": 1500000,
+        "criticalIllness": 2000000,
+        "impairment": null,
+        "waitingPeriod": null,
+        "beneficiary": "David"
+      },
+      {
+        "personId": "sarah",
+        "personName": "Sarah",
+        "insurer": "Group risk",
+        "policyNumber": null,
+        "lifeCover": 500000,
+        "incomeDisabilityMonthly": null,
+        "capitalDisability": null,
+        "criticalIllness": null,
+        "impairment": null,
+        "waitingPeriod": null,
+        "beneficiary": "David"
+      }
+    ],
+    "totalsByPerson": [
+      {
+        "personId": "david",
+        "personName": "David",
+        "lifeCover": 5000000,
+        "incomeDisabilityMonthly": 45000,
+        "capitalDisability": 3000000,
+        "criticalIllness": 1250000,
+        "impairment": null
+      },
+      {
+        "personId": "sarah",
+        "personName": "Sarah",
+        "lifeCover": 3000000,
+        "incomeDisabilityMonthly": null,
+        "capitalDisability": 1500000,
+        "criticalIllness": 2000000,
+        "impairment": null
+      }
+    ],
+    "comments": "Existing cover appears broadly aligned with the current income and debt position, but the meeting should confirm whether the level of disability and severe illness cover remains appropriate after any income, family, or employment changes. Income protection waiting periods should also be checked against available cash reserves."
+  },
+  "estate": {
+    "willRows": [
+      {
+        "personId": "david",
+        "name": "David",
+        "maritalRegime": "ANC with accrual",
+        "willOnFile": "Yes, unsigned",
+        "willDate": "2015",
+        "executor": "Sarah, failing Keri-Lee",
+        "beneficiaryHeirs": "Sarah, failing children in trust until age 25",
+        "guardians": "Keri-Lee",
+        "powerOfAttorney": "No"
+      },
+      {
+        "personId": "sarah",
+        "name": "Sarah",
+        "maritalRegime": "ANC with accrual",
+        "willOnFile": "No",
+        "willDate": "2015",
+        "executor": "David, failing Keri-Lee",
+        "beneficiaryHeirs": "David, failing children in trust until age 25",
+        "guardians": "Keri-Lee",
+        "powerOfAttorney": "No"
+      }
+    ],
+    "trusts": {
+      "hasTrust": false,
+      "summary": "No active family trust is currently recorded. If a trust exists, this section should describe its purpose, the intended beneficiaries, and any trustee or liquidity points that should be confirmed."
+    },
+    "estateLiquidityComment": "Estate liquidity should be reviewed against expected debts, estate costs, tax, executor fees, and any cash needs that may arise before assets can be transferred or sold. The meeting should confirm whether life cover, available cash, and beneficiary nominations provide enough practical liquidity.",
+    "comments": "The wills appear to be in place, but the meeting should confirm whether guardians, executors, beneficiaries, and any trust provisions still reflect the family’s wishes. If there have been material asset, family, or residency changes, the estate documents should be reviewed formally before relying on this summary."
+  },
+  "notes": {
+    "sections": [
+      {
+        "title": "Purpose of this document",
+        "paragraph": "This pre-meeting review document is prepared to support a planning conversation. It highlights factual information, planning assumptions, and agenda items that should be confirmed before recommendations are finalised."
+      },
+      {
+        "title": "Projection methodology",
+        "paragraph": "Retirement projections are illustrative and are based on the inputs, assumptions, and capital events recorded at the date prepared."
+      },
+      {
+        "title": "Investment and account information",
+        "paragraph": "Account values, asset splits, contribution levels, growth-asset exposure, and offshore exposure are planning inputs used to guide the discussion."
+      },
+      {
+        "title": "Risk and estate information",
+        "paragraph": "Policy and estate summaries are factual planning summaries and should be read together with the official policy schedules, beneficiary nominations, wills, and estate-planning documents."
+      }
+    ],
+    "confidentialityText": "Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637. This document is confidential and prepared for the named client family only. It should not be relied on by any other person."
+  }
+}

@@ -11,7 +11,7 @@ const path = require('path');
 const assert = require('assert');
 
 const html = fs.readFileSync(
-  path.join(__dirname, '..', '..', 'retirement_accumulation_v2.html'), 'utf8');
+  path.join(__dirname, '..', '..', 'Meeting Report', 'retirement_accumulation_v2.html'), 'utf8');
 
 // Grab the inline <script>...</script> (skip the Chart.js src tag)
 const scripts = html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g) || [];
