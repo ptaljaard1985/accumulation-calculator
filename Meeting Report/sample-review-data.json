@@ -1,0 +1,191 @@
+{
+  "kind": "sw-review-data",
+  "schemaVersion": "1.3.0",
+  "exportedAt": "2026-07-01T09:30:00+02:00",
+  "exportedBy": "Pierre Taljaard",
+  "firm": { "name": "Simple Wealth (Pty) Ltd", "fspNumber": "50637" },
+  "clientFamily": {
+    "groupId": "b1b2c3d4-0000-0000-0000-000000000001",
+    "displayName": "David and Sarah",
+    "members": [
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+        "firstName": "David",
+        "lastName": "Bennett",
+        "role": "primary",
+        "age": 48,
+        "dateOfBirth": "1978-04-15"
+      },
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a2",
+        "firstName": "Sarah",
+        "lastName": "Bennett",
+        "role": "spouse",
+        "age": 46,
+        "dateOfBirth": "1980-09-10"
+      }
+    ]
+  },
+  "accounts": [
+    {
+      "accountId": "acc-0000-0000-0000-000000000001",
+      "ownerPersonId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+      "ownerName": "David Bennett",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Retirement annuity",
+      "value": 2000000,
+      "monthlyContribution": 15000,
+      "growthAssetsPercent": 0.82,
+      "offshoreAssetsPercent": 0.41,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "acc-0000-0000-0000-000000000002",
+      "ownerPersonId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+      "ownerName": "David Bennett",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Discretionary",
+      "accountName": "Unit trust",
+      "value": 500000,
+      "monthlyContribution": 3000,
+      "growthAssetsPercent": 0.99,
+      "offshoreAssetsPercent": 1.0,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "acc-0000-0000-0000-000000000003",
+      "ownerPersonId": "b1b2c3d4-0000-0000-0000-0000000000a2",
+      "ownerName": "Sarah Bennett",
+      "source": "managed",
+      "provider": "Ninety One",
+      "type": "Retirement",
+      "accountName": "Retirement annuity",
+      "value": 2000000,
+      "monthlyContribution": 15000,
+      "growthAssetsPercent": 0.82,
+      "offshoreAssetsPercent": 0.41,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "bsi-0000-0000-0000-000000000010",
+      "ownerPersonId": "b1b2c3d4-0000-0000-0000-0000000000a2",
+      "ownerName": "Sarah Bennett",
+      "source": "held_away",
+      "provider": "10X",
+      "type": "Retirement (held-away)",
+      "accountName": "Preservation fund (previous employer)",
+      "value": null,
+      "monthlyContribution": 0,
+      "growthAssetsPercent": null,
+      "offshoreAssetsPercent": null,
+      "suggestedBucket": "retirementAssets"
+    }
+  ],
+  "netWorthItems": [
+    {
+      "itemId": "bsi-0000-0000-0000-000000000020",
+      "ownerPersonId": null,
+      "ownerName": "Joint / household",
+      "kind": "asset",
+      "category": "primary_residence",
+      "description": "Primary residence",
+      "institution": null,
+      "value": 3500000
+    },
+    {
+      "itemId": "bsi-0000-0000-0000-000000000021",
+      "ownerPersonId": null,
+      "ownerName": "Joint / household",
+      "kind": "liability",
+      "category": "debt",
+      "description": "Home loan",
+      "institution": "FNB",
+      "value": 1200000
+    }
+  ],
+  "risk": {
+    "policyBenefitRows": [
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+        "personName": "David Bennett",
+        "insurer": "Discovery Life",
+        "policyNumber": "DL-001",
+        "status": "active",
+        "lifeCover": 4500000,
+        "incomeDisabilityMonthly": 45000,
+        "capitalDisability": 3000000,
+        "criticalIllness": 1250000,
+        "impairment": 0,
+        "beneficiary": "Sarah"
+      },
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a2",
+        "personName": "Sarah Bennett",
+        "insurer": "Discovery Life",
+        "policyNumber": "DL-002",
+        "status": "active",
+        "lifeCover": 2500000,
+        "incomeDisabilityMonthly": 0,
+        "capitalDisability": 1500000,
+        "criticalIllness": 2000000,
+        "impairment": 0,
+        "beneficiary": "David"
+      }
+    ],
+    "comments": "Existing cover looks broadly aligned with the current income and debt position. Confirm whether disability and severe-illness cover remain appropriate after any income or family changes."
+  },
+  "estate": {
+    "willRows": [
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+        "name": "David Bennett",
+        "maritalRegime": "ANC with accrual",
+        "willStatus": "On file",
+        "willDate": "2023-06-01",
+        "executor": "Sarah, failing nominated executor",
+        "beneficiaryHeirs": "Sarah, failing children in trust until age 25",
+        "guardians": "Keri-Lee",
+        "testamentaryTrustForMinors": true
+      },
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a2",
+        "name": "Sarah Bennett",
+        "maritalRegime": "ANC with accrual",
+        "willStatus": "Has one — not seen",
+        "willDate": null,
+        "executor": "David, failing nominated executor",
+        "beneficiaryHeirs": "David, failing children in trust until age 25",
+        "guardians": "Keri-Lee",
+        "testamentaryTrustForMinors": true
+      }
+    ],
+    "powersOfAttorney": [
+      {
+        "personId": "b1b2c3d4-0000-0000-0000-0000000000a1",
+        "name": "David Bennett",
+        "poaType": "Healthcare",
+        "agent": "Sarah Bennett",
+        "status": "On file"
+      }
+    ],
+    "trusts": [
+      {
+        "name": "Bennett Family Trust",
+        "ownerName": "Household",
+        "trustType": "Inter vivos (living)",
+        "trustees": "David & Sarah Bennett, independent trustee"
+      }
+    ],
+    "estateLiquidityComment": "Review estate liquidity against expected debts, estate costs, tax and executor fees. Confirm that life cover and available cash provide enough practical liquidity.",
+    "comments": "Wills appear in place. Confirm guardians, executors, beneficiaries and any trust provisions still reflect the family's wishes."
+  },
+  "assumptionSeeds": {
+    "expectedInflation": 0.05,
+    "expectedReturn": 0.08,
+    "lifeExpectancy": 95,
+    "incomeGoalMonthly": 40000
+  }
+}
