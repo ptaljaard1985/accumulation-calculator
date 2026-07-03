@@ -1169,6 +1169,89 @@ check('review import: confirmMapping sets the eight hp-* inputs + ages + seeds +
     'confirm should build the projection');
 });
 
+// ============================================================
+// 8-page pre-meeting review report (Stage 6)
+// ============================================================
+const reviewReport = new Function('realData',
+  'var reviewData=realData, reviewSlots=null, mappingDecisions={};' +
+  ['fmtR', 'fmtShort', 'fmtPct', 'escapeHtml', 'isFiniteNum', 'resolveMemberSlots',
+   'normalizeReviewBucket', 'accountOwnerSlot', 'defaultAccountDecisions', 'aggregateReviewData',
+   'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
+   'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewAccountGroups', 'reviewOwnerLabel',
+   'renderReviewAccountRowsHtml', 'renderReviewNetWorthHtml', 'renderReviewRiskRowsHtml',
+   'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml', 'estateStatusReady',
+   'renderReviewReadinessHtml', 'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
+  ';reviewSlots=resolveMemberSlots(reviewData.clientFamily.members);' +
+  'mappingDecisions=defaultAccountDecisions(reviewData.accounts, reviewSlots);' +
+  'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(),' +
+  ' nw:renderReviewNetWorthHtml(), risk:renderReviewRiskRowsHtml(), wills:renderReviewWillsRowsHtml(),' +
+  ' poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml(), ready:renderReviewReadinessHtml() };'
+)(realReview);
+const stripSpace = s => s.replace(/ /g, ' ');
+
+check('review report: summary cards match confirmed buckets (children Ignored)', () => {
+  const r2 = n => Math.round(n * 100) / 100;
+  assert.strictEqual(r2(reviewReport.summary.totalInvest), 10743007.09);
+  assert.strictEqual(r2(reviewReport.summary.retTotal), 7820376.68);
+  assert.strictEqual(r2(reviewReport.summary.discTotal), 2514692.73);  // excludes the two child TFIs
+  assert.strictEqual(r2(reviewReport.summary.monthly), 7281.54);
+});
+
+check('review report: accounts table = 13 rows + 4 owner subtotals + household total, 2 Ignored', () => {
+  const trs = (reviewReport.acct.match(/<tr/g) || []).length;
+  assert.strictEqual(trs, 18, 'expected 18 <tr>, got ' + trs);
+  assert.ok(/Household total/.test(reviewReport.acct), 'household total row missing');
+  assert.ok(stripSpace(reviewReport.acct).includes('10 743 007'), 'household total value missing');
+  assert.strictEqual((reviewReport.acct.match(/>Ignore</g) || []).length, 2,
+    'exactly the two child accounts should be labelled Ignore');
+});
+
+check('review report: net worth reconciles to household total', () => {
+  assert.ok(stripSpace(reviewReport.nw).includes('26 293 007'),
+    'net worth should be R26 293 007 (investments + property/business - liabilities)');
+});
+
+check('review report: estate rebuilt to schema 1.3.0 (no old willOnFile / per-row POA)', () => {
+  // Wills carry willStatus + a testamentary column; POA + trusts are their own tables.
+  assert.ok(/On file — unsigned/.test(reviewReport.wills) && /Not discussed/.test(reviewReport.wills),
+    'wills should render willStatus values');
+  const willBodyRows = (reviewReport.wills.match(/<td class="rr-name"/g) || []).length;
+  assert.strictEqual(willBodyRows, 2, 'two will rows');
+  assert.strictEqual((reviewReport.poa.match(/<td class="rr-name"/g) || []).length, 2, 'two POA rows in their own table');
+  assert.ok(/VDW Family Trust/.test(reviewReport.trusts), 'trusts table should list the VDW Family Trust');
+  // The render source must not reference the superseded shape.
+  ['renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml'].forEach(fn => {
+    assert.ok(!/willOnFile/.test(extractFn(inline, fn)), fn + ' still references old willOnFile shape');
+  });
+  assert.ok(/testamentaryTrustForMinors/.test(extractFn(inline, 'renderReviewWillsRowsHtml')),
+    'wills should surface the testamentary-trust flag');
+});
+
+check('review report: risk table shows impairment, omits the (absent) waiting-period column', () => {
+  const src = extractFn(inline, 'renderReviewRiskRowsHtml');
+  assert.ok(/impairment/.test(src), 'impairment column missing');
+  assert.ok(!/waitingPeriod|waiting-period|Waiting period/i.test(src),
+    'waiting-period column should be omitted (no data field for it)');
+  assert.strictEqual((reviewReport.risk.match(/<tr>/g) || []).length, 2, 'two policy rows');
+});
+
+check('review report: estate-readiness flags the unfinalised wills/POAs/trustees', () => {
+  assert.ok(/not yet finalised/.test(reviewReport.ready), 'readiness should flag unfinalised documents');
+});
+
+check('review report: markup, button, export-mode gating + afterprint teardown present', () => {
+  assert.ok(/class="review-report"/.test(html), '.review-report section missing');
+  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 8, 'expected 8 report pages');
+  assert.ok(/id="btn-review-report"/.test(html), '#btn-review-report missing');
+  assert.ok(/getElementById\('btn-review-report'\)\.addEventListener\('click', runReviewReport\)/.test(inline),
+    'review report button not wired');
+  assert.ok(/\[data-export-mode="review"\]/.test(html), 'review export-mode CSS gate missing');
+  const run = extractFn(inline, 'runReviewReport');
+  assert.ok(/setAttribute\('data-export-mode', 'review'\)/.test(run) && /window\.print/.test(run),
+    'runReviewReport should gate review mode and print');
+  assert.ok(inline.includes("=== 'review'"), 'afterprint should tear down the review export mode');
+});
+
 console.log();
 console.log('='.repeat(50));
 console.log(`${passed} passed, ${failed} failed`);
