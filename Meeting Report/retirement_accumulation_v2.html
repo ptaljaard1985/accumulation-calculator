@@ -1668,6 +1668,51 @@
   .report-modal.events-modal { width: min(820px, 100%); }
   .report-modal.events-modal .events-list { margin: 14px 0 0; }
   .report-modal.events-modal .add-btn { margin-top: 10px; }
+  /* CRM account-mapping modal (wide, scrollable table of imported accounts) */
+  .report-modal.mapping-modal { width: min(1120px, 100%); max-height: 88vh; display: flex; flex-direction: column; }
+  .mapping-note {
+    margin: 12px 0 0; padding: 9px 12px; border-radius: 6px;
+    background: var(--gold-pale); color: var(--gold-2); font-size: 12.5px; line-height: 1.4;
+  }
+  .mapping-head, .map-row {
+    display: grid;
+    grid-template-columns: 1.35fr 1.2fr 1.25fr 0.8fr 0.8fr 1fr 1.75fr;
+    gap: 8px; align-items: center;
+  }
+  .mapping-head {
+    margin-top: 14px; padding: 0 6px 8px; border-bottom: 1px solid var(--hairline);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute);
+  }
+  .mapping-head .map-num { text-align: right; }
+  .mapping-list { overflow-y: auto; margin-top: 2px; }
+  .map-row { padding: 9px 6px; border-bottom: 1px solid var(--hairline); font-size: 12px; color: var(--ink-2); }
+  .map-owner { font-weight: 600; color: var(--ink); }
+  .map-provider, .map-acct { color: var(--mute); font-size: 11.5px; }
+  .map-acct-id { color: var(--faint); font-family: var(--mono); font-size: 10px; }
+  .map-val, .map-contrib { font-family: var(--mono); text-align: right; }
+  .map-tag {
+    display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 999px;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .03em;
+    background: var(--paper-2); color: var(--mute); vertical-align: middle;
+  }
+  .map-tag-child { background: var(--gold-pale); color: var(--gold-2); }
+  .map-tag-joint { background: var(--blue-soft); color: var(--navy); }
+  .map-attr { width: 100%; font-size: 11px; padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink-2); }
+  .map-attr-fixed { font-size: 11px; color: var(--mute); }
+  .map-seg { display: flex; gap: 4px; }
+  .map-seg-btn {
+    flex: 1; padding: 5px 4px; font-size: 10.5px; border: 1px solid var(--line);
+    border-radius: 5px; background: var(--surface); color: var(--mute); cursor: pointer;
+  }
+  .map-seg-btn:hover { border-color: var(--navy-soft); }
+  .map-seg-btn.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .mapping-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline); flex-wrap: wrap;
+  }
+  .mapping-totals { font-size: 12.5px; color: var(--ink-2); }
+  .mapping-totals strong { font-family: var(--mono); color: var(--ink); }
+  .mapping-foot .report-modal-actions { margin-top: 0; }
   .report-modal h2 { margin: 0 0 8px; font-size: 19px; color: #101828; }
   .report-modal p { margin: 0; color: #667085; }
   .report-modal-actions {
@@ -2660,6 +2705,32 @@
     </div>
   </div>
 
+  <!-- CRM review-data mapping: one row per imported account -> Retirement / Discretionary / Ignore -->
+  <div class="report-modal-backdrop mapping-modal-backdrop" id="mapping-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title">
+    <div class="report-modal mapping-modal">
+      <h2 id="mapping-modal-title">Map imported accounts</h2>
+      <p id="mapping-modal-sub">Confirm each account as Retirement, Discretionary, or Ignore.</p>
+      <div class="mapping-note" id="mapping-assumptions-note" style="display:none"></div>
+      <div class="mapping-head">
+        <div>Owner</div>
+        <div>Provider · Type</div>
+        <div>Account</div>
+        <div class="map-num">Value</div>
+        <div class="map-num">Monthly</div>
+        <div>Attribute to</div>
+        <div>Planning bucket</div>
+      </div>
+      <div class="mapping-list" id="mapping-list"></div>
+      <div class="mapping-foot">
+        <div class="mapping-totals" id="mapping-totals"></div>
+        <div class="report-modal-actions">
+          <button class="btn ghost" id="mapping-cancel-btn" type="button">Cancel</button>
+          <button class="btn primary" id="mapping-confirm-btn" type="button">Confirm and build projection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="footer-meta">
     Simple Wealth &nbsp;·&nbsp; Retirement Accumulation Projection &nbsp;·&nbsp; <span id="footer-date">—</span>
   </div>
@@ -2749,6 +2820,16 @@
   // One-way gate: State 1 → State 2 transition only happens when the adviser
   // clicks "See current projection". Stays true for the rest of the session.
   var projectionRequested = false;
+  // --- CRM review-data import (kind: "sw-review-data") ----------------------
+  // Set when a CRM export file is opened + mapped. reviewData retains the full
+  // loaded file (accounts, netWorthItems, risk, estate, comments) so the
+  // pre-meeting report can render the factual pages; the projection itself
+  // still comes from the tool's own engine over the aggregated planning inputs.
+  var REVIEW_KIND = 'sw-review-data';
+  var reviewData = null;        // the full loaded CRM file
+  var reviewSlots = null;       // resolveMemberSlots() result for the loaded file
+  var mappingDecisions = {};    // { accountId: { bucket, attributeTo, ownerSlot } }
+  var reviewLoaded = false;     // true once a review file's mapping is confirmed
   // Captured from baseline.inputs when a baseline is locked; drives the
   // planned-scenario slider row (centre, range, and delta readouts).
   // null whenever no baseline is locked — the slider row is hidden in that case.
@@ -4739,6 +4820,12 @@
     // (schemaVersion is tolerant; only branch here if we ever ship a v2 with a
     // breaking shape change. Additive changes stay at v1 — see restore-below.)
 
+    // Restoring a saved plan clears any loaded CRM review file: a plan file
+    // carries only inputs, not the CRM facts the pre-meeting report needs, so
+    // the review-report affordance must not linger with stale data.
+    reviewData = null; reviewSlots = null; mappingDecisions = {};
+    reviewLoaded = false; updateReviewReportButton();
+
     // 2. Top-level mode state FIRST (drives view derivation + scenario sliders).
     if (obj.anchor === 'youngest' || obj.anchor === 'oldest') anchor = obj.anchor;
     if (obj.mode === 'pv' || obj.mode === 'fv') mode = obj.mode;
@@ -4818,10 +4905,322 @@
     return true;
   }
 
+  // ==========================================================================
+  // CRM review-data import + per-account mapping (kind: "sw-review-data")
+  // The CRM exports one investment account per row with a *suggested* planning
+  // bucket. The advisor confirms each account as Retirement / Discretionary /
+  // Ignore on the mapping screen; the confirmed buckets are summed per spouse
+  // into the tool's existing planning inputs. The pure helpers below (member
+  // slotting, default decisions, aggregation) are audited by the JS + Python
+  // suites — they must stay side-effect-free.
+  // ==========================================================================
+
+  function isFiniteNum(x){ return typeof x === 'number' && isFinite(x); }
+
+  // Resolve which member fills spouse slot A (primary) and B (spouse). Members
+  // who are neither (children / dependants / other) resolve to slot 'other'.
+  // Solo edge: if no explicit primary, the first member anchors slot A.
+  function resolveMemberSlots(members){
+    members = Array.isArray(members) ? members : [];
+    var A = null, B = null, i;
+    for (i = 0; i < members.length; i++){
+      if (!A && members[i].role === 'primary') A = members[i];
+      else if (!B && members[i].role === 'spouse') B = members[i];
+    }
+    if (!A && members.length) A = members[0];
+    var slotById = {};
+    for (i = 0; i < members.length; i++){
+      var m = members[i];
+      slotById[m.personId] = (m === A) ? 'A' : (m === B) ? 'B' : 'other';
+    }
+    return { A: A, B: B, slotById: slotById, members: members };
+  }
+
+  // Coerce a CRM suggested bucket to one of the three planning buckets. Anything
+  // unrecognised (null / 'needsReview') defaults to 'excluded' so the advisor
+  // makes a deliberate choice rather than the tool guessing.
+  function normalizeReviewBucket(b){
+    return (b === 'retirementAssets' || b === 'discretionaryAssets' || b === 'excluded') ? b : 'excluded';
+  }
+
+  // The owner "slot" for an account: 'A'/'B' for a spouse-owned account,
+  // 'joint' for an unowned (null) account, 'other' for a child/dependant member.
+  function accountOwnerSlot(account, slots){
+    if (account.ownerPersonId == null) return 'joint';
+    return slots.slotById[account.ownerPersonId] || 'other';
+  }
+
+  // Starting per-account decisions: bucket seeded from the CRM suggestion, but a
+  // non-spouse owner (child/dependant, or a member with no A/B slot) defaults to
+  // Ignore so nothing owned by a minor silently lands in a parent's retirement
+  // capital. Joint accounts default to a 50/50 split. All overridable per row.
+  function defaultAccountDecisions(accounts, slots){
+    var d = {};
+    (accounts || []).forEach(function(a){
+      var ownerSlot = accountOwnerSlot(a, slots);
+      var dec = { ownerSlot: ownerSlot };
+      if (ownerSlot === 'A' || ownerSlot === 'B'){
+        dec.attributeTo = ownerSlot;
+        dec.bucket = normalizeReviewBucket(a.suggestedBucket);
+      } else if (ownerSlot === 'joint'){
+        dec.attributeTo = 'split';
+        dec.bucket = normalizeReviewBucket(a.suggestedBucket);
+      } else {          // 'other' — child / dependant / unknown member
+        dec.attributeTo = 'A';    // only consulted if the advisor later includes it
+        dec.bucket = 'excluded';  // default Ignore
+      }
+      d[a.accountId] = dec;
+    });
+    return d;
+  }
+
+  // Sum the confirmed decisions into the tool's per-spouse planning inputs.
+  // value:null -> 0; a 'split' attribution halves value+contribution across A/B.
+  // Returns the eight bucket totals plus included/excluded bookkeeping.
+  function aggregateReviewData(accounts, decisions){
+    var t = { A: {ret:0, retC:0, disc:0, discC:0}, B: {ret:0, retC:0, disc:0, discC:0} };
+    var includedTotal = 0, excludedTotal = 0;
+    (accounts || []).forEach(function(a){
+      var dec = decisions[a.accountId] || {};
+      var v = Number(a.value) || 0;
+      var c = Number(a.monthlyContribution) || 0;
+      if (dec.bucket !== 'retirementAssets' && dec.bucket !== 'discretionaryAssets'){
+        excludedTotal += v;
+        return;
+      }
+      includedTotal += v;
+      var bk = dec.bucket === 'retirementAssets' ? 'ret' : 'disc';
+      var attr = dec.attributeTo || 'A';
+      if (attr === 'split'){
+        t.A[bk] += v / 2; t.A[bk + 'C'] += c / 2;
+        t.B[bk] += v / 2; t.B[bk + 'C'] += c / 2;
+      } else {
+        var slot = (attr === 'B') ? 'B' : 'A';
+        t[slot][bk] += v; t[slot][bk + 'C'] += c;
+      }
+    });
+    return { A: t.A, B: t.B, includedTotal: includedTotal, excludedTotal: excludedTotal };
+  }
+
+  // --- Review-data UI (modal + rendering) -----------------------------------
+
+  function reviewMembers(){
+    return (reviewData && reviewData.clientFamily && reviewData.clientFamily.members) || [];
+  }
+  function reviewMemberRole(personId){
+    var ms = reviewMembers();
+    for (var i = 0; i < ms.length; i++){ if (ms[i].personId === personId) return ms[i].role; }
+    return null;
+  }
+  function nameForSlot(slot){
+    var m = slot === 'A' ? (reviewSlots && reviewSlots.A) : slot === 'B' ? (reviewSlots && reviewSlots.B) : null;
+    return (m && m.firstName) ? m.firstName : (slot === 'B' ? 'Spouse B' : 'Spouse A');
+  }
+  function reviewSharedSurname(slots){
+    var a = slots.A, b = slots.B;
+    if (a && b && a.lastName && b.lastName && a.lastName === b.lastName) return a.lastName;
+    if (a && a.lastName && !b) return a.lastName;
+    return null;
+  }
+
+  function openReviewData(obj){
+    reviewData = obj;
+    var members = (obj.clientFamily && obj.clientFamily.members) || [];
+    reviewSlots = resolveMemberSlots(members);
+    mappingDecisions = defaultAccountDecisions(obj.accounts || [], reviewSlots);
+
+    var sub = document.getElementById('mapping-modal-sub');
+    if (sub){
+      var fam = (obj.clientFamily && obj.clientFamily.displayName) || 'this household';
+      var n = (obj.accounts || []).length;
+      sub.textContent = fam + ' · ' + n + ' account' + (n === 1 ? '' : 's') +
+        ' imported from the CRM. Confirm each as Retirement, Discretionary, or Ignore.';
+    }
+    var note = document.getElementById('mapping-assumptions-note');
+    if (note){
+      var s = obj.assumptionSeeds || {};
+      var hasSeed = isFiniteNum(s.expectedReturn) || isFiniteNum(s.expectedInflation) || isFiniteNum(s.incomeGoalMonthly);
+      if (hasSeed){ note.style.display = 'none'; note.textContent = ''; }
+      else {
+        note.style.display = '';
+        note.textContent = 'The CRM supplied no return, inflation or income-goal assumptions, ' +
+          'so the projection will use the tool defaults. Set these on the market-assumptions sliders after building.';
+      }
+    }
+    renderMappingRows();
+    openMappingModal();
+  }
+
+  function renderMappingRows(){
+    var list = document.getElementById('mapping-list');
+    if (!list || !reviewData) return;
+    list.innerHTML = (reviewData.accounts || []).map(buildMappingRow).join('');
+    updateMappingTotals();
+  }
+
+  function buildMappingRow(a){
+    var dec = mappingDecisions[a.accountId] || {};
+    var slot = dec.ownerSlot;
+    var owner = escapeHtml(a.ownerName || 'Joint / household');
+    var tags = '';
+    if (a.source === 'held_away') tags += '<span class="map-tag">held-away</span>';
+    if (slot === 'joint') tags += '<span class="map-tag map-tag-joint">joint</span>';
+    if (slot === 'other') tags += '<span class="map-tag map-tag-child">' + escapeHtml(reviewMemberRole(a.ownerPersonId) || 'other') + '</span>';
+
+    var val = (a.value == null) ? '—' : fmtR(a.value);
+    var contrib = fmtR(a.monthlyContribution || 0);
+    var providerType = escapeHtml((a.provider || '') + ' · ' + (a.type || ''));
+    var acctName = escapeHtml(a.accountName || '') +
+      ' <span class="map-acct-id">' + escapeHtml(String(a.accountId || '').slice(0, 8)) + '</span>';
+
+    var seg = [['retirementAssets', 'Retirement'], ['discretionaryAssets', 'Discretionary'], ['excluded', 'Ignore']]
+      .map(function(b){
+        var on = dec.bucket === b[0] ? ' on' : '';
+        return '<button type="button" class="map-seg-btn' + on + '" data-account="' +
+          escapeHtml(a.accountId) + '" data-bucket="' + b[0] + '">' + b[1] + '</button>';
+      }).join('');
+
+    var attrCell;
+    if (slot === 'joint' || slot === 'other'){
+      var opts = [['A', nameForSlot('A')], ['B', nameForSlot('B')], ['split', 'Split 50/50']].map(function(o){
+        var sel = dec.attributeTo === o[0] ? ' selected' : '';
+        return '<option value="' + o[0] + '"' + sel + '>' + escapeHtml(o[1]) + '</option>';
+      }).join('');
+      attrCell = '<select class="map-attr" data-account="' + escapeHtml(a.accountId) + '">' + opts + '</select>';
+    } else {
+      attrCell = '<span class="map-attr-fixed">' + escapeHtml(nameForSlot(slot)) + '</span>';
+    }
+
+    return '<div class="map-row" data-account="' + escapeHtml(a.accountId) + '">' +
+      '<div class="map-owner">' + owner + tags + '</div>' +
+      '<div class="map-provider">' + providerType + '</div>' +
+      '<div class="map-acct">' + acctName + '</div>' +
+      '<div class="map-val">' + val + '</div>' +
+      '<div class="map-contrib">' + contrib + '</div>' +
+      '<div class="map-attr-cell">' + attrCell + '</div>' +
+      '<div class="map-seg">' + seg + '</div>' +
+    '</div>';
+  }
+
+  function onMappingClick(e){
+    var btn = e.target.closest ? e.target.closest('.map-seg-btn') : null;
+    if (!btn) return;
+    var id = btn.getAttribute('data-account');
+    if (!mappingDecisions[id]) mappingDecisions[id] = {};
+    mappingDecisions[id].bucket = btn.getAttribute('data-bucket');
+    var row = btn.closest('.map-row');
+    if (row){
+      var segs = row.querySelectorAll('.map-seg-btn');
+      for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('on', segs[i] === btn);
+    }
+    updateMappingTotals();
+  }
+
+  function onMappingChange(e){
+    var sel = e.target.closest ? e.target.closest('.map-attr') : null;
+    if (!sel) return;
+    var id = sel.getAttribute('data-account');
+    if (!mappingDecisions[id]) mappingDecisions[id] = {};
+    mappingDecisions[id].attributeTo = sel.value;
+    updateMappingTotals();
+  }
+
+  function updateMappingTotals(){
+    var el = document.getElementById('mapping-totals');
+    if (!el || !reviewData) return;
+    var t = aggregateReviewData(reviewData.accounts || [], mappingDecisions);
+    el.innerHTML = 'Retirement <strong>' + fmtR(t.A.ret + t.B.ret) + '</strong>' +
+      ' &nbsp;·&nbsp; Discretionary <strong>' + fmtR(t.A.disc + t.B.disc) + '</strong>' +
+      ' &nbsp;·&nbsp; Ignored <strong>' + fmtR(t.excludedTotal) + '</strong>';
+  }
+
+  function setSliderClamped(id, pct){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var min = parseFloat(el.min), max = parseFloat(el.max), v = pct;
+    if (isFinite(min)) v = Math.max(min, v);
+    if (isFinite(max)) v = Math.min(max, v);
+    el.value = String(v);
+  }
+
+  function applyAssumptionSeeds(seeds){
+    seeds = seeds || {};
+    if (isFiniteNum(seeds.expectedReturn)) setSliderClamped('return', seeds.expectedReturn * 100);
+    if (isFiniteNum(seeds.expectedInflation)) setSliderClamped('cpi', seeds.expectedInflation * 100);
+    if (isFiniteNum(seeds.incomeGoalMonthly)) setHpFormatted('income-goal', seeds.incomeGoalMonthly);
+    // lifeExpectancy is a drawdown-tool input; esc + retirement-age keep defaults.
+  }
+
+  function confirmMapping(){
+    if (!reviewData) return;
+    var slots = reviewSlots || resolveMemberSlots(reviewMembers());
+    var t = aggregateReviewData(reviewData.accounts || [], mappingDecisions);
+
+    // Spouse names + ages from members (primary -> A, spouse -> B).
+    if (slots.A){
+      spouseNames.A = slots.A.firstName || 'Spouse A';
+      if (isFiniteNum(slots.A.age)) document.getElementById('hp-age-A').value = String(slots.A.age);
+    }
+    if (slots.B){
+      spouseNames.B = slots.B.firstName || 'Spouse B';
+      if (isFiniteNum(slots.B.age)) document.getElementById('hp-age-B').value = String(slots.B.age);
+    } else {
+      spouseNames.B = 'Spouse B';
+    }
+    // Mirror names into the State-1 first-name inputs (cosmetic; consistent with loadSampleData).
+    document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
+      el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
+    });
+    // Family + client name from the CRM displayName / shared surname.
+    var cf = reviewData.clientFamily || {};
+    var famLabel = reviewSharedSurname(slots) || cf.displayName || '';
+    var famEl = document.getElementById('family-name');
+    if (famEl && famLabel){ famEl.textContent = famLabel; famEl.classList.remove('is-placeholder'); }
+    var cn = document.getElementById('client-name');
+    if (cn) cn.value = cf.displayName || famLabel || '';
+    var cne = document.getElementById('client-name-edit');
+    if (cne) cne.value = cf.displayName || famLabel || '';
+
+    // Money buckets.
+    setHpFormatted('hp-ret-A', t.A.ret);   setHpFormatted('hp-ret-contrib-A', t.A.retC);
+    setHpFormatted('hp-disc-A', t.A.disc); setHpFormatted('hp-disc-contrib-A', t.A.discC);
+    setHpFormatted('hp-ret-B', t.B.ret);   setHpFormatted('hp-ret-contrib-B', t.B.retC);
+    setHpFormatted('hp-disc-B', t.B.disc); setHpFormatted('hp-disc-contrib-B', t.B.discC);
+
+    applyAssumptionSeeds(reviewData.assumptionSeeds);
+
+    reviewLoaded = true;
+    updateReviewReportButton();
+    projectionRequested = true;
+    closeMappingModal();
+    renderEvents();
+    renderSpouseLabels();
+    refresh();
+    window.scrollTo(0, 0);
+  }
+
+  function openMappingModal(){
+    var m = document.getElementById('mapping-modal');
+    if (m) m.setAttribute('data-open', 'true');
+  }
+  function closeMappingModal(){
+    var m = document.getElementById('mapping-modal');
+    if (m) m.setAttribute('data-open', 'false');
+  }
+
+  // Shows/hides the "Full review report" button; fleshed out with the report.
+  function updateReviewReportButton(){
+    var b = document.getElementById('btn-review-report');
+    if (b) b.style.display = reviewLoaded ? '' : 'none';
+  }
+
   function handlePlanText(text){
     var obj;
     try { obj = JSON.parse(text); }
     catch (e){ window.alert('That file is not valid JSON, so it could not be opened.'); return; }
+    // A CRM review-data export routes to the mapping screen; anything else falls
+    // through to the plan-restore path (which still rejects unknown kinds).
+    if (obj && obj.kind === REVIEW_KIND){ openReviewData(obj); return; }
     applyPlanFile(obj);
   }
 
@@ -5495,6 +5894,14 @@
   });
   document.getElementById('events-modal').addEventListener('click', function(e){
     if (e.target === this) closeEventsModal();   // backdrop click dismisses
+  });
+  // CRM review-data mapping modal.
+  document.getElementById('mapping-list').addEventListener('click', onMappingClick);
+  document.getElementById('mapping-list').addEventListener('change', onMappingChange);
+  document.getElementById('mapping-confirm-btn').addEventListener('click', confirmMapping);
+  document.getElementById('mapping-cancel-btn').addEventListener('click', closeMappingModal);
+  document.getElementById('mapping-modal').addEventListener('click', function(e){
+    if (e.target === this) closeMappingModal();   // backdrop click dismisses
   });
   document.getElementById('empty-add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());

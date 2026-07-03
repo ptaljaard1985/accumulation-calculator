@@ -145,21 +145,53 @@ If no income benefit exists, show a dash or leave blank.
 
 ## Estate Mapping
 
-Estate page rows come mainly from `estate_plans`.
+Estate documents are now **addable items** in the CRM (`estate_items`), so the estate block carries **three lists** — `willRows` (one per member), `powersOfAttorney`, and `trusts` — plus the two planner comment boxes (schema 1.3.0). There is no longer a `willOnFile` field and no per-will-row `powerOfAttorney` field.
+
+### `willRows[]` — one per member
+
+Will facts come mainly from `estate_plans`, joined to `clients` for the name.
 
 | Report Field | CRM Source | Notes |
 |---|---|---|
+| `personId` | `estate_plans.client_id` | |
 | `name` | `clients.first_name` | |
-| `maritalRegime` | `estate_plans.estate_data.marital_regime` | Convert enum to human wording. |
-| `willOnFile` | `estate_plans.has_will` plus notes | Display `Yes`, `No`, `Unknown`, or richer wording. |
-| `willDate` | `estate_plans.will_date` | Display year if space is tight. |
+| `maritalRegime` | `estate_plans.estate_data.marital_regime` | Convert enum to human wording. `null` if unknown. |
+| `willStatus` | `estate_plans.will_status` | One of `On file` / `On file — unsigned` / `Has one — not seen` / `None` / `Not discussed`. Replaces the old boolean `willOnFile`. |
+| `willDate` | `estate_plans.will_date` | ISO date the will was signed; `null` if none/unknown. Display year if space is tight. |
 | `executor` | `estate_plans.executor` | |
-| `beneficiaryHeirs` | `estate_plans.notes` or future structured field | May need a dedicated CRM field later. |
+| `beneficiaryHeirs` | `estate_plans.beneficiary_heirs` | Structured field (migration 023). |
 | `guardians` | `estate_plans.guardian_nominations` | |
-| `powerOfAttorney` | future field or notes | CRM may need a dedicated field. |
-| `trusts.summary` | `estate_plans.trust_notes` or group-level trust note | Free text. |
-| `estateLiquidityComment` | planner comment field | Free text. |
-| `estate.comments` | planner comment field | Free text. |
+| `testamentaryTrustForMinors` | `estate_plans.testamentary_trust` | Boolean — the will provides a testamentary trust if minor children inherit. |
+
+### `powersOfAttorney[]` — zero or more across the family
+
+A separate list, no longer a per-will-row field.
+
+| Report Field | CRM Source | Notes |
+|---|---|---|
+| `personId` | `estate_items.client_id` | Person granting the POA. |
+| `name` | `clients.first_name` | |
+| `poaType` | `estate_items.poa_type` | Display string, e.g. `General`, `Healthcare`. |
+| `agent` | `estate_items.agent` | Appointed agent/attorney. |
+| `status` | `estate_items.status` | Display string, e.g. `On file`, `On file — unsigned`. |
+
+### `trusts[]` — zero or more, household or per-member
+
+A separate list (an **array**, not an object — the old `trusts.summary` / `trusts.hasTrust` object is gone).
+
+| Report Field | CRM Source | Notes |
+|---|---|---|
+| `name` | `estate_items.trust_name` | Trust name. |
+| `ownerName` | `estate_items.client_id` → member name, else `Household` | `Household` for a group-level trust, or the owning member's name. |
+| `trustType` | `estate_items.trust_type` | Display string, e.g. `Inter vivos (living)`, `Testamentary`. |
+| `trustees` | `estate_items.trustees` | Free text; `null` if unknown. |
+
+### Estate comments
+
+| Report Field | CRM Source | Notes |
+|---|---|---|
+| `estateLiquidityComment` | `client_groups.estate_liquidity_comment` | Free text planner comment. |
+| `estate.comments` | `client_groups.estate_planning_comment` | Free text planner comment. |
 
 ## Fields Likely Needed in CRM Later
 
