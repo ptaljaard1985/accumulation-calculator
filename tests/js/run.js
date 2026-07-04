@@ -1179,13 +1179,13 @@ const reviewReport = new Function('realData',
    'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
    'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewAccountGroups', 'reviewOwnerLabel',
    'renderReviewAccountRowsHtml', 'renderReviewNetWorthHtml', 'renderReviewRiskRowsHtml',
-   'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml', 'estateStatusReady',
-   'renderReviewReadinessHtml', 'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
+   'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml',
+   'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
   ';reviewSlots=resolveMemberSlots(reviewData.clientFamily.members);' +
   'mappingDecisions=defaultAccountDecisions(reviewData.accounts, reviewSlots);' +
   'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(),' +
   ' nw:renderReviewNetWorthHtml(), risk:renderReviewRiskRowsHtml(), wills:renderReviewWillsRowsHtml(),' +
-  ' poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml(), ready:renderReviewReadinessHtml() };'
+  ' poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml() };'
 )(realReview);
 const stripSpace = s => s.replace(/ /g, ' ');
 
@@ -1235,8 +1235,11 @@ check('review report: risk table shows impairment, omits the (absent) waiting-pe
   assert.strictEqual((reviewReport.risk.match(/<tr>/g) || []).length, 2, 'two policy rows');
 });
 
-check('review report: estate-readiness flags the unfinalised wills/POAs/trustees', () => {
-  assert.ok(/not yet finalised/.test(reviewReport.ready), 'readiness should flag unfinalised documents');
+check('review report: estate has three separate sections (wills, POA, trusts); no readiness box', () => {
+  assert.ok(/id="rr-estate-wills"/.test(html) && /id="rr-estate-poa"/.test(html) && /id="rr-estate-trusts"/.test(html),
+    'wills/POA/trusts containers all present');
+  assert.ok(!/id="rr-estate-readiness"/.test(html), 'estate-readiness box should be removed');
+  assert.ok(!/renderReviewReadinessHtml|estateStatusReady/.test(inline), 'readiness render functions should be removed');
 });
 
 check('review report: markup, button, export-mode gating + afterprint teardown present', () => {

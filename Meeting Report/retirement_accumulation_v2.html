@@ -1747,11 +1747,11 @@
   }
 
   .review-report .rr-page {
-    width: 297mm; height: 210mm; box-sizing: border-box;
+    width: 297mm; min-height: 210mm; box-sizing: border-box;
     background: var(--rr-paper); color: var(--rr-ink);
     font-family: var(--sans); font-size: 13px; line-height: 1.45;
-    display: grid; grid-template-rows: auto minmax(0, 1fr) 12mm;
-    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    position: relative;
     page-break-after: always; break-after: page;
   }
   .review-report .rr-page:last-of-type { page-break-after: auto; break-after: auto; }
@@ -1768,7 +1768,7 @@
   .review-report .rr-meta { text-align: right; color: var(--rr-muted); font-size: 11px; line-height: 1.5; }
   .review-report .rr-dark .rr-meta,
   .review-report .rr-dark .rr-footer { color: rgba(255,255,255,0.82); }
-  .review-report .rr-body { min-height: 0; padding: 7mm 13mm 6mm; }
+  .review-report .rr-body { flex: 1 1 auto; min-height: 0; padding: 7mm 13mm 6mm; }
   .review-report .rr-footer {
     height: 12mm; padding: 0 13mm; border-top: 1px solid var(--rr-line);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -1918,9 +1918,12 @@
   .review-report .rr-event-note { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--rr-line); font-size: 10.4px; color: var(--rr-muted); }
 
   /* ---------- Detail pages (accounts / risk / estate) ---------- */
-  .review-report .rr-detail-page { height: 100%; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 10px; min-height: 0; }
-  .review-report .rr-detail-page.rr-compact-detail { grid-template-rows: auto minmax(0,1fr) auto; }
-  .review-report .rr-detail-page.rr-estate-detail { grid-template-rows: auto; grid-auto-rows: auto; align-content: start; gap: 9px; }
+  /* Content-flow: sections stack at their natural height, top-aligned, so a
+     card is bound by the space it needs (no stretch, no clipping/overlap). The
+     page grows past 210mm only if the content genuinely needs it. */
+  .review-report .rr-detail-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 10px; }
+  .review-report .rr-detail-page.rr-compact-detail { gap: 10px; }
+  .review-report .rr-detail-page.rr-estate-detail { gap: 9px; }
   .review-report .rr-detail-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; min-height: 0; }
   .review-report .rr-detail-grid.rr-full { grid-template-columns: 1fr; }
   .review-report .rr-detail-grid.rr-equal { grid-template-columns: 1fr 1fr; }
@@ -1982,13 +1985,6 @@
   .review-report .rr-summary-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 17px; line-height: 1; }
   .review-report .rr-summary-card small { display: block; margin-top: 6px; color: var(--rr-muted); font-size: 9.4px; line-height: 1.25; }
 
-  /* ---------- Estate readiness note ---------- */
-  .review-report #rr-estate-readiness p { margin: 0 0 6px; color: var(--rr-ink); font-size: 11px; font-weight: 700; }
-  .review-report #rr-estate-readiness ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
-  .review-report #rr-estate-readiness li { display: grid; grid-template-columns: 13px minmax(0,1fr); gap: 7px; color: var(--rr-muted); font-size: 10.5px; line-height: 1.34; }
-  .review-report #rr-estate-readiness li::before { content: "\2022"; color: var(--rr-gold); font-size: 15px; line-height: 0.8; }
-  .review-report #rr-estate-readiness .rr-clear-list li::before { color: var(--rr-brand); }
-
   /* ---------- Notes (page 8) ---------- */
   .review-report .rr-notes-page { height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); gap: 14px; min-height: 0; }
   .review-report .rr-notes-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; align-content: start; }
@@ -2015,9 +2011,9 @@
       gap: 0 !important; background: transparent !important;
     }
     html.export-printing #calc-root[data-export-mode="review"] .rr-page {
-      width: 297mm !important; height: 210mm !important;
+      width: 297mm !important; min-height: 210mm !important; height: auto !important;
       margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-      overflow: hidden !important; break-after: page; page-break-after: always;
+      overflow: visible !important; break-after: page; page-break-after: always;
     }
     html.export-printing #calc-root[data-export-mode="review"] .rr-page:last-of-type {
       break-after: auto; page-break-after: auto;
@@ -3387,20 +3383,16 @@
               </div>
             </article>
           </section>
-          <section class="rr-detail-grid rr-equal">
+          <section class="rr-detail-grid rr-full">
             <article class="rr-detail-card">
               <h2>Powers of attorney</h2>
               <div class="rr-detail-body rr-table-body" id="rr-estate-poa"></div>
             </article>
-            <article class="rr-detail-card">
-              <h2>Trusts</h2>
-              <div class="rr-detail-body rr-table-body" id="rr-estate-trusts"></div>
-            </article>
           </section>
           <section class="rr-detail-grid rr-full">
             <article class="rr-detail-card">
-              <h2>Estate readiness</h2>
-              <div class="rr-detail-body" id="rr-estate-readiness"></div>
+              <h2>Trusts</h2>
+              <div class="rr-detail-body rr-table-body" id="rr-estate-trusts"></div>
             </article>
           </section>
           <section class="rr-detail-grid rr-equal">
@@ -6900,46 +6892,6 @@
       + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
 
-  // A will / POA status counts as "ready" only when it is on file / signed and
-  // not flagged unsigned, outstanding, or not discussed.
-  function estateStatusReady(status){
-    var s = (status || '').toLowerCase();
-    if (!s) return false;
-    if (s.indexOf('unsigned') !== -1 || s.indexOf('not discussed') !== -1 ||
-        s.indexOf('outstanding') !== -1 || s.indexOf('none') !== -1) return false;
-    return s.indexOf('on file') !== -1 || s.indexOf('signed') !== -1;
-  }
-
-  // Estate readiness: list the gaps (unfinalised wills / POAs, trusts with no
-  // trustees). When nothing is flagged, a single reassuring line.
-  function renderReviewReadinessHtml(){
-    var est = (reviewData && reviewData.estate) || {};
-    var gaps = [];
-    (est.willRows || []).forEach(function(w){
-      if (!estateStatusReady(w.willStatus)){
-        gaps.push(escapeHtml(reviewShortName(w.personId, w.name)) + "'s will is not yet finalised (status: "
-          + escapeHtml(w.willStatus || 'no status recorded') + ").");
-      }
-    });
-    (est.powersOfAttorney || []).forEach(function(pw){
-      if (!estateStatusReady(pw.status)){
-        gaps.push(escapeHtml(reviewShortName(pw.personId, pw.name)) + "'s "
-          + escapeHtml((pw.poaType || 'general').toLowerCase()) + " power of attorney is not yet finalised (status: "
-          + escapeHtml(pw.status || 'no status recorded') + ").");
-      }
-    });
-    (est.trusts || []).forEach(function(t){
-      if (t.trustees == null || String(t.trustees).trim() === ''){
-        gaps.push('Trustees for ' + escapeHtml(t.name || 'the recorded trust') + ' are not recorded and should be confirmed.');
-      }
-    });
-    if (!gaps.length){
-      return '<ul class="rr-clear-list"><li>No outstanding estate-readiness items were flagged from the recorded data. Confirm the documents remain current at the meeting.</li></ul>';
-    }
-    return '<p>Items to confirm or finalise before relying on the estate plan:</p><ul>'
-      + gaps.map(function(g){ return '<li>' + g + '</li>'; }).join('') + '</ul>';
-  }
-
   // Comment box text with paragraph breaks preserved.
   function reviewCommentHtml(text){
     var t = (text || '').trim();
@@ -7067,7 +7019,6 @@
     setRRHtmlById('rr-estate-wills', renderReviewWillsRowsHtml());
     setRRHtmlById('rr-estate-poa', renderReviewPoaHtml());
     setRRHtmlById('rr-estate-trusts', renderReviewTrustsHtml());
-    setRRHtmlById('rr-estate-readiness', renderReviewReadinessHtml());
     setRRHtmlById('rr-estate-liquidity', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.estateLiquidityComment));
     setRRHtmlById('rr-estate-comments', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.comments));
   }
