@@ -1668,10 +1668,361 @@
   .report-modal.events-modal { width: min(820px, 100%); }
   .report-modal.events-modal .events-list { margin: 14px 0 0; }
   .report-modal.events-modal .add-btn { margin-top: 10px; }
+  /* CRM account-mapping modal (wide, scrollable table of imported accounts) */
+  .report-modal.mapping-modal { width: min(1120px, 100%); max-height: 88vh; display: flex; flex-direction: column; }
+  .mapping-note {
+    margin: 12px 0 0; padding: 9px 12px; border-radius: 6px;
+    background: var(--gold-pale); color: var(--gold-2); font-size: 12.5px; line-height: 1.4;
+  }
+  .mapping-head, .map-row {
+    display: grid;
+    grid-template-columns: 1.35fr 1.2fr 1.25fr 0.8fr 0.8fr 1fr 1.75fr;
+    gap: 8px; align-items: center;
+  }
+  .mapping-head {
+    margin-top: 14px; padding: 0 6px 8px; border-bottom: 1px solid var(--hairline);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute);
+  }
+  .mapping-head .map-num { text-align: right; }
+  .mapping-list { overflow-y: auto; margin-top: 2px; }
+  .map-row { padding: 9px 6px; border-bottom: 1px solid var(--hairline); font-size: 12px; color: var(--ink-2); }
+  .map-owner { font-weight: 600; color: var(--ink); }
+  .map-provider, .map-acct { color: var(--mute); font-size: 11.5px; }
+  .map-acct-id { color: var(--faint); font-family: var(--mono); font-size: 10px; }
+  .map-val, .map-contrib { font-family: var(--mono); text-align: right; }
+  .map-tag {
+    display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 999px;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .03em;
+    background: var(--paper-2); color: var(--mute); vertical-align: middle;
+  }
+  .map-tag-child { background: var(--gold-pale); color: var(--gold-2); }
+  .map-tag-joint { background: var(--blue-soft); color: var(--navy); }
+  .map-attr { width: 100%; font-size: 11px; padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink-2); }
+  .map-attr-fixed { font-size: 11px; color: var(--mute); }
+  .map-seg { display: flex; gap: 4px; }
+  .map-seg-btn {
+    flex: 1; padding: 5px 4px; font-size: 10.5px; border: 1px solid var(--line);
+    border-radius: 5px; background: var(--surface); color: var(--mute); cursor: pointer;
+  }
+  .map-seg-btn:hover { border-color: var(--navy-soft); }
+  .map-seg-btn.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .mapping-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline); flex-wrap: wrap;
+  }
+  .mapping-totals { font-size: 12.5px; color: var(--ink-2); }
+  .mapping-totals strong { font-family: var(--mono); color: var(--ink); }
+  .mapping-foot .report-modal-actions { margin-top: 0; }
   .report-modal h2 { margin: 0 0 8px; font-size: 19px; color: #101828; }
   .report-modal p { margin: 0; color: #667085; }
   .report-modal-actions {
     display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap;
+  }
+
+  /* ============================================================
+     Review report (8-page A4 landscape, CRM-driven pre-meeting
+     document). Ported from report_master.html; every class is
+     rr-prefixed and scoped under .review-report so nothing leaks
+     into the screen UI or the existing .report-deck export. Shown
+     only when #calc-root has data-export-mode="review". Colours are
+     report-local --rr-* custom properties.
+     ============================================================ */
+  .review-report {
+    --rr-brand: #323E5D;
+    --rr-gold: #B97A4D;
+    --rr-paper: #f4f6f9;
+    --rr-surface: #ffffff;
+    --rr-surface-2: #f8fafc;
+    --rr-ink: #101828;
+    --rr-muted: #667085;
+    --rr-line: #d9dfe8;
+    --rr-radius: 9px;
+    display: none;
+  }
+
+  #calc-root[data-export-mode="review"] > :not(.review-report) { display: none !important; }
+  #calc-root[data-export-mode="review"] .review-report {
+    display: grid; justify-content: center; gap: 18px;
+    background: var(--hairline); padding: 24px 0;
+  }
+
+  .review-report .rr-page {
+    width: 297mm; height: 210mm; box-sizing: border-box;
+    background: var(--rr-paper); color: var(--rr-ink);
+    font-family: var(--sans); font-size: 13px; line-height: 1.45;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) 12mm;
+    overflow: hidden; position: relative;
+    page-break-after: always; break-after: page;
+  }
+  .review-report .rr-page:last-of-type { page-break-after: auto; break-after: auto; }
+  #calc-root[data-export-mode="review"] .rr-page { box-shadow: 0 18px 48px rgba(16,24,40,0.12); }
+  .review-report .rr-dark { background: var(--rr-brand); color: #fff; }
+
+  .review-report .rr-header {
+    min-height: 19mm; padding: 8mm 13mm 0;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 18px;
+  }
+  .review-report .rr-brand { display: flex; align-items: center; }
+  .review-report .rr-brand-logo { display: block; width: 34mm; height: auto; }
+  .review-report .rr-dark .rr-brand-logo { width: 37mm; }
+  .review-report .rr-meta { text-align: right; color: var(--rr-muted); font-size: 11px; line-height: 1.5; }
+  .review-report .rr-dark .rr-meta,
+  .review-report .rr-dark .rr-footer { color: rgba(255,255,255,0.82); }
+  .review-report .rr-body { min-height: 0; padding: 7mm 13mm 6mm; }
+  .review-report .rr-footer {
+    height: 12mm; padding: 0 13mm; border-top: 1px solid var(--rr-line);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    color: var(--rr-muted); font-size: 10px;
+  }
+  .review-report .rr-dark .rr-footer { border-top-color: rgba(255,255,255,0.18); }
+  .review-report .rr-num { font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; }
+  .review-report .rr-kicker {
+    color: var(--rr-muted); text-transform: uppercase; letter-spacing: 1.4px;
+    font-size: 10px; font-weight: 850;
+  }
+  .review-report .rr-dark .rr-kicker { color: rgba(255,255,255,0.66); }
+  .review-report h1, .review-report h2, .review-report h3, .review-report p { margin-top: 0; }
+  .review-report .rr-page h1 { margin-bottom: 10px; font-size: 31px; line-height: 1.05; letter-spacing: -0.04em; }
+  .review-report .rr-page h2 { margin-bottom: 6px; font-size: 15px; line-height: 1.18; }
+  .review-report .rr-page h3 { margin-bottom: 4px; font-size: 12px; line-height: 1.2; }
+  .review-report .rr-page p { margin-bottom: 8px; color: var(--rr-muted); font-size: 11.5px; line-height: 1.42; }
+  .review-report .rr-dark p { color: rgba(255,255,255,0.74); }
+
+  /* ---------- Cover ---------- */
+  .review-report .rr-cover-layout { height: 100%; display: grid; align-content: center; gap: 12px; }
+  .review-report .rr-cover-title {
+    margin: 6px 0 12px; max-width: 940px; color: var(--rr-gold);
+    font-size: 54px; line-height: 1.02; letter-spacing: -0.05em;
+  }
+  .review-report .rr-cover-subtitle {
+    max-width: 860px; color: rgba(255,255,255,0.74); font-size: 17px; line-height: 1.45;
+  }
+
+  /* ---------- Page title ---------- */
+  .review-report .rr-page-title {
+    display: flex; justify-content: space-between; gap: 22px; align-items: flex-end;
+    padding-bottom: 8px; border-bottom: 1px solid var(--rr-line); margin-bottom: 8px;
+  }
+  .review-report .rr-page-title h1 { margin: 4px 0 0; font-size: 28px; }
+  .review-report .rr-page-title p { max-width: 430px; margin: 0; text-align: right; font-size: 10.8px; }
+
+  /* ---------- Agenda (pages 2-3) ---------- */
+  .review-report .rr-agenda-page {
+    height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); gap: 12px; min-height: 0;
+  }
+  .review-report .rr-agenda-page.rr-with-seasonal { grid-template-rows: auto minmax(0,1fr) auto; gap: 10px; }
+  .review-report .rr-agenda-page.rr-with-seasonal.rr-no-title { grid-template-rows: minmax(0,1fr) auto; }
+  .review-report .rr-agenda-list { min-height: 0; display: grid; grid-auto-rows: auto; gap: 7px; align-content: start; }
+  .review-report .rr-agenda-section {
+    background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
+    display: grid; grid-template-columns: 58mm minmax(0,1fr); min-height: 0; overflow: hidden;
+  }
+  .review-report .rr-agenda-section.rr-gold-label .rr-agenda-label { background: var(--rr-gold); }
+  .review-report .rr-agenda-section.rr-gold-label .rr-agenda-label h2 { color: #fff; }
+  .review-report .rr-agenda-section.rr-gold-label .rr-agenda-label span { color: rgba(255,255,255,0.82); }
+  .review-report .rr-agenda-section.rr-rows-1 .rr-agenda-label { padding-top: 0; padding-bottom: 0; justify-content: center; }
+  .review-report .rr-agenda-label {
+    padding: 12px 14px; border-right: 1px solid var(--rr-line); background: #3f4653;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 7px;
+  }
+  .review-report .rr-agenda-label h2 { margin: 0; color: #fff; font-size: 17px; line-height: 1.08; white-space: normal; letter-spacing: -0.02em; }
+  .review-report .rr-agenda-label span { display: block; color: rgba(255,255,255,0.72); font-size: 10.4px; line-height: 1.32; text-align: left; }
+  .review-report .rr-agenda-items {
+    padding: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 13mm; gap: 0; align-content: start; background: #fff;
+  }
+  .review-report .rr-agenda-question {
+    min-height: 0; display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 9px; align-items: start;
+    padding: 9px 16px; color: var(--rr-brand); font-size: 12.7px; line-height: 1.22;
+  }
+  .review-report .rr-agenda-question:nth-child(4n + 1),
+  .review-report .rr-agenda-question:nth-child(4n) { background: var(--rr-surface-2); }
+  .review-report .rr-agenda-question span {
+    color: var(--rr-gold); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums;
+    font-size: 10.5px; font-weight: 850; text-align: center; line-height: 1.4;
+  }
+  .review-report .rr-seasonal-strip {
+    background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
+    padding: 0; display: grid; grid-template-columns: 58mm repeat(3, minmax(0,1fr)); gap: 0; align-items: stretch; overflow: hidden;
+  }
+  .review-report .rr-seasonal-strip > div:first-child { background: var(--rr-gold); color: #fff; padding: 10px 14px; }
+  .review-report .rr-seasonal-strip h2 { margin: 0 0 3px; font-size: 13px; color: inherit; }
+  .review-report .rr-seasonal-strip p { margin: 0; font-size: 10.2px; line-height: 1.32; color: rgba(255,255,255,0.82); }
+  .review-report .rr-seasonal-items { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .review-report .rr-seasonal-item { border-left: 1px solid var(--rr-line); padding: 10px 12px; }
+  .review-report .rr-seasonal-item strong { display: block; margin-bottom: 2px; font-size: 11px; color: var(--rr-ink); }
+  .review-report .rr-seasonal-item span { color: var(--rr-muted); font-size: 10.2px; line-height: 1.32; }
+
+  /* ---------- Projection (page 5) ---------- */
+  .review-report .rr-projection-page {
+    height: 100%; display: grid; grid-template-rows: 80mm auto auto; gap: 10px; min-height: 0;
+  }
+  .review-report .rr-chart-panel {
+    background: var(--rr-brand); border-radius: var(--rr-radius); color: #fff; overflow: hidden;
+    display: grid; grid-template-rows: auto minmax(0,1fr);
+  }
+  .review-report .rr-chart-head { min-height: 13mm; padding: 12px 18px 0; }
+  .review-report .rr-chart-head p { margin: 0; color: rgba(255,255,255,0.76); font-size: 14px; }
+  .review-report .rr-chart-wrap { min-height: 0; padding: 0 4px 10px; }
+  .review-report .rr-chart { display: block; width: 100%; height: 100%; overflow: visible; }
+  .review-report .rr-chart text { font-family: var(--sans); }
+  .review-report .rr-projection-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 0; }
+  .review-report .rr-card {
+    background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
+    overflow: hidden; min-height: 0;
+  }
+  .review-report .rr-card-head {
+    min-height: 34px; padding: 0 12px; border-bottom: 1px solid var(--rr-line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .review-report .rr-card-head h2 { margin: 0; font-size: 13px; }
+  .review-report .rr-card-body { padding: 10px 12px; }
+  .review-report .rr-leverage-card {
+    background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
+    display: grid; grid-template-columns: 52mm minmax(0,1fr); min-height: 15mm; overflow: hidden;
+  }
+  .review-report .rr-leverage-label { padding: 7px 11px; border-right: 1px solid var(--rr-line); background: var(--rr-gold); }
+  .review-report .rr-leverage-card h2 { margin: 0 0 3px; color: #fff; font-size: 12px; line-height: 1.16; }
+  .review-report .rr-leverage-label span { display: block; color: rgba(255,255,255,0.82); font-size: 8.6px; line-height: 1.25; }
+  .review-report .rr-leverage-copy { padding: 6px 13px; display: flex; align-items: center; }
+  .review-report .rr-leverage-copy p { margin: 0; color: var(--rr-muted); font-size: 10.6px; line-height: 1.3; }
+  .review-report .rr-leverage-copy strong { color: var(--rr-ink); font-weight: 850; }
+  .review-report .rr-metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 9px; }
+  .review-report .rr-metric { border: 1px solid var(--rr-line); border-radius: var(--rr-radius); background: var(--rr-surface-2); padding: 8px 9px; }
+  .review-report .rr-metric span { display: block; margin-bottom: 4px; color: var(--rr-muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+  .review-report .rr-metric strong { display: block; color: var(--rr-brand); font-size: 14px; line-height: 1; }
+  .review-report .rr-snapshot-grid {
+    display: grid; grid-template-columns: 1.05fr 1fr 1fr; row-gap: 8px; column-gap: 12px; align-items: baseline; font-size: 11px;
+  }
+  .review-report .rr-snapshot-grid .rr-head {
+    color: var(--rr-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 850;
+    border-bottom: 1px solid var(--rr-line); padding-bottom: 6px;
+  }
+  .review-report .rr-snapshot-grid .rr-label { color: var(--rr-ink); font-weight: 790; }
+  .review-report .rr-snapshot-grid .rr-value {
+    color: var(--rr-ink); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums;
+    font-weight: 760; text-align: right; white-space: nowrap;
+  }
+  .review-report .rr-assumption-row {
+    margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--rr-line);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: baseline;
+  }
+  .review-report .rr-assumption-row div { display: flex; justify-content: space-between; gap: 12px; color: var(--rr-muted); font-size: 11px; }
+  .review-report .rr-assumption-row strong { color: var(--rr-ink); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; }
+  .review-report .rr-event-grid {
+    display: grid; grid-template-columns: 18mm minmax(0,1fr) 30mm 28mm; row-gap: 8px; column-gap: 10px; align-items: baseline; font-size: 11px;
+  }
+  .review-report .rr-event-grid .rr-ev-age, .review-report .rr-event-grid .rr-ev-basis { color: var(--rr-muted); }
+  .review-report .rr-event-grid .rr-ev-name { color: var(--rr-ink); font-weight: 790; }
+  .review-report .rr-event-grid .rr-ev-amount { color: var(--rr-ink); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-weight: 760; text-align: right; white-space: nowrap; }
+  .review-report .rr-event-empty { color: var(--rr-muted); font-size: 11px; font-style: italic; }
+  .review-report .rr-event-note { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--rr-line); font-size: 10.4px; color: var(--rr-muted); }
+
+  /* ---------- Detail pages (accounts / risk / estate) ---------- */
+  .review-report .rr-detail-page { height: 100%; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 10px; min-height: 0; }
+  .review-report .rr-detail-page.rr-compact-detail { grid-template-rows: auto minmax(0,1fr) auto; }
+  .review-report .rr-detail-page.rr-estate-detail { grid-template-rows: auto; grid-auto-rows: auto; align-content: start; gap: 9px; }
+  .review-report .rr-detail-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; min-height: 0; }
+  .review-report .rr-detail-grid.rr-full { grid-template-columns: 1fr; }
+  .review-report .rr-detail-grid.rr-equal { grid-template-columns: 1fr 1fr; }
+  .review-report .rr-detail-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); overflow: hidden; min-height: 0; }
+  .review-report .rr-detail-card h2 { margin: 0; padding: 10px 12px; border-bottom: 1px solid var(--rr-line); font-size: 14px; }
+  .review-report .rr-planner-comment h2 { background: #667085; border-bottom-color: #667085; color: #fff; }
+  .review-report .rr-detail-body { padding: 10px 12px; }
+  .review-report .rr-detail-body.rr-table-body { padding: 0; }
+  .review-report .rr-detail-card.rr-compact .rr-detail-body { padding-top: 8px; padding-bottom: 8px; }
+  .review-report .rr-planner-comment .rr-detail-body { min-height: 20mm; display: flex; align-items: flex-start; }
+  .review-report .rr-planner-comment p, .review-report .rr-trust-note p { margin: 0; color: var(--rr-muted); font-size: 11px; line-height: 1.42; }
+  .review-report .rr-planner-comment p strong { color: var(--rr-ink); font-weight: 850; }
+
+  /* ---------- Tables ---------- */
+  .review-report .rr-table { width: 100%; border-collapse: collapse; font-size: 9.7px; line-height: 1.25; }
+  .review-report .rr-table th { padding: 0 0 7px; color: var(--rr-muted); font-size: 8.3px; font-weight: 850; letter-spacing: 0.6px; text-align: left; text-transform: uppercase; border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-table td { padding: 7px 0; color: var(--rr-muted); border-bottom: 1px solid var(--rr-line); vertical-align: top; }
+  .review-report .rr-table tr:last-child td { border-bottom: 0; }
+  .review-report .rr-table .rr-name { color: var(--rr-ink); font-weight: 800; }
+  .review-report .rr-table .rr-money, .review-report .rr-table .rr-num-cell {
+    color: var(--rr-ink); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-weight: 760; text-align: right; white-space: nowrap;
+  }
+  .review-report .rr-table .rr-right { text-align: right; }
+  .review-report .rr-table .rr-empty { text-align: center; color: var(--rr-muted); font-style: italic; padding: 14px 6px; }
+  .review-report .rr-account-table { font-size: 9px; }
+  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 4px 6px; }
+  .review-report .rr-account-table th { background: var(--rr-brand); color: #fff; border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-account-table .rr-person-total td { background: var(--rr-gold); color: #fff; font-weight: 850; }
+  .review-report .rr-account-table .rr-household-total td { background: var(--rr-brand); color: #fff; font-weight: 850; }
+  .review-report .rr-account-table .rr-person-total .rr-money, .review-report .rr-account-table .rr-household-total .rr-money,
+  .review-report .rr-account-table .rr-person-total .rr-num-cell, .review-report .rr-account-table .rr-household-total .rr-num-cell,
+  .review-report .rr-account-table .rr-person-total .rr-name, .review-report .rr-account-table .rr-household-total .rr-name { color: #fff; }
+  .review-report .rr-risk-table { font-size: 10px; }
+  .review-report .rr-risk-table th { background: var(--rr-brand); color: #fff; padding: 8px 7px; border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-risk-table td { padding: 8px 7px; }
+  .review-report .rr-risk-table .rr-person-total td { background: var(--rr-gold); color: #fff; font-weight: 850; }
+  .review-report .rr-risk-table .rr-person-total .rr-money, .review-report .rr-risk-table .rr-person-total .rr-name { color: #fff; }
+  .review-report .rr-risk-table .rr-person-spacer td { padding: 4px 0; border-bottom: 0; background: transparent; }
+  .review-report .rr-estate-table { font-size: 9.6px; }
+  .review-report .rr-estate-table th { background: var(--rr-brand); color: #fff; padding: 7px; border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-estate-table td { padding: 7px; line-height: 1.28; }
+  .review-report .rr-empty-note { margin: 0; padding: 12px; color: var(--rr-muted); font-size: 11px; font-style: italic; }
+
+  /* ---------- Net worth strip (accounts page) ---------- */
+  .review-report .rr-networth { display: grid; gap: 8px; }
+  .review-report .rr-networth-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .review-report .rr-networth-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 9px 12px; }
+  .review-report .rr-networth-card span { display: block; margin-bottom: 5px; color: var(--rr-muted); font-size: 8.6px; font-weight: 850; letter-spacing: 0.6px; text-transform: uppercase; }
+  .review-report .rr-networth-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 15px; line-height: 1; }
+  .review-report .rr-networth-card.rr-net strong { color: var(--rr-gold); }
+  .review-report .rr-networth-items { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 9.5px; color: var(--rr-muted); }
+  .review-report .rr-networth-items span { white-space: nowrap; }
+  .review-report .rr-networth-items strong { color: var(--rr-ink); font-family: var(--mono); font-weight: 760; }
+
+  /* ---------- Summary cards (accounts page top) ---------- */
+  .review-report .rr-summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 20mm; padding: 10px 12px; }
+  .review-report .rr-summary-card span { display: block; margin-bottom: 6px; color: var(--rr-muted); font-size: 9px; font-weight: 850; letter-spacing: 0.7px; text-transform: uppercase; }
+  .review-report .rr-summary-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 17px; line-height: 1; }
+  .review-report .rr-summary-card small { display: block; margin-top: 6px; color: var(--rr-muted); font-size: 9.4px; line-height: 1.25; }
+
+  /* ---------- Estate readiness note ---------- */
+  .review-report #rr-estate-readiness p { margin: 0 0 6px; color: var(--rr-ink); font-size: 11px; font-weight: 700; }
+  .review-report #rr-estate-readiness ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+  .review-report #rr-estate-readiness li { display: grid; grid-template-columns: 13px minmax(0,1fr); gap: 7px; color: var(--rr-muted); font-size: 10.5px; line-height: 1.34; }
+  .review-report #rr-estate-readiness li::before { content: "\2022"; color: var(--rr-gold); font-size: 15px; line-height: 0.8; }
+  .review-report #rr-estate-readiness .rr-clear-list li::before { color: var(--rr-brand); }
+
+  /* ---------- Notes (page 8) ---------- */
+  .review-report .rr-notes-page { height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); gap: 14px; min-height: 0; }
+  .review-report .rr-notes-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; align-content: start; }
+  .review-report .rr-note-section { padding-top: 12px; border-top: 1px solid var(--rr-line); }
+  .review-report .rr-note-section h2 { margin: 0 0 6px; color: var(--rr-ink); font-size: 14px; line-height: 1.2; }
+  .review-report .rr-note-section p { margin: 0 0 7px; color: var(--rr-muted); font-size: 10.8px; line-height: 1.44; }
+  .review-report .rr-note-section ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .review-report .rr-note-section li { display: grid; grid-template-columns: 13px minmax(0,1fr); gap: 7px; color: var(--rr-muted); font-size: 10.8px; line-height: 1.38; }
+  .review-report .rr-note-section li::before { content: "\2022"; color: var(--rr-gold); font-size: 16px; line-height: 0.8; }
+  .review-report .rr-note-section.rr-wide { grid-column: 1 / -1; }
+
+  /* Print overrides for the review report (mirror the report-deck "true"
+     print block, but keyed to data-export-mode="review"). Collapses the
+     screen-print wrappers so each .rr-page maps 1:1 to a landscape sheet. */
+  @media print {
+    html.export-printing #calc-root[data-export-mode="review"],
+    html.export-printing #calc-root[data-export-mode="review"] .calc {
+      margin: 0 !important; padding: 0 !important;
+      max-width: none !important; width: 100% !important;
+      min-height: 0 !important; overflow: visible !important;
+    }
+    html.export-printing #calc-root[data-export-mode="review"] .review-report {
+      display: block !important; margin: 0 !important; padding: 0 !important;
+      gap: 0 !important; background: transparent !important;
+    }
+    html.export-printing #calc-root[data-export-mode="review"] .rr-page {
+      width: 297mm !important; height: 210mm !important;
+      margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+      overflow: hidden !important; break-after: page; page-break-after: always;
+    }
+    html.export-printing #calc-root[data-export-mode="review"] .rr-page:last-of-type {
+      break-after: auto; page-break-after: auto;
+    }
+    .report-modal-backdrop { display: none !important; }
   }
 
   /* Print-specific overrides for the report deck. Scoped to
@@ -2029,6 +2380,7 @@
         <button class="btn no-print" id="btn-open-plan" type="button">Open</button>
         <button class="btn primary no-print" id="btn-compare-top" type="button">Compare</button>
         <button class="btn gold no-print" id="btn-export-report" type="button">Report</button>
+        <button class="btn gold no-print" id="btn-review-report" type="button" style="display:none">Review report</button>
       </div>
     </div>
 
@@ -2634,6 +2986,503 @@
 
   </section><!-- /.report-deck -->
 
+  <!-- ========================================================
+       Review report (8-page A4 landscape, CRM-driven pre-meeting
+       document). Hidden until runReviewReport() sets
+       data-export-mode="review" on #calc-root. Static pages (agenda,
+       notes) are ported verbatim from report_master.html; the
+       accounts / projection / risk / estate pages are filled at
+       export time by populateReviewReport() from reviewData +
+       mappingDecisions + the live projection. No sample data.
+       ======================================================== -->
+  <section class="review-report" aria-hidden="true">
+
+    <!-- 01 · Cover (dark) -->
+    <section class="rr-page rr-dark rr-cover" data-page="cover">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-cover.png" alt="Simple Wealth"></div>
+        <div class="rr-meta">Prepared for private discussion</div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-cover-layout">
+          <div>
+            <div class="rr-kicker">Pre-meeting review document</div>
+            <h1 class="rr-cover-title" data-rr="cover-title">Household review</h1>
+            <p class="rr-cover-subtitle" data-rr="cover-subtitle">Prepared for the annual review meeting.</p>
+          </div>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">01 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 02 · Agenda (part 1) -->
+    <section class="rr-page" data-page="agenda-1">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-agenda-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Annual review</div>
+              <h1>Annual Review Agenda Items.</h1>
+            </div>
+          </div>
+          <section class="rr-agenda-list">
+            <article class="rr-agenda-section rr-rows-2 rr-gold-label">
+              <div class="rr-agenda-label">
+                <h2>Life planning</h2>
+                <span>Family, transitions, decisions, and anything material changing soon.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>1</span><div>Confirm any important family updates since the last review.</div></div>
+                <div class="rr-agenda-question"><span>2</span><div>Discuss upcoming transitions expected in the next 12 to 24 months.</div></div>
+                <div class="rr-agenda-question"><span>3</span><div>Identify any big family decisions that need to be made.</div></div>
+                <div class="rr-agenda-question"><span>4</span><div>Note any personal priorities that should shape the financial plan.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-3">
+              <div class="rr-agenda-label">
+                <h2>Cash flow planning</h2>
+                <span>Income, expenses, savings capacity, and known capital needs.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>5</span><div>Confirm expected income or expense changes in the coming year.</div></div>
+                <div class="rr-agenda-question"><span>6</span><div>Confirm monthly surplus after household expenses.</div></div>
+                <div class="rr-agenda-question"><span>7</span><div>Review emergency fund and short-term cash buffer.</div></div>
+                <div class="rr-agenda-question"><span>8</span><div>Review whether debt is being serviced appropriately.</div></div>
+                <div class="rr-agenda-question"><span>9</span><div>Decide whether contributions can increase.</div></div>
+                <div class="rr-agenda-question"><span>10</span><div>Capture upcoming expenses, withdrawals, or capital needs.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-2">
+              <div class="rr-agenda-label">
+                <h2>Investment planning</h2>
+                <span>Portfolio structure, contribution split, risk, fees, and platform use.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>11</span><div>Confirm the portfolio still supports the plan.</div></div>
+                <div class="rr-agenda-question"><span>12</span><div>Review the retirement and discretionary asset split.</div></div>
+                <div class="rr-agenda-question"><span>13</span><div>Check whether asset allocation remains appropriate.</div></div>
+                <div class="rr-agenda-question"><span>14</span><div>Review fees, platform use, and simplification opportunities.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-3">
+              <div class="rr-agenda-label">
+                <h2>Retirement projections</h2>
+                <span>Income goal, retirement age, capital events, and scenarios.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>15</span><div>Confirm the income goal is still appropriate.</div></div>
+                <div class="rr-agenda-question"><span>16</span><div>Review projected income at the planned retirement age.</div></div>
+                <div class="rr-agenda-question"><span>17</span><div>Compare projected income with current living expenses.</div></div>
+                <div class="rr-agenda-question"><span>18</span><div>Decide whether a scenario should become the new baseline.</div></div>
+                <div class="rr-agenda-question"><span>19</span><div>Confirm capital events included in the projection.</div></div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">02 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 03 · Agenda (part 2) + seasonal strip -->
+    <section class="rr-page" data-page="agenda-2">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-agenda-page rr-with-seasonal rr-no-title">
+          <section class="rr-agenda-list">
+            <article class="rr-agenda-section rr-rows-3">
+              <div class="rr-agenda-label">
+                <h2>Risk planning</h2>
+                <span>Cover levels, income protection, beneficiaries, and ownership.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>20</span><div>Confirm income, debt, family, or employment changes.</div></div>
+                <div class="rr-agenda-question"><span>21</span><div>Review whether life and disability cover remain appropriate.</div></div>
+                <div class="rr-agenda-question"><span>22</span><div>Check income protection and critical illness cover.</div></div>
+                <div class="rr-agenda-question"><span>23</span><div>Review provision for future healthcare needs.</div></div>
+                <div class="rr-agenda-question"><span>24</span><div>Confirm beneficiaries and policy ownership where relevant.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-3">
+              <div class="rr-agenda-label">
+                <h2>Estate planning</h2>
+                <span>Wills, beneficiaries, estate liquidity, and family changes.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>25</span><div>Confirm wills still reflect your wishes.</div></div>
+                <div class="rr-agenda-question"><span>26</span><div>Review beneficiary nominations and estate liquidity.</div></div>
+                <div class="rr-agenda-question"><span>27</span><div>Confirm living will or power of attorney documents if relevant.</div></div>
+                <div class="rr-agenda-question"><span>28</span><div>Confirm guardians, trusts, or special arrangements if relevant.</div></div>
+                <div class="rr-agenda-question"><span>29</span><div>Check whether major family or asset changes affect the plan.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-3">
+              <div class="rr-agenda-label">
+                <h2>Tax planning</h2>
+                <span>Contribution allowances, tax-year planning, and tax admin.</span>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>30</span><div>Check whether recent tax or legislative changes affect the plan.</div></div>
+                <div class="rr-agenda-question"><span>31</span><div>Review whether RA, TFSA, or CGT allowances should be used.</div></div>
+                <div class="rr-agenda-question"><span>32</span><div>Note any tax-year top-up opportunity.</div></div>
+                <div class="rr-agenda-question"><span>33</span><div>Check whether PAYE, CGT, or tax admin needs attention.</div></div>
+                <div class="rr-agenda-question"><span>34</span><div>Confirm documents needed for tax season.</div></div>
+              </div>
+            </article>
+            <article class="rr-agenda-section rr-rows-1">
+              <div class="rr-agenda-label">
+                <h2>Other</h2>
+              </div>
+              <div class="rr-agenda-items">
+                <div class="rr-agenda-question"><span>35</span><div>Anything else we have not yet covered.</div></div>
+              </div>
+            </article>
+          </section>
+          <section class="rr-seasonal-strip">
+            <div>
+              <h2>Seasonal check-ins</h2>
+              <p>Between annual reviews, we also help with:</p>
+            </div>
+            <div class="rr-seasonal-items">
+              <div class="rr-seasonal-item">
+                <strong>Tax year-end</strong>
+                <span>Contribution opportunities before the tax year closes.</span>
+              </div>
+              <div class="rr-seasonal-item">
+                <strong>Tax season</strong>
+                <span>Tax information summaries and available certificates.</span>
+              </div>
+              <div class="rr-seasonal-item">
+                <strong>Life changes</strong>
+                <span>Urgent planning issues caused by major personal changes.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">03 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 04 · Accounts and contributions -->
+    <section class="rr-page" data-page="accounts">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-detail-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Investment detail</div>
+              <h1>Accounts and contributions.</h1>
+            </div>
+          </div>
+          <section class="rr-summary-cards">
+            <div class="rr-summary-card">
+              <span>Total investment assets</span>
+              <strong data-rr="acc-total">—</strong>
+              <small>Across all imported investment accounts.</small>
+            </div>
+            <div class="rr-summary-card">
+              <span>Retirement assets</span>
+              <strong data-rr="acc-retirement">—</strong>
+              <small>Confirmed to the retirement projection.</small>
+            </div>
+            <div class="rr-summary-card">
+              <span>Discretionary assets</span>
+              <strong data-rr="acc-discretionary">—</strong>
+              <small>Capital outside retirement wrappers.</small>
+            </div>
+            <div class="rr-summary-card">
+              <span>Monthly contributions</span>
+              <strong data-rr="acc-monthly">—</strong>
+              <small>Recurring invested contributions.</small>
+            </div>
+          </section>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Account summary</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-account-table">
+                  <thead>
+                    <tr>
+                      <th>Owner</th><th>Provider</th><th>Type</th><th>Account</th>
+                      <th class="rr-right">Value</th><th class="rr-right">Monthly</th>
+                      <th>Bucket</th><th class="rr-right">Growth</th><th class="rr-right">Offshore</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rr-accounts-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <section class="rr-networth" id="rr-networth"></section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">04 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 05 · Retirement projection -->
+    <section class="rr-page" data-page="projection">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-projection-page">
+          <section class="rr-chart-panel">
+            <div class="rr-chart-head">
+              <p>Projected starting retirement income, shown in today's money and before tax.</p>
+            </div>
+            <div class="rr-chart-wrap">
+              <svg id="rr-income-chart" class="rr-chart" viewBox="0 0 940 350" role="img" aria-label="Retirement income projection chart"></svg>
+            </div>
+          </section>
+          <section>
+            <div class="rr-metric-grid">
+              <div class="rr-metric"><span>Projected income</span><strong class="rr-num" data-rr="proj-income">—</strong></div>
+              <div class="rr-metric"><span>Income goal</span><strong class="rr-num" data-rr="proj-goal">—</strong></div>
+              <div class="rr-metric"><span>Goal progress</span><strong class="rr-num" data-rr="proj-progress">—</strong></div>
+              <div class="rr-metric"><span>Retire at</span><strong data-rr="proj-retire">—</strong></div>
+            </div>
+            <div class="rr-projection-summary">
+              <article class="rr-card">
+                <div class="rr-card-head"><h2>Current planning snapshot</h2></div>
+                <div class="rr-card-body">
+                  <div class="rr-snapshot-grid">
+                    <div class="rr-head">Planning item</div>
+                    <div class="rr-head" style="text-align:right;">Current balance</div>
+                    <div class="rr-head" style="text-align:right;">Monthly contribution</div>
+                    <div class="rr-label">Retirement assets</div>
+                    <div class="rr-value" data-rr="snap-ret-bal">—</div>
+                    <div class="rr-value" data-rr="snap-ret-contrib">—</div>
+                    <div class="rr-label">Discretionary assets</div>
+                    <div class="rr-value" data-rr="snap-disc-bal">—</div>
+                    <div class="rr-value" data-rr="snap-disc-contrib">—</div>
+                  </div>
+                  <div class="rr-assumption-row">
+                    <div><span>Expected return</span><strong data-rr="proj-return">—</strong></div>
+                    <div><span>Expected inflation</span><strong data-rr="proj-inflation">—</strong></div>
+                  </div>
+                </div>
+              </article>
+              <article class="rr-card">
+                <div class="rr-card-head"><h2>Capital events</h2></div>
+                <div class="rr-card-body">
+                  <div id="rr-proj-events"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+          <section class="rr-leverage-card">
+            <div class="rr-leverage-label">
+              <h2>Contribution leverage</h2>
+              <span>Estimated impact of saving more before retirement.</span>
+            </div>
+            <div class="rr-leverage-copy">
+              <p data-rr="proj-leverage">—</p>
+            </div>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">05 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 06 · Risk / policy summary -->
+    <section class="rr-page" data-page="risk">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-detail-page rr-compact-detail">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Risk planning detail</div>
+              <h1>Policy summary.</h1>
+            </div>
+          </div>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Benefits by person and insurer</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-risk-table">
+                  <thead>
+                    <tr>
+                      <th>Person</th><th>Insurer</th>
+                      <th class="rr-right">Life cover</th><th class="rr-right">Income disability</th>
+                      <th class="rr-right">Capital disability</th><th class="rr-right">Critical illness</th>
+                      <th class="rr-right">Impairment</th><th>Beneficiary</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rr-risk-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card rr-planner-comment">
+              <h2>Comments</h2>
+              <div class="rr-detail-body">
+                <p id="rr-risk-comment">—</p>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">06 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 07 · Estate facts -->
+    <section class="rr-page" data-page="estate">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-detail-page rr-estate-detail">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Estate planning detail</div>
+              <h1>Estate facts to confirm.</h1>
+            </div>
+          </div>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Wills and estate documents</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-estate-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th><th>Marital regime</th><th>Will status</th><th>Will date</th>
+                      <th>Executor</th><th>Beneficiary / heirs</th><th>Guardians</th><th>Testamentary trust</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rr-estate-wills"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <section class="rr-detail-grid rr-equal">
+            <article class="rr-detail-card">
+              <h2>Powers of attorney</h2>
+              <div class="rr-detail-body rr-table-body" id="rr-estate-poa"></div>
+            </article>
+            <article class="rr-detail-card">
+              <h2>Trusts</h2>
+              <div class="rr-detail-body rr-table-body" id="rr-estate-trusts"></div>
+            </article>
+          </section>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Estate readiness</h2>
+              <div class="rr-detail-body" id="rr-estate-readiness"></div>
+            </article>
+          </section>
+          <section class="rr-detail-grid rr-equal">
+            <article class="rr-detail-card rr-planner-comment rr-compact">
+              <h2>Estate liquidity</h2>
+              <div class="rr-detail-body"><p id="rr-estate-liquidity">—</p></div>
+            </article>
+            <article class="rr-detail-card rr-planner-comment rr-compact">
+              <h2>Comments</h2>
+              <div class="rr-detail-body"><p id="rr-estate-comments">—</p></div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">07 / 08</span>
+      </footer>
+    </section>
+
+    <!-- 08 · Notes / methodology -->
+    <section class="rr-page" data-page="notes">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-notes-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Methodology and important information</div>
+              <h1>Notes for interpreting this report.</h1>
+            </div>
+          </div>
+          <section class="rr-notes-layout">
+            <article class="rr-note-section">
+              <h2>Purpose of this document</h2>
+              <p>This pre-meeting review document is prepared to support a planning conversation. It highlights factual information, planning assumptions, and agenda items that should be confirmed before recommendations are finalised.</p>
+              <ul>
+                <li>It is not intended to be a complete record of advice or a standalone recommendation.</li>
+                <li>Any agreed changes should be confirmed after the meeting before implementation.</li>
+              </ul>
+            </article>
+            <article class="rr-note-section">
+              <h2>Projection methodology</h2>
+              <p>Retirement projections are illustrative and are based on the inputs, assumptions, and capital events recorded at the date prepared.</p>
+              <ul>
+                <li>Projected income is shown in today's money and before tax unless stated otherwise.</li>
+                <li>Actual outcomes may differ because of investment returns, inflation, fees, tax, legislation, contribution changes, and personal circumstances.</li>
+              </ul>
+            </article>
+            <article class="rr-note-section">
+              <h2>Investment and account information</h2>
+              <p>Account values, asset splits, contribution levels, growth-asset exposure, and offshore exposure are planning inputs used to guide the discussion.</p>
+              <ul>
+                <li>Values should be checked against the most recent available investment statements.</li>
+                <li>Portfolio changes should only be implemented after the agreed advice and instruction process.</li>
+              </ul>
+            </article>
+            <article class="rr-note-section">
+              <h2>Risk and estate information</h2>
+              <p>Policy and estate summaries are factual planning summaries and should be read together with the official policy schedules, beneficiary nominations, wills, and estate-planning documents.</p>
+              <ul>
+                <li>Benefit amounts, beneficiaries, ownership, waiting periods, executors, guardians, and trustees should be confirmed where relevant.</li>
+                <li>Estate, tax, and legal matters may require input from appropriately qualified professionals.</li>
+              </ul>
+            </article>
+            <article class="rr-note-section rr-wide">
+              <h2>Regulatory and confidentiality note</h2>
+              <p>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637. This document is confidential and prepared for the named client family only. It should not be relied on by any other person. Information in this report depends on the accuracy of data provided by the client, product providers, and internal planning records.</p>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">08 / 08</span>
+      </footer>
+    </section>
+
+  </section><!-- /.review-report -->
+
   <!-- Include-scenario prompt (shown before export when a baseline is locked) -->
   <div class="report-modal-backdrop" id="report-scenario-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="report-scenario-modal-title">
     <div class="report-modal">
@@ -2656,6 +3505,32 @@
       <button class="add-btn" id="modal-add-event-btn" type="button">+ Add an event</button>
       <div class="report-modal-actions">
         <button class="btn primary" id="events-modal-done" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRM review-data mapping: one row per imported account -> Retirement / Discretionary / Ignore -->
+  <div class="report-modal-backdrop mapping-modal-backdrop" id="mapping-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title">
+    <div class="report-modal mapping-modal">
+      <h2 id="mapping-modal-title">Map imported accounts</h2>
+      <p id="mapping-modal-sub">Confirm each account as Retirement, Discretionary, or Ignore.</p>
+      <div class="mapping-note" id="mapping-assumptions-note" style="display:none"></div>
+      <div class="mapping-head">
+        <div>Owner</div>
+        <div>Provider · Type</div>
+        <div>Account</div>
+        <div class="map-num">Value</div>
+        <div class="map-num">Monthly</div>
+        <div>Attribute to</div>
+        <div>Planning bucket</div>
+      </div>
+      <div class="mapping-list" id="mapping-list"></div>
+      <div class="mapping-foot">
+        <div class="mapping-totals" id="mapping-totals"></div>
+        <div class="report-modal-actions">
+          <button class="btn ghost" id="mapping-cancel-btn" type="button">Cancel</button>
+          <button class="btn primary" id="mapping-confirm-btn" type="button">Confirm and build projection</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2749,6 +3624,16 @@
   // One-way gate: State 1 → State 2 transition only happens when the adviser
   // clicks "See current projection". Stays true for the rest of the session.
   var projectionRequested = false;
+  // --- CRM review-data import (kind: "sw-review-data") ----------------------
+  // Set when a CRM export file is opened + mapped. reviewData retains the full
+  // loaded file (accounts, netWorthItems, risk, estate, comments) so the
+  // pre-meeting report can render the factual pages; the projection itself
+  // still comes from the tool's own engine over the aggregated planning inputs.
+  var REVIEW_KIND = 'sw-review-data';
+  var reviewData = null;        // the full loaded CRM file
+  var reviewSlots = null;       // resolveMemberSlots() result for the loaded file
+  var mappingDecisions = {};    // { accountId: { bucket, attributeTo, ownerSlot } }
+  var reviewLoaded = false;     // true once a review file's mapping is confirmed
   // Captured from baseline.inputs when a baseline is locked; drives the
   // planned-scenario slider row (centre, range, and delta readouts).
   // null whenever no baseline is locked — the slider row is hidden in that case.
@@ -4739,6 +5624,12 @@
     // (schemaVersion is tolerant; only branch here if we ever ship a v2 with a
     // breaking shape change. Additive changes stay at v1 — see restore-below.)
 
+    // Restoring a saved plan clears any loaded CRM review file: a plan file
+    // carries only inputs, not the CRM facts the pre-meeting report needs, so
+    // the review-report affordance must not linger with stale data.
+    reviewData = null; reviewSlots = null; mappingDecisions = {};
+    reviewLoaded = false; updateReviewReportButton();
+
     // 2. Top-level mode state FIRST (drives view derivation + scenario sliders).
     if (obj.anchor === 'youngest' || obj.anchor === 'oldest') anchor = obj.anchor;
     if (obj.mode === 'pv' || obj.mode === 'fv') mode = obj.mode;
@@ -4818,10 +5709,322 @@
     return true;
   }
 
+  // ==========================================================================
+  // CRM review-data import + per-account mapping (kind: "sw-review-data")
+  // The CRM exports one investment account per row with a *suggested* planning
+  // bucket. The advisor confirms each account as Retirement / Discretionary /
+  // Ignore on the mapping screen; the confirmed buckets are summed per spouse
+  // into the tool's existing planning inputs. The pure helpers below (member
+  // slotting, default decisions, aggregation) are audited by the JS + Python
+  // suites — they must stay side-effect-free.
+  // ==========================================================================
+
+  function isFiniteNum(x){ return typeof x === 'number' && isFinite(x); }
+
+  // Resolve which member fills spouse slot A (primary) and B (spouse). Members
+  // who are neither (children / dependants / other) resolve to slot 'other'.
+  // Solo edge: if no explicit primary, the first member anchors slot A.
+  function resolveMemberSlots(members){
+    members = Array.isArray(members) ? members : [];
+    var A = null, B = null, i;
+    for (i = 0; i < members.length; i++){
+      if (!A && members[i].role === 'primary') A = members[i];
+      else if (!B && members[i].role === 'spouse') B = members[i];
+    }
+    if (!A && members.length) A = members[0];
+    var slotById = {};
+    for (i = 0; i < members.length; i++){
+      var m = members[i];
+      slotById[m.personId] = (m === A) ? 'A' : (m === B) ? 'B' : 'other';
+    }
+    return { A: A, B: B, slotById: slotById, members: members };
+  }
+
+  // Coerce a CRM suggested bucket to one of the three planning buckets. Anything
+  // unrecognised (null / 'needsReview') defaults to 'excluded' so the advisor
+  // makes a deliberate choice rather than the tool guessing.
+  function normalizeReviewBucket(b){
+    return (b === 'retirementAssets' || b === 'discretionaryAssets' || b === 'excluded') ? b : 'excluded';
+  }
+
+  // The owner "slot" for an account: 'A'/'B' for a spouse-owned account,
+  // 'joint' for an unowned (null) account, 'other' for a child/dependant member.
+  function accountOwnerSlot(account, slots){
+    if (account.ownerPersonId == null) return 'joint';
+    return slots.slotById[account.ownerPersonId] || 'other';
+  }
+
+  // Starting per-account decisions: bucket seeded from the CRM suggestion, but a
+  // non-spouse owner (child/dependant, or a member with no A/B slot) defaults to
+  // Ignore so nothing owned by a minor silently lands in a parent's retirement
+  // capital. Joint accounts default to a 50/50 split. All overridable per row.
+  function defaultAccountDecisions(accounts, slots){
+    var d = {};
+    (accounts || []).forEach(function(a){
+      var ownerSlot = accountOwnerSlot(a, slots);
+      var dec = { ownerSlot: ownerSlot };
+      if (ownerSlot === 'A' || ownerSlot === 'B'){
+        dec.attributeTo = ownerSlot;
+        dec.bucket = normalizeReviewBucket(a.suggestedBucket);
+      } else if (ownerSlot === 'joint'){
+        dec.attributeTo = 'split';
+        dec.bucket = normalizeReviewBucket(a.suggestedBucket);
+      } else {          // 'other' — child / dependant / unknown member
+        dec.attributeTo = 'A';    // only consulted if the advisor later includes it
+        dec.bucket = 'excluded';  // default Ignore
+      }
+      d[a.accountId] = dec;
+    });
+    return d;
+  }
+
+  // Sum the confirmed decisions into the tool's per-spouse planning inputs.
+  // value:null -> 0; a 'split' attribution halves value+contribution across A/B.
+  // Returns the eight bucket totals plus included/excluded bookkeeping.
+  function aggregateReviewData(accounts, decisions){
+    var t = { A: {ret:0, retC:0, disc:0, discC:0}, B: {ret:0, retC:0, disc:0, discC:0} };
+    var includedTotal = 0, excludedTotal = 0;
+    (accounts || []).forEach(function(a){
+      var dec = decisions[a.accountId] || {};
+      var v = Number(a.value) || 0;
+      var c = Number(a.monthlyContribution) || 0;
+      if (dec.bucket !== 'retirementAssets' && dec.bucket !== 'discretionaryAssets'){
+        excludedTotal += v;
+        return;
+      }
+      includedTotal += v;
+      var bk = dec.bucket === 'retirementAssets' ? 'ret' : 'disc';
+      var attr = dec.attributeTo || 'A';
+      if (attr === 'split'){
+        t.A[bk] += v / 2; t.A[bk + 'C'] += c / 2;
+        t.B[bk] += v / 2; t.B[bk + 'C'] += c / 2;
+      } else {
+        var slot = (attr === 'B') ? 'B' : 'A';
+        t[slot][bk] += v; t[slot][bk + 'C'] += c;
+      }
+    });
+    return { A: t.A, B: t.B, includedTotal: includedTotal, excludedTotal: excludedTotal };
+  }
+
+  // --- Review-data UI (modal + rendering) -----------------------------------
+
+  function reviewMembers(){
+    return (reviewData && reviewData.clientFamily && reviewData.clientFamily.members) || [];
+  }
+  function reviewMemberRole(personId){
+    var ms = reviewMembers();
+    for (var i = 0; i < ms.length; i++){ if (ms[i].personId === personId) return ms[i].role; }
+    return null;
+  }
+  function nameForSlot(slot){
+    var m = slot === 'A' ? (reviewSlots && reviewSlots.A) : slot === 'B' ? (reviewSlots && reviewSlots.B) : null;
+    return (m && m.firstName) ? m.firstName : (slot === 'B' ? 'Spouse B' : 'Spouse A');
+  }
+  function reviewSharedSurname(slots){
+    var a = slots.A, b = slots.B;
+    if (a && b && a.lastName && b.lastName && a.lastName === b.lastName) return a.lastName;
+    if (a && a.lastName && !b) return a.lastName;
+    return null;
+  }
+
+  function openReviewData(obj){
+    reviewData = obj;
+    var members = (obj.clientFamily && obj.clientFamily.members) || [];
+    reviewSlots = resolveMemberSlots(members);
+    mappingDecisions = defaultAccountDecisions(obj.accounts || [], reviewSlots);
+
+    var sub = document.getElementById('mapping-modal-sub');
+    if (sub){
+      var fam = (obj.clientFamily && obj.clientFamily.displayName) || 'this household';
+      var n = (obj.accounts || []).length;
+      sub.textContent = fam + ' · ' + n + ' account' + (n === 1 ? '' : 's') +
+        ' imported from the CRM. Confirm each as Retirement, Discretionary, or Ignore.';
+    }
+    var note = document.getElementById('mapping-assumptions-note');
+    if (note){
+      var s = obj.assumptionSeeds || {};
+      var hasSeed = isFiniteNum(s.expectedReturn) || isFiniteNum(s.expectedInflation) || isFiniteNum(s.incomeGoalMonthly);
+      if (hasSeed){ note.style.display = 'none'; note.textContent = ''; }
+      else {
+        note.style.display = '';
+        note.textContent = 'The CRM supplied no return, inflation or income-goal assumptions, ' +
+          'so the projection will use the tool defaults. Set these on the market-assumptions sliders after building.';
+      }
+    }
+    renderMappingRows();
+    openMappingModal();
+  }
+
+  function renderMappingRows(){
+    var list = document.getElementById('mapping-list');
+    if (!list || !reviewData) return;
+    list.innerHTML = (reviewData.accounts || []).map(buildMappingRow).join('');
+    updateMappingTotals();
+  }
+
+  function buildMappingRow(a){
+    var dec = mappingDecisions[a.accountId] || {};
+    var slot = dec.ownerSlot;
+    var owner = escapeHtml(a.ownerName || 'Joint / household');
+    var tags = '';
+    if (a.source === 'held_away') tags += '<span class="map-tag">held-away</span>';
+    if (slot === 'joint') tags += '<span class="map-tag map-tag-joint">joint</span>';
+    if (slot === 'other') tags += '<span class="map-tag map-tag-child">' + escapeHtml(reviewMemberRole(a.ownerPersonId) || 'other') + '</span>';
+
+    var val = (a.value == null) ? '—' : fmtR(a.value);
+    var contrib = fmtR(a.monthlyContribution || 0);
+    var providerType = escapeHtml((a.provider || '') + ' · ' + (a.type || ''));
+    var acctName = escapeHtml(a.accountName || '') +
+      ' <span class="map-acct-id">' + escapeHtml(String(a.accountId || '').slice(0, 8)) + '</span>';
+
+    var seg = [['retirementAssets', 'Retirement'], ['discretionaryAssets', 'Discretionary'], ['excluded', 'Ignore']]
+      .map(function(b){
+        var on = dec.bucket === b[0] ? ' on' : '';
+        return '<button type="button" class="map-seg-btn' + on + '" data-account="' +
+          escapeHtml(a.accountId) + '" data-bucket="' + b[0] + '">' + b[1] + '</button>';
+      }).join('');
+
+    var attrCell;
+    if (slot === 'joint' || slot === 'other'){
+      var opts = [['A', nameForSlot('A')], ['B', nameForSlot('B')], ['split', 'Split 50/50']].map(function(o){
+        var sel = dec.attributeTo === o[0] ? ' selected' : '';
+        return '<option value="' + o[0] + '"' + sel + '>' + escapeHtml(o[1]) + '</option>';
+      }).join('');
+      attrCell = '<select class="map-attr" data-account="' + escapeHtml(a.accountId) + '">' + opts + '</select>';
+    } else {
+      attrCell = '<span class="map-attr-fixed">' + escapeHtml(nameForSlot(slot)) + '</span>';
+    }
+
+    return '<div class="map-row" data-account="' + escapeHtml(a.accountId) + '">' +
+      '<div class="map-owner">' + owner + tags + '</div>' +
+      '<div class="map-provider">' + providerType + '</div>' +
+      '<div class="map-acct">' + acctName + '</div>' +
+      '<div class="map-val">' + val + '</div>' +
+      '<div class="map-contrib">' + contrib + '</div>' +
+      '<div class="map-attr-cell">' + attrCell + '</div>' +
+      '<div class="map-seg">' + seg + '</div>' +
+    '</div>';
+  }
+
+  function onMappingClick(e){
+    var btn = e.target.closest ? e.target.closest('.map-seg-btn') : null;
+    if (!btn) return;
+    var id = btn.getAttribute('data-account');
+    if (!mappingDecisions[id]) mappingDecisions[id] = {};
+    mappingDecisions[id].bucket = btn.getAttribute('data-bucket');
+    var row = btn.closest('.map-row');
+    if (row){
+      var segs = row.querySelectorAll('.map-seg-btn');
+      for (var i = 0; i < segs.length; i++) segs[i].classList.toggle('on', segs[i] === btn);
+    }
+    updateMappingTotals();
+  }
+
+  function onMappingChange(e){
+    var sel = e.target.closest ? e.target.closest('.map-attr') : null;
+    if (!sel) return;
+    var id = sel.getAttribute('data-account');
+    if (!mappingDecisions[id]) mappingDecisions[id] = {};
+    mappingDecisions[id].attributeTo = sel.value;
+    updateMappingTotals();
+  }
+
+  function updateMappingTotals(){
+    var el = document.getElementById('mapping-totals');
+    if (!el || !reviewData) return;
+    var t = aggregateReviewData(reviewData.accounts || [], mappingDecisions);
+    el.innerHTML = 'Retirement <strong>' + fmtR(t.A.ret + t.B.ret) + '</strong>' +
+      ' &nbsp;·&nbsp; Discretionary <strong>' + fmtR(t.A.disc + t.B.disc) + '</strong>' +
+      ' &nbsp;·&nbsp; Ignored <strong>' + fmtR(t.excludedTotal) + '</strong>';
+  }
+
+  function setSliderClamped(id, pct){
+    var el = document.getElementById(id);
+    if (!el) return;
+    var min = parseFloat(el.min), max = parseFloat(el.max), v = pct;
+    if (isFinite(min)) v = Math.max(min, v);
+    if (isFinite(max)) v = Math.min(max, v);
+    el.value = String(v);
+  }
+
+  function applyAssumptionSeeds(seeds){
+    seeds = seeds || {};
+    if (isFiniteNum(seeds.expectedReturn)) setSliderClamped('return', seeds.expectedReturn * 100);
+    if (isFiniteNum(seeds.expectedInflation)) setSliderClamped('cpi', seeds.expectedInflation * 100);
+    if (isFiniteNum(seeds.incomeGoalMonthly)) setHpFormatted('income-goal', seeds.incomeGoalMonthly);
+    // lifeExpectancy is a drawdown-tool input; esc + retirement-age keep defaults.
+  }
+
+  function confirmMapping(){
+    if (!reviewData) return;
+    var slots = reviewSlots || resolveMemberSlots(reviewMembers());
+    var t = aggregateReviewData(reviewData.accounts || [], mappingDecisions);
+
+    // Spouse names + ages from members (primary -> A, spouse -> B).
+    if (slots.A){
+      spouseNames.A = slots.A.firstName || 'Spouse A';
+      if (isFiniteNum(slots.A.age)) document.getElementById('hp-age-A').value = String(slots.A.age);
+    }
+    if (slots.B){
+      spouseNames.B = slots.B.firstName || 'Spouse B';
+      if (isFiniteNum(slots.B.age)) document.getElementById('hp-age-B').value = String(slots.B.age);
+    } else {
+      spouseNames.B = 'Spouse B';
+    }
+    // Mirror names into the State-1 first-name inputs (cosmetic; consistent with loadSampleData).
+    document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
+      el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
+    });
+    // Family + client name from the CRM displayName / shared surname.
+    var cf = reviewData.clientFamily || {};
+    var famLabel = reviewSharedSurname(slots) || cf.displayName || '';
+    var famEl = document.getElementById('family-name');
+    if (famEl && famLabel){ famEl.textContent = famLabel; famEl.classList.remove('is-placeholder'); }
+    var cn = document.getElementById('client-name');
+    if (cn) cn.value = cf.displayName || famLabel || '';
+    var cne = document.getElementById('client-name-edit');
+    if (cne) cne.value = cf.displayName || famLabel || '';
+
+    // Money buckets.
+    setHpFormatted('hp-ret-A', t.A.ret);   setHpFormatted('hp-ret-contrib-A', t.A.retC);
+    setHpFormatted('hp-disc-A', t.A.disc); setHpFormatted('hp-disc-contrib-A', t.A.discC);
+    setHpFormatted('hp-ret-B', t.B.ret);   setHpFormatted('hp-ret-contrib-B', t.B.retC);
+    setHpFormatted('hp-disc-B', t.B.disc); setHpFormatted('hp-disc-contrib-B', t.B.discC);
+
+    applyAssumptionSeeds(reviewData.assumptionSeeds);
+
+    reviewLoaded = true;
+    updateReviewReportButton();
+    projectionRequested = true;
+    closeMappingModal();
+    renderEvents();
+    renderSpouseLabels();
+    refresh();
+    window.scrollTo(0, 0);
+  }
+
+  function openMappingModal(){
+    var m = document.getElementById('mapping-modal');
+    if (m) m.setAttribute('data-open', 'true');
+  }
+  function closeMappingModal(){
+    var m = document.getElementById('mapping-modal');
+    if (m) m.setAttribute('data-open', 'false');
+  }
+
+  // Shows/hides the "Full review report" button; fleshed out with the report.
+  function updateReviewReportButton(){
+    var b = document.getElementById('btn-review-report');
+    if (b) b.style.display = reviewLoaded ? '' : 'none';
+  }
+
   function handlePlanText(text){
     var obj;
     try { obj = JSON.parse(text); }
     catch (e){ window.alert('That file is not valid JSON, so it could not be opened.'); return; }
+    // A CRM review-data export routes to the mapping screen; anything else falls
+    // through to the plan-restore path (which still rejects unknown kinds).
+    if (obj && obj.kind === REVIEW_KIND){ openReviewData(obj); return; }
     applyPlanFile(obj);
   }
 
@@ -5378,6 +6581,512 @@
     removeExportPageSheet();
   }
 
+  // ======================================================================
+  // Review report (8-page A4 landscape pre-meeting document, CRM-driven).
+  // Rendered from reviewData + confirmed mappingDecisions + the live
+  // projection. Separate from the report-deck export above; it reuses the
+  // same @page landscape sheet + export-printing plumbing but its own
+  // data-export-mode="review" gate and its own .review-report markup.
+  // ======================================================================
+
+  // Bind helpers for the review deck (mirror setBind/setBindText, scoped to
+  // .review-report [data-rr]).
+  function setRR(name, html){
+    var nodes = document.querySelectorAll('.review-report [data-rr="' + name + '"]');
+    for (var i = 0; i < nodes.length; i++){ nodes[i].innerHTML = html; }
+  }
+  function setRRText(name, txt){
+    var nodes = document.querySelectorAll('.review-report [data-rr="' + name + '"]');
+    for (var i = 0; i < nodes.length; i++){ nodes[i].textContent = txt; }
+  }
+  function setRRHtmlById(id, html){
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+
+  // First name (first whitespace token) for a member by personId, else the
+  // first token of a fallback full name. null personId -> "Joint / household".
+  function reviewShortName(personId, fallbackFullName){
+    var ms = reviewMembers();
+    for (var i = 0; i < ms.length; i++){
+      if (ms[i].personId === personId){
+        var fn = (ms[i].firstName || '').trim();
+        return fn ? fn.split(/\s+/)[0] : (ms[i].firstName || '—');
+      }
+    }
+    if (personId == null) return 'Joint / household';
+    var raw = (fallbackFullName || '').trim();
+    return raw ? raw.split(/\s+/)[0] : '—';
+  }
+
+  // Running header identity: short first names of the two spouse slots.
+  function reviewNamesLine(){
+    var a = reviewSlots && reviewSlots.A, b = reviewSlots && reviewSlots.B;
+    var an = a ? (a.firstName || '').trim().split(/\s+/)[0] : '';
+    var bn = b ? (b.firstName || '').trim().split(/\s+/)[0] : '';
+    if (an && bn) return an + ' and ' + bn;
+    if (an) return an;
+    return (reviewData && reviewData.clientFamily && reviewData.clientFamily.displayName) || 'Household';
+  }
+
+  // Prepared date: the meeting-detail client-date input if set, else today.
+  function reviewPreparedDate(){
+    var el = document.getElementById('client-date');
+    var v = (el && el.value) ? el.value.trim() : '';
+    if (v) return v;
+    var dt = new Date();
+    try { return dt.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    catch (e){ return dt.toISOString().slice(0, 10); }
+  }
+
+  // Bucket label for the account table from the confirmed decision.
+  function reviewBucketLabel(accountId){
+    var b = (mappingDecisions[accountId] || {}).bucket;
+    if (b === 'retirementAssets') return 'Retirement';
+    if (b === 'discretionaryAssets') return 'Discretionary';
+    return 'Ignore';
+  }
+
+  // A CRM percent is a decimal (0.84 -> 84%); null -> em-dash placeholder.
+  function fmtReviewPct(x){
+    return (typeof x === 'number' && isFinite(x)) ? Math.round(x * 100) + '%' : '—';
+  }
+  // Value-weighted average of a decimal percent field across accounts.
+  function reviewWeightedPct(accounts, field){
+    var num = 0, den = 0;
+    (accounts || []).forEach(function(a){
+      var v = Number(a.value) || 0, pv = a[field];
+      if (v > 0 && typeof pv === 'number' && isFinite(pv)){ num += v * pv; den += v; }
+    });
+    return den > 0 ? (num / den) : null;
+  }
+
+  // Summary-card totals for the accounts page. Total investment = all account
+  // values; retirement / discretionary = confirmed-bucket sums; monthly =
+  // recurring contributions over accounts whose confirmed bucket is invested
+  // (retirement or discretionary), i.e. not ignored.
+  function reviewAccountsSummary(){
+    var accounts = (reviewData && reviewData.accounts) || [];
+    var totalInvest = 0, retTotal = 0, discTotal = 0, monthly = 0;
+    accounts.forEach(function(a){
+      var v = Number(a.value) || 0;
+      totalInvest += v;
+      var b = (mappingDecisions[a.accountId] || {}).bucket;
+      if (b === 'retirementAssets') retTotal += v;
+      else if (b === 'discretionaryAssets') discTotal += v;
+      if (b === 'retirementAssets' || b === 'discretionaryAssets') monthly += Number(a.monthlyContribution) || 0;
+    });
+    return { totalInvest: totalInvest, retTotal: retTotal, discTotal: discTotal, monthly: monthly };
+  }
+
+  // Group accounts by owner, ordered primary (A), spouse (B), children, then
+  // joint / other. Each group is { key, accounts }.
+  function reviewAccountGroups(){
+    var accounts = (reviewData && reviewData.accounts) || [];
+    var groups = {}, order = [];
+    accounts.forEach(function(a){
+      var key = a.ownerPersonId == null ? '__joint__' : a.ownerPersonId;
+      if (!groups[key]){ groups[key] = []; order.push(key); }
+      groups[key].push(a);
+    });
+    var slots = reviewSlots || {};
+    function rank(key){
+      if (key === '__joint__') return 5;
+      if (slots.A && key === slots.A.personId) return 0;
+      if (slots.B && key === slots.B.personId) return 1;
+      return reviewMemberRole(key) === 'child' ? 3 : 4;
+    }
+    order.sort(function(x, y){ return rank(x) - rank(y); });
+    return order.map(function(key){ return { key: key, accounts: groups[key] }; });
+  }
+
+  function reviewOwnerLabel(g){
+    if (g.key === '__joint__') return 'Joint / household';
+    var first = g.accounts[0];
+    return reviewShortName(g.key, first ? first.ownerName : '');
+  }
+
+  // Account table tbody: one row per account, a subtotal row per owner, then a
+  // household-total row. Value / Monthly are straight sums of the rows shown;
+  // Growth / Offshore are value-weighted. value:null renders as an em-dash.
+  function renderReviewAccountRowsHtml(){
+    var groups = reviewAccountGroups();
+    var accounts = (reviewData && reviewData.accounts) || [];
+    if (!accounts.length) return '<tr><td colspan="9" class="rr-empty">No investment accounts imported.</td></tr>';
+    var html = '';
+    groups.forEach(function(g){
+      var owner = reviewOwnerLabel(g);
+      var subV = 0, subM = 0;
+      g.accounts.forEach(function(a){
+        var v = (a.value == null) ? null : Number(a.value);
+        subV += (v || 0);
+        subM += Number(a.monthlyContribution) || 0;
+        html += '<tr>'
+          + '<td class="rr-name">' + escapeHtml(owner) + '</td>'
+          + '<td>' + escapeHtml(a.provider || '—') + '</td>'
+          + '<td>' + escapeHtml(a.type || '—') + '</td>'
+          + '<td>' + escapeHtml(a.accountName || '—') + '</td>'
+          + '<td class="rr-money">' + (v == null ? '—' : fmtR(v)) + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(a.monthlyContribution) || 0) + '</td>'
+          + '<td>' + escapeHtml(reviewBucketLabel(a.accountId)) + '</td>'
+          + '<td class="rr-num-cell">' + fmtReviewPct(a.growthAssetsPercent) + '</td>'
+          + '<td class="rr-num-cell">' + fmtReviewPct(a.offshoreAssetsPercent) + '</td>'
+          + '</tr>';
+      });
+      html += '<tr class="rr-person-total">'
+        + '<td class="rr-name" colspan="4">' + escapeHtml(owner) + ' total</td>'
+        + '<td class="rr-money">' + fmtR(subV) + '</td>'
+        + '<td class="rr-money">' + fmtR(subM) + '</td>'
+        + '<td></td>'
+        + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(g.accounts, 'growthAssetsPercent')) + '</td>'
+        + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(g.accounts, 'offshoreAssetsPercent')) + '</td>'
+        + '</tr>';
+    });
+    var totV = 0, totM = 0;
+    accounts.forEach(function(a){ totV += Number(a.value) || 0; totM += Number(a.monthlyContribution) || 0; });
+    html += '<tr class="rr-person-total rr-household-total">'
+      + '<td class="rr-name" colspan="4">Household total</td>'
+      + '<td class="rr-money">' + fmtR(totV) + '</td>'
+      + '<td class="rr-money">' + fmtR(totM) + '</td>'
+      + '<td></td>'
+      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(accounts, 'growthAssetsPercent')) + '</td>'
+      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(accounts, 'offshoreAssetsPercent')) + '</td>'
+      + '</tr>';
+    return html;
+  }
+
+  // Net-worth strip: investment assets (from the accounts summary) + property /
+  // business assets - liabilities = household net worth, plus an itemised list
+  // so netWorthItems is surfaced rather than orphaned.
+  function renderReviewNetWorthHtml(){
+    var items = (reviewData && reviewData.netWorthItems) || [];
+    var invest = reviewAccountsSummary().totalInvest;
+    var otherAssets = 0, liabilities = 0;
+    items.forEach(function(it){
+      var v = Number(it.value) || 0;
+      if (it.kind === 'liability') liabilities += v; else otherAssets += v;
+    });
+    var net = invest + otherAssets - liabilities;
+    var itemBits = items.map(function(it){
+      var raw = Number(it.value) || 0;
+      var val = (it.value == null) ? '—' : (it.kind === 'liability' ? '-' + fmtR(raw) : fmtR(raw));
+      return '<span>' + escapeHtml(it.description || it.category || 'Item') + ' <strong>' + val + '</strong></span>';
+    }).join('');
+    return '<div class="rr-networth-cards">'
+      + '<div class="rr-networth-card"><span>Investment assets</span><strong>' + fmtR(invest) + '</strong></div>'
+      + '<div class="rr-networth-card"><span>Property &amp; business</span><strong>' + fmtR(otherAssets) + '</strong></div>'
+      + '<div class="rr-networth-card"><span>Liabilities</span><strong>' + (liabilities ? ('-' + fmtR(liabilities)) : fmtR(0)) + '</strong></div>'
+      + '<div class="rr-networth-card rr-net"><span>Household net worth</span><strong>' + fmtR(net) + '</strong></div>'
+      + '</div>'
+      + (items.length ? '<div class="rr-networth-items">' + itemBits + '</div>' : '');
+  }
+
+  // Risk table tbody: one row per policy, grouped by person; a per-person total
+  // row only when a person has more than one policy. Impairment is shown even
+  // when zero (rendered as R0).
+  function renderReviewRiskRowsHtml(){
+    var rows = (reviewData && reviewData.risk && reviewData.risk.policyBenefitRows) || [];
+    if (!rows.length) return '<tr><td colspan="8" class="rr-empty">No risk policies recorded.</td></tr>';
+    var groups = {}, order = [];
+    rows.forEach(function(r){
+      var k = r.personId || r.personName || 'unknown';
+      if (!groups[k]){ groups[k] = []; order.push(k); }
+      groups[k].push(r);
+    });
+    var fields = ['lifeCover', 'incomeDisabilityMonthly', 'capitalDisability', 'criticalIllness', 'impairment'];
+    var html = '';
+    order.forEach(function(k, gi){
+      var list = groups[k];
+      var sums = { lifeCover: 0, incomeDisabilityMonthly: 0, capitalDisability: 0, criticalIllness: 0, impairment: 0 };
+      list.forEach(function(r){
+        fields.forEach(function(f){ sums[f] += Number(r[f]) || 0; });
+        html += '<tr>'
+          + '<td class="rr-name">' + escapeHtml(reviewShortName(r.personId, r.personName)) + '</td>'
+          + '<td>' + escapeHtml(r.insurer || '—') + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(r.lifeCover) || 0) + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(r.incomeDisabilityMonthly) || 0) + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(r.capitalDisability) || 0) + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(r.criticalIllness) || 0) + '</td>'
+          + '<td class="rr-money">' + fmtR(Number(r.impairment) || 0) + '</td>'
+          + '<td>' + escapeHtml(r.beneficiary || '—') + '</td>'
+          + '</tr>';
+      });
+      if (list.length > 1){
+        html += '<tr class="rr-person-total">'
+          + '<td class="rr-name" colspan="2">' + escapeHtml(reviewShortName(k, list[0].personName)) + ' total</td>'
+          + '<td class="rr-money">' + fmtR(sums.lifeCover) + '</td>'
+          + '<td class="rr-money">' + fmtR(sums.incomeDisabilityMonthly) + '</td>'
+          + '<td class="rr-money">' + fmtR(sums.capitalDisability) + '</td>'
+          + '<td class="rr-money">' + fmtR(sums.criticalIllness) + '</td>'
+          + '<td class="rr-money">' + fmtR(sums.impairment) + '</td>'
+          + '<td></td></tr>';
+      }
+      if (gi < order.length - 1) html += '<tr class="rr-person-spacer"><td colspan="8"></td></tr>';
+    });
+    return html;
+  }
+
+  // Capital-events list for the projection page (up to three; extra counted).
+  function renderReviewEventsHtml(events){
+    var display = capitalEventDisplayRows(events);
+    if (!display.hasEvents){
+      return '<div class="rr-event-empty">No capital events are modelled in this projection.</div>';
+    }
+    var html = '<div class="rr-event-grid">';
+    display.rows.forEach(function(r){
+      var label = r.name ? (r.name + ' (' + r.kind + ')') : r.kind;
+      html += '<div class="rr-ev-age">' + escapeHtml(r.age) + '</div>'
+        + '<div class="rr-ev-name">' + escapeHtml(label) + '</div>'
+        + '<div class="rr-ev-amount">' + escapeHtml(r.amount) + '</div>'
+        + '<div class="rr-ev-basis">' + escapeHtml(r.basis) + '</div>';
+    });
+    html += '</div>';
+    if (display.extraCount > 0){
+      html += '<p class="rr-event-note">' + display.extraCount + ' additional '
+        + (display.extraCount === 1 ? 'event' : 'events') + ' modelled and included in the projection.</p>';
+    }
+    return html;
+  }
+
+  // Estate: wills table tbody.
+  function renderReviewWillsRowsHtml(){
+    var rows = (reviewData && reviewData.estate && reviewData.estate.willRows) || [];
+    if (!rows.length) return '<tr><td colspan="8" class="rr-empty">No wills recorded.</td></tr>';
+    return rows.map(function(r){
+      return '<tr>'
+        + '<td class="rr-name">' + escapeHtml(reviewShortName(r.personId, r.name)) + '</td>'
+        + '<td>' + escapeHtml(r.maritalRegime || '—') + '</td>'
+        + '<td>' + escapeHtml(r.willStatus || '—') + '</td>'
+        + '<td>' + escapeHtml(r.willDate || '—') + '</td>'
+        + '<td>' + escapeHtml(r.executor || '—') + '</td>'
+        + '<td>' + escapeHtml(r.beneficiaryHeirs || '—') + '</td>'
+        + '<td>' + escapeHtml(r.guardians || '—') + '</td>'
+        + '<td>' + (r.testamentaryTrustForMinors ? 'Yes' : 'No') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // Estate: powers-of-attorney (own table, or a "None recorded" note).
+  function renderReviewPoaHtml(){
+    var poa = (reviewData && reviewData.estate && reviewData.estate.powersOfAttorney) || [];
+    if (!poa.length) return '<p class="rr-empty-note">No powers of attorney recorded.</p>';
+    var body = poa.map(function(r){
+      return '<tr>'
+        + '<td class="rr-name">' + escapeHtml(reviewShortName(r.personId, r.name)) + '</td>'
+        + '<td>' + escapeHtml(r.poaType || '—') + '</td>'
+        + '<td>' + escapeHtml(r.agent || '—') + '</td>'
+        + '<td>' + escapeHtml(r.status || '—') + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<table class="rr-table rr-estate-table"><thead><tr>'
+      + '<th>Person</th><th>Type</th><th>Agent</th><th>Status</th>'
+      + '</tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
+  // Estate: trusts (own table, or a genuine empty state).
+  function renderReviewTrustsHtml(){
+    var trusts = (reviewData && reviewData.estate && reviewData.estate.trusts) || [];
+    if (!trusts.length) return '<p class="rr-empty-note">No trusts recorded.</p>';
+    var body = trusts.map(function(t){
+      return '<tr>'
+        + '<td class="rr-name">' + escapeHtml(t.name || '—') + '</td>'
+        + '<td>' + escapeHtml(t.ownerName || '—') + '</td>'
+        + '<td>' + escapeHtml(t.trustType || '—') + '</td>'
+        + '<td>' + escapeHtml(t.trustees || '—') + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<table class="rr-table rr-estate-table"><thead><tr>'
+      + '<th>Trust</th><th>Owner</th><th>Type</th><th>Trustees</th>'
+      + '</tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
+  // A will / POA status counts as "ready" only when it is on file / signed and
+  // not flagged unsigned, outstanding, or not discussed.
+  function estateStatusReady(status){
+    var s = (status || '').toLowerCase();
+    if (!s) return false;
+    if (s.indexOf('unsigned') !== -1 || s.indexOf('not discussed') !== -1 ||
+        s.indexOf('outstanding') !== -1 || s.indexOf('none') !== -1) return false;
+    return s.indexOf('on file') !== -1 || s.indexOf('signed') !== -1;
+  }
+
+  // Estate readiness: list the gaps (unfinalised wills / POAs, trusts with no
+  // trustees). When nothing is flagged, a single reassuring line.
+  function renderReviewReadinessHtml(){
+    var est = (reviewData && reviewData.estate) || {};
+    var gaps = [];
+    (est.willRows || []).forEach(function(w){
+      if (!estateStatusReady(w.willStatus)){
+        gaps.push(escapeHtml(reviewShortName(w.personId, w.name)) + "'s will is not yet finalised (status: "
+          + escapeHtml(w.willStatus || 'no status recorded') + ").");
+      }
+    });
+    (est.powersOfAttorney || []).forEach(function(pw){
+      if (!estateStatusReady(pw.status)){
+        gaps.push(escapeHtml(reviewShortName(pw.personId, pw.name)) + "'s "
+          + escapeHtml((pw.poaType || 'general').toLowerCase()) + " power of attorney is not yet finalised (status: "
+          + escapeHtml(pw.status || 'no status recorded') + ").");
+      }
+    });
+    (est.trusts || []).forEach(function(t){
+      if (t.trustees == null || String(t.trustees).trim() === ''){
+        gaps.push('Trustees for ' + escapeHtml(t.name || 'the recorded trust') + ' are not recorded and should be confirmed.');
+      }
+    });
+    if (!gaps.length){
+      return '<ul class="rr-clear-list"><li>No outstanding estate-readiness items were flagged from the recorded data. Confirm the documents remain current at the meeting.</li></ul>';
+    }
+    return '<p>Items to confirm or finalise before relying on the estate plan:</p><ul>'
+      + gaps.map(function(g){ return '<li>' + g + '</li>'; }).join('') + '</ul>';
+  }
+
+  // Comment box text with paragraph breaks preserved.
+  function reviewCommentHtml(text){
+    var t = (text || '').trim();
+    if (!t) return '<span>No comments recorded.</span>';
+    return t.split(/\n{2,}/).map(function(para){
+      return escapeHtml(para).replace(/\n/g, '<br>');
+    }).join('<br><br>');
+  }
+
+  // SVG income chart for the review projection page. Identical to
+  // renderReportIncomeChart but retargeted to #rr-income-chart (dark panel,
+  // white-on-brand styling).
+  function renderReviewIncomeChart(data){
+    var svg = document.getElementById('rr-income-chart');
+    if (!svg || !data) return;
+    var points = data.points.slice().sort(function(a, b){ return a.age - b.age; });
+    if (!points.length) return;
+    var width = 940, height = 350;
+    var pad = { top: 22, right: 30, bottom: 38, left: 68 };
+    var chartW = width - pad.left - pad.right;
+    var chartH = height - pad.top - pad.bottom;
+    var minAge = points[0].age;
+    var maxAge = points[points.length - 1].age;
+    var ageSpan = (maxAge - minAge) || 1;
+    var selectedAge = data.selectedAge;
+    var selectedIncome = data.selectedIncome;
+    var goal = data.incomeGoal || 0;
+    var largest = Math.max(goal, selectedIncome);
+    for (var i = 0; i < points.length; i++) largest = Math.max(largest, points[i].income);
+    var maxIncome = niceChartMax(largest * 1.1);
+
+    function xForAge(age){ return pad.left + chartW * ((age - minAge) / ageSpan); }
+    function yForValue(v){ return pad.top + chartH * (1 - v / maxIncome); }
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    for (var t = 0; t <= 4; t++){
+      var val = maxIncome * (1 - t / 4);
+      var y = yForValue(val);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: y, x2: width - pad.right, y2: y, stroke: 'rgba(255,255,255,0.16)', 'stroke-width': 1 }));
+      svg.appendChild(createSvgEl('text', { x: 14, y: y + 5, fill: 'rgba(255,255,255,0.65)', 'font-size': 15, 'font-weight': 600 }, fmtShort(val)));
+    }
+
+    if (goal > 0){
+      var gy = yForValue(goal);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: gy, x2: width - pad.right, y2: gy, stroke: 'rgba(185,137,54,0.9)', 'stroke-width': 2, 'stroke-dasharray': '8 6' }));
+      svg.appendChild(createSvgEl('text', { x: width - pad.right - 6, y: gy - 8, fill: 'rgba(255,255,255,0.70)', 'font-size': 15, 'font-weight': 700, 'text-anchor': 'end' }, 'Income goal'));
+    }
+
+    var dPath = '';
+    for (var j = 0; j < points.length; j++){
+      dPath += (j === 0 ? 'M' : 'L') + ' ' + xForAge(points[j].age).toFixed(2) + ' ' + yForValue(points[j].income).toFixed(2) + ' ';
+    }
+    svg.appendChild(createSvgEl('path', { d: dPath.trim(), fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+
+    var sx = xForAge(selectedAge);
+    var sy = yForValue(selectedIncome);
+    svg.appendChild(createSvgEl('line', { x1: sx, y1: pad.top, x2: sx, y2: height - pad.bottom, stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 1.5 }));
+    svg.appendChild(createSvgEl('circle', { cx: sx, cy: sy, r: 6, fill: '#b98936' }));
+
+    var calloutW = 196, calloutH = 56;
+    var cx = (sx + calloutW + 18 > width - pad.right) ? sx - calloutW - 18 : sx + 14;
+    var cy = Math.max(pad.top + 4, Math.min(sy - 40, height - pad.bottom - calloutH - 4));
+    svg.appendChild(createSvgEl('rect', { x: cx, y: cy, width: calloutW, height: calloutH, rx: 8, fill: '#ffffff' }));
+    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 22, fill: '#323E5D', 'font-size': 14, 'font-weight': 750 }, 'Age ' + selectedAge));
+    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 46, fill: '#323E5D', 'font-size': 18, 'font-weight': 850 }, fmtR(selectedIncome) + ' /mo'));
+
+    var labelStep = Math.max(1, Math.ceil(points.length / 6));
+    for (var k = 0; k < points.length; k++){
+      var show = (k === 0 || k === points.length - 1 || k % labelStep === 0);
+      if (!show) continue;
+      svg.appendChild(createSvgEl('text', { x: xForAge(points[k].age), y: height - 12, fill: 'rgba(255,255,255,0.65)', 'font-size': 15, 'font-weight': 600, 'text-anchor': 'middle' }, points[k].age));
+    }
+  }
+
+  // Fill every review-deck slot + container from reviewData + the live
+  // projection. No math here beyond the marginal-income helper.
+  function populateReviewReport(){
+    var d = reviewData || {};
+    var cf = d.clientFamily || {};
+
+    // Cover + running header identity.
+    setRRText('cover-title', cf.displayName || 'Household review');
+    setRRText('cover-subtitle', 'Prepared on ' + reviewPreparedDate() + '.');
+    setRRText('meta-names', reviewNamesLine());
+    setRRText('meta-date', reviewPreparedDate());
+
+    // Accounts page.
+    var s = reviewAccountsSummary();
+    setRRText('acc-total', fmtR(s.totalInvest));
+    setRRText('acc-retirement', fmtR(s.retTotal));
+    setRRText('acc-discretionary', fmtR(s.discTotal));
+    setRRText('acc-monthly', fmtR(s.monthly));
+    setRRHtmlById('rr-accounts-body', renderReviewAccountRowsHtml());
+    setRRHtmlById('rr-networth', renderReviewNetWorthHtml());
+
+    // Projection page (live engine over the confirmed planning inputs).
+    var p = baseline ? baseline.p : lastProjection;
+    if (p){
+      var proj = buildReportData(p, null, eventsStore, spouseNames);
+      var inp = p.inputs;
+      setRRText('proj-income', fmtR(p.monthlyIncomeReal) + ' /mo');
+      setRRText('proj-goal', proj.assumptions.goal);
+      var gp = computeGoalProgress(p);
+      setRRText('proj-progress', gp ? (gp.pct + '%') : '—');
+      setRRText('proj-retire', 'Age ' + p.retirementAge);
+      setRRText('snap-ret-bal', fmtR(inp.retA + inp.retB));
+      setRRText('snap-ret-contrib', fmtR(inp.contribRetA + inp.contribRetB));
+      setRRText('snap-disc-bal', fmtR(inp.discA + inp.discB));
+      setRRText('snap-disc-contrib', fmtR(inp.contribDiscA + inp.contribDiscB));
+      setRRText('proj-return', proj.assumptions.ret);
+      setRRText('proj-inflation', proj.assumptions.cpi);
+      var marginal = marginalIncomePer1000(inp);
+      setRR('proj-leverage', 'Each extra <strong>R1 000 a month</strong> saved until retirement, escalating annually, '
+        + 'is projected to add about <strong>' + fmtR(marginal) + ' a month</strong> of starting retirement income in today’s money.');
+      setRRHtmlById('rr-proj-events', renderReviewEventsHtml(inp.events || []));
+      renderReviewIncomeChart(proj.chart);
+    }
+
+    // Risk page.
+    setRRHtmlById('rr-risk-body', renderReviewRiskRowsHtml());
+    setRRHtmlById('rr-risk-comment', reviewCommentHtml(d.risk && d.risk.comments));
+
+    // Estate page.
+    setRRHtmlById('rr-estate-wills', renderReviewWillsRowsHtml());
+    setRRHtmlById('rr-estate-poa', renderReviewPoaHtml());
+    setRRHtmlById('rr-estate-trusts', renderReviewTrustsHtml());
+    setRRHtmlById('rr-estate-readiness', renderReviewReadinessHtml());
+    setRRHtmlById('rr-estate-liquidity', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.estateLiquidityComment));
+    setRRHtmlById('rr-estate-comments', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.comments));
+  }
+
+  // Export entry point (wired to #btn-review-report). Injects the landscape
+  // @page sheet, gates #calc-root to review mode, populates the deck, then
+  // defers print() by two rAFs so layout flushes first. afterprint tears down.
+  function runReviewReport(){
+    if (!reviewData) return;
+    ensureExportPageSheet();
+    var root = document.getElementById('calc-root');
+    root.setAttribute('data-export-mode', 'review');
+    document.documentElement.classList.add('export-printing');
+    populateReviewReport();
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ window.print(); });
+    });
+  }
+
   (function wireReportModal(){
     var cancel = document.getElementById('report-modal-cancel');
     var without = document.getElementById('report-export-without');
@@ -5407,7 +7116,8 @@
       accordionStateBeforePrint = null;
     }
     var rootEl = document.getElementById('calc-root');
-    if (rootEl && rootEl.getAttribute('data-export-mode') === 'true'){
+    var em = rootEl && rootEl.getAttribute('data-export-mode');
+    if (em === 'true' || em === 'review'){
       teardownExport();
     }
     resizeChartsToWrap();
@@ -5468,6 +7178,7 @@
   document.getElementById('btn-relock').addEventListener('click', lockBaseline);
   document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
   document.getElementById('btn-export-report').addEventListener('click', startExport);
+  document.getElementById('btn-review-report').addEventListener('click', runReviewReport);
   document.getElementById('btn-save-plan').addEventListener('click', savePlan);
   document.getElementById('btn-open-plan').addEventListener('click', openPlan);
   document.getElementById('btn-open-plan-empty').addEventListener('click', openPlan);
@@ -5495,6 +7206,14 @@
   });
   document.getElementById('events-modal').addEventListener('click', function(e){
     if (e.target === this) closeEventsModal();   // backdrop click dismisses
+  });
+  // CRM review-data mapping modal.
+  document.getElementById('mapping-list').addEventListener('click', onMappingClick);
+  document.getElementById('mapping-list').addEventListener('change', onMappingChange);
+  document.getElementById('mapping-confirm-btn').addEventListener('click', confirmMapping);
+  document.getElementById('mapping-cancel-btn').addEventListener('click', closeMappingModal);
+  document.getElementById('mapping-modal').addEventListener('click', function(e){
+    if (e.target === this) closeMappingModal();   // backdrop click dismisses
   });
   document.getElementById('empty-add-event-btn').addEventListener('click', function(){
     eventsStore.push(newEvent());

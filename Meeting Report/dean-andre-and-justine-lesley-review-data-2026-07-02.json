@@ -1,0 +1,363 @@
+{
+  "kind": "sw-review-data",
+  "schemaVersion": "1.3.0",
+  "exportedAt": "2026-07-02T09:04:34.910Z",
+  "exportedBy": "Pierre",
+  "firm": {
+    "name": "Simple Wealth (Pty) Ltd",
+    "fspNumber": "50637"
+  },
+  "clientFamily": {
+    "groupId": "1d72e49b-bf83-4aca-b76b-9bc73c360eb4",
+    "displayName": "Dean Andre and Justine Lesley",
+    "members": [
+      {
+        "personId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+        "firstName": "Dean Andre",
+        "lastName": "van der Westhuizen",
+        "role": "primary",
+        "age": 41,
+        "dateOfBirth": "1985-05-14"
+      },
+      {
+        "personId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+        "firstName": "Justine Lesley",
+        "lastName": "van der Westhuizen",
+        "role": "spouse",
+        "age": 40,
+        "dateOfBirth": "1986-04-03"
+      },
+      {
+        "personId": "1d74bc6d-65e9-483d-831f-35ddd45d34f6",
+        "firstName": "Lucy Mae",
+        "lastName": "van der Westhuizen",
+        "role": "child",
+        "age": 11,
+        "dateOfBirth": "2015-01-30"
+      },
+      {
+        "personId": "21e34e86-1519-4875-ac23-8fa583147423",
+        "firstName": "Logan Ash",
+        "lastName": "van der Westhuizen",
+        "role": "child",
+        "age": 13,
+        "dateOfBirth": "2013-04-20"
+      }
+    ]
+  },
+  "accounts": [
+    {
+      "accountId": "b4e74414-0ab3-41a9-90b3-d01f26d0d9d5",
+      "ownerPersonId": "1d74bc6d-65e9-483d-831f-35ddd45d34f6",
+      "ownerName": "Lucy Mae van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Tax-Free",
+      "accountName": "Tax-Free Investment",
+      "value": 203968.84,
+      "monthlyContribution": 225,
+      "growthAssetsPercent": 0.9832,
+      "offshoreAssetsPercent": 0.4225,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "bd3e14ad-54a4-44db-a6d1-f10c787792e0",
+      "ownerPersonId": "21e34e86-1519-4875-ac23-8fa583147423",
+      "ownerName": "Logan Ash van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Tax-Free",
+      "accountName": "Tax-Free Investment",
+      "value": 203968.84,
+      "monthlyContribution": 225,
+      "growthAssetsPercent": 0.9832,
+      "offshoreAssetsPercent": 0.4225,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "b0aaf0be-c60b-4725-a492-06de2fbdec89",
+      "ownerPersonId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+      "ownerName": "Justine Lesley van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Pension Preservation Fund",
+      "value": 940401.71,
+      "monthlyContribution": 0,
+      "growthAssetsPercent": 0.8464,
+      "offshoreAssetsPercent": 0.4339,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "d4b07842-036e-4015-b89c-74e7735e5400",
+      "ownerPersonId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+      "ownerName": "Justine Lesley van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Retirement Annuity Fund",
+      "value": 1807870.39,
+      "monthlyContribution": 765.77,
+      "growthAssetsPercent": 0.8464,
+      "offshoreAssetsPercent": 0.4337,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "fba222d4-96d5-4636-9612-99e384ebf45e",
+      "ownerPersonId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+      "ownerName": "Justine Lesley van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Retirement Annuity Fund",
+      "value": 441688.58,
+      "monthlyContribution": 0,
+      "growthAssetsPercent": 0.8464,
+      "offshoreAssetsPercent": 0.4339,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "2dbc90de-dffb-4c8d-ab77-c0d158a3bd1a",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Discretionary",
+      "accountName": "Investment Platform Unit Trust",
+      "value": 496303.31,
+      "monthlyContribution": 2083.71,
+      "growthAssetsPercent": 0.9735,
+      "offshoreAssetsPercent": 0.9857,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "f4e38db1-e332-4e17-af21-35710bbf45d5",
+      "ownerPersonId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+      "ownerName": "Justine Lesley van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Tax-Free",
+      "accountName": "Tax-Free Investment",
+      "value": 342640.63,
+      "monthlyContribution": 345,
+      "growthAssetsPercent": 0.9793,
+      "offshoreAssetsPercent": 0.4704,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "dcf31292-b28e-440e-82cc-e523be945ac9",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Retirement Annuity Fund",
+      "value": 2144526.82,
+      "monthlyContribution": 1458.35,
+      "growthAssetsPercent": 0.8464,
+      "offshoreAssetsPercent": 0.4336,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "1121cf90-ab6d-4ac6-bf33-875792764d16",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Tax-Free",
+      "accountName": "Tax-Free Investment",
+      "value": 343349.51,
+      "monthlyContribution": 345,
+      "growthAssetsPercent": 0.9793,
+      "offshoreAssetsPercent": 0.4704,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "5511f06f-8b29-4340-a303-d6449ec54206",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Pension Preservation Fund",
+      "value": 1657652.33,
+      "monthlyContribution": 0,
+      "growthAssetsPercent": 0.8464,
+      "offshoreAssetsPercent": 0.4339,
+      "suggestedBucket": "retirementAssets"
+    },
+    {
+      "accountId": "306830a9-f619-4f26-97aa-59c3fdd4c646",
+      "ownerPersonId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+      "ownerName": "Justine Lesley van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Discretionary",
+      "accountName": "Investment Platform Unit Trust",
+      "value": 495856.02,
+      "monthlyContribution": 2083.71,
+      "growthAssetsPercent": 0.9735,
+      "offshoreAssetsPercent": 0.9857,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "8a4fab29-45cf-481e-8f87-92e4ccd2fc86",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Discretionary",
+      "accountName": "Investment Platform Unit Trust",
+      "value": 836543.26,
+      "monthlyContribution": 200,
+      "growthAssetsPercent": 0.9735,
+      "offshoreAssetsPercent": 0.9857,
+      "suggestedBucket": "discretionaryAssets"
+    },
+    {
+      "accountId": "137b272d-2448-4d2c-85d1-3dd9da249efb",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "source": "managed",
+      "provider": "Allan Gray",
+      "type": "Retirement",
+      "accountName": "Retirement Annuity Fund",
+      "value": 828236.85,
+      "monthlyContribution": 0,
+      "growthAssetsPercent": 0.8462,
+      "offshoreAssetsPercent": 0.4335,
+      "suggestedBucket": "retirementAssets"
+    }
+  ],
+  "netWorthItems": [
+    {
+      "itemId": "6f2ebbfa-102c-4f3b-b132-4f97b753019e",
+      "ownerPersonId": null,
+      "ownerName": "Joint / household",
+      "kind": "asset",
+      "category": "business_interest",
+      "description": "Ocuwise Capital",
+      "institution": null,
+      "value": 13600000
+    },
+    {
+      "itemId": "c91d67d0-dbf1-411a-b888-ef28f8354749",
+      "ownerPersonId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+      "ownerName": "Dean Andre van der Westhuizen",
+      "kind": "asset",
+      "category": "business_interest",
+      "description": "Dr Dean Inc",
+      "institution": null,
+      "value": 0
+    },
+    {
+      "itemId": "37a43f6d-c46c-4b81-b111-398c9192b961",
+      "ownerPersonId": null,
+      "ownerName": "Joint / household",
+      "kind": "liability",
+      "category": "debt",
+      "description": "Nelspruit house bond",
+      "institution": null,
+      "value": 3750000
+    },
+    {
+      "itemId": "964e60d3-eed7-4a78-b457-69378306012f",
+      "ownerPersonId": null,
+      "ownerName": "Joint / household",
+      "kind": "asset",
+      "category": "primary_residence",
+      "description": "Nelspruit house",
+      "institution": null,
+      "value": 5700000
+    }
+  ],
+  "risk": {
+    "policyBenefitRows": [
+      {
+        "personId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+        "personName": "Dean Andre van der Westhuizen",
+        "insurer": "Discovery Life",
+        "policyNumber": null,
+        "status": "active",
+        "lifeCover": 10774885,
+        "incomeDisabilityMonthly": 85196,
+        "capitalDisability": 1616928,
+        "criticalIllness": 1078879,
+        "impairment": 0,
+        "beneficiary": "Justine"
+      },
+      {
+        "personId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+        "personName": "Justine Lesley van der Westhuizen",
+        "insurer": "Discovery Life",
+        "policyNumber": null,
+        "status": "active",
+        "lifeCover": 12191171,
+        "incomeDisabilityMonthly": 93601,
+        "capitalDisability": 1219171,
+        "criticalIllness": 1828756,
+        "impairment": 0,
+        "beneficiary": "Dean"
+      }
+    ],
+    "comments": "Life cover is material, but it will likely not be able to replace earnings until retirement age. Other family assets exist that could provide cash flow.\n\nDean's income protection is currently lower than his earnings, and increasing this should be discussed."
+  },
+  "estate": {
+    "willRows": [
+      {
+        "personId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+        "name": "Dean Andre van der Westhuizen",
+        "maritalRegime": "ANC with accrual",
+        "willStatus": "On file — unsigned",
+        "willDate": null,
+        "executor": "Justine, failing Keri-Lee",
+        "beneficiaryHeirs": "Justine",
+        "guardians": "Keri-Lee",
+        "testamentaryTrustForMinors": true
+      },
+      {
+        "personId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+        "name": "Justine Lesley van der Westhuizen",
+        "maritalRegime": "ANC with accrual",
+        "willStatus": "Not discussed",
+        "willDate": null,
+        "executor": null,
+        "beneficiaryHeirs": null,
+        "guardians": null,
+        "testamentaryTrustForMinors": false
+      }
+    ],
+    "powersOfAttorney": [
+      {
+        "personId": "c66fe4ae-5547-4bf6-81e6-36f64225b25f",
+        "name": "Dean Andre van der Westhuizen",
+        "poaType": "General",
+        "agent": "Justine",
+        "status": "On file — unsigned"
+      },
+      {
+        "personId": "fd40ba4e-2396-4457-a2fc-a1790ae5a14f",
+        "name": "Justine Lesley van der Westhuizen",
+        "poaType": "General",
+        "agent": "Dean",
+        "status": "On file — unsigned"
+      }
+    ],
+    "trusts": [
+      {
+        "name": "VDW Family Trust",
+        "ownerName": "Household",
+        "trustType": "Inter vivos (living)",
+        "trustees": null
+      }
+    ],
+    "estateLiquidityComment": "There are sufficient liquid assets to provide for estate liquidity, given that both spouses leave everything to each other. No estate duty or capital gains tax will be payable on the first death.",
+    "comments": "Signed documents are needed for both wills, and the estate administration needs to be tidied up."
+  },
+  "assumptionSeeds": {
+    "expectedInflation": null,
+    "expectedReturn": null,
+    "lifeExpectancy": null,
+    "incomeGoalMonthly": null
+  }
+}
