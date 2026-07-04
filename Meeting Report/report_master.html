@@ -1,0 +1,1528 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Wealth — Pre-Meeting Review V3</title>
+  <style>
+    :root {
+      --brand: #323E5D;
+      --gold: #B97A4D;
+      --paper: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9dfe8;
+      --green-soft: #323E5D;
+      --blue-soft: #323E5D;
+      --gold-soft: #B97A4D;
+      --radius: 9px;
+      --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      --mono: var(--sans);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #d9dfe8;
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+    body { padding: 24px 0; }
+    .deck { display: grid; gap: 18px; justify-content: center; }
+    .page {
+      width: 297mm;
+      height: 210mm;
+      background: var(--paper);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) 12mm;
+      overflow: hidden;
+      box-shadow: 0 18px 48px rgba(16, 24, 40, 0.14);
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+    .dark { background: var(--brand); color: #fff; }
+
+    .header {
+      min-height: 19mm;
+      padding: 8mm 13mm 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .brand { display: flex; align-items: center; }
+    .brand-logo {
+      display: block;
+      width: 34mm;
+      height: auto;
+    }
+    .dark .brand-logo {
+      width: 37mm;
+    }
+    .dark .meta,
+    .dark .footer { color: rgba(255, 255, 255, 0.82); }
+    .meta {
+      text-align: right;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .body { min-height: 0; padding: 7mm 13mm 6mm; }
+    .footer {
+      height: 12mm;
+      padding: 0 13mm;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .dark .footer { border-top-color: rgba(255, 255, 255, 0.18); }
+    .num {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+    .kicker {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      font-size: 10px;
+      font-weight: 850;
+    }
+    .dark .kicker { color: rgba(255, 255, 255, 0.66); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 10px; font-size: 31px; line-height: 1.05; letter-spacing: -0.04em; }
+    h2 { margin-bottom: 6px; font-size: 15px; line-height: 1.18; }
+    h3 { margin-bottom: 4px; font-size: 12px; line-height: 1.2; }
+    p { margin-bottom: 8px; color: var(--muted); font-size: 11.5px; line-height: 1.42; }
+    .dark p { color: rgba(255, 255, 255, 0.74); }
+
+    .cover-layout {
+      height: 100%;
+      display: grid;
+      align-content: center;
+      gap: 12px;
+    }
+    .cover-title {
+      margin: 6px 0 12px;
+      max-width: 900px;
+      color: var(--gold);
+      font-size: 58px;
+      line-height: 1;
+      letter-spacing: -0.055em;
+    }
+    .cover-subtitle {
+      max-width: 860px;
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .page-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      align-items: flex-end;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 8px;
+    }
+    .page-title h1 { margin: 4px 0 0; font-size: 28px; }
+    .page-title p { max-width: 430px; margin: 0; text-align: right; font-size: 10.8px; }
+
+    .agenda-page {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+    }
+    .agenda-page.with-seasonal {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+    .agenda-page.with-seasonal.no-title {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+    .agenda-list {
+      min-height: 0;
+      display: grid;
+      grid-auto-rows: auto;
+      gap: 7px;
+      align-content: start;
+    }
+    .agenda-section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: grid;
+      grid-template-columns: 58mm minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+    }
+    .agenda-section.gold-label .agenda-label {
+      background: var(--gold);
+    }
+    .agenda-section.gold-label .agenda-label h2 {
+      color: #fff;
+    }
+    .agenda-section.gold-label .agenda-label span {
+      color: rgba(255, 255, 255, 0.82);
+    }
+    .agenda-section.rows-1 .agenda-label {
+      padding-top: 0;
+      padding-bottom: 0;
+      justify-content: center;
+    }
+    .agenda-label {
+      padding: 12px 14px;
+      border-right: 1px solid var(--line);
+      background: #3f4653;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 7px;
+    }
+    .agenda-label h2 {
+      margin: 0;
+      color: #fff;
+      font-size: 17px;
+      line-height: 1.08;
+      white-space: normal;
+      letter-spacing: -0.02em;
+    }
+    .agenda-label span {
+      display: block;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 10.4px;
+      line-height: 1.32;
+      text-align: left;
+    }
+    .agenda-items {
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: 13mm;
+      gap: 0;
+      align-content: start;
+      background: #fff;
+    }
+    .agenda-question {
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 9px;
+      align-items: start;
+      padding: 9px 16px;
+      color: var(--brand);
+      font-size: 12.7px;
+      line-height: 1.22;
+    }
+    .agenda-question:nth-child(4n + 1),
+    .agenda-question:nth-child(4n) {
+      background: var(--surface-2);
+    }
+    .agenda-question:nth-child(odd),
+    .agenda-question:nth-child(even) {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    .agenda-question span {
+      color: var(--gold);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-size: 10.5px;
+      font-weight: 850;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .seasonal-strip {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0;
+      display: grid;
+      grid-template-columns: 58mm repeat(3, minmax(0, 1fr));
+      gap: 0;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    .seasonal-strip > div:first-child {
+      background: var(--gold);
+      color: #fff;
+      padding: 10px 14px;
+    }
+    .seasonal-strip h2 { margin: 0 0 3px; font-size: 13px; color: inherit; }
+    .seasonal-strip p { margin: 0; font-size: 10.2px; line-height: 1.32; color: rgba(255, 255, 255, 0.82); }
+    .seasonal-items {
+      grid-column: 2 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .seasonal-item { border-left: 1px solid var(--line); padding: 10px 12px; }
+    .seasonal-item strong { display: block; margin-bottom: 2px; font-size: 11px; }
+    .seasonal-item span {
+      color: var(--muted);
+      font-size: 10.2px;
+      line-height: 1.32;
+    }
+
+    .projection-page {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 80mm auto auto;
+      gap: 10px;
+      min-height: 0;
+    }
+    .chart-panel {
+      background: var(--brand);
+      border-radius: var(--radius);
+      color: #fff;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .chart-head {
+      min-height: 13mm;
+      padding: 12px 18px 0;
+    }
+    .chart-head p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 14px;
+    }
+    .chart-wrap { min-height: 0; padding: 0 4px 10px; }
+    .chart { display: block; width: 100%; height: 100%; overflow: visible; }
+    .projection-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 0;
+    }
+    .card-head {
+      min-height: 34px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-head h2 { margin: 0; font-size: 13px; }
+    .card-body { padding: 10px 12px; }
+    .leverage-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: grid;
+      grid-template-columns: 52mm minmax(0, 1fr);
+      min-height: 15mm;
+      overflow: hidden;
+    }
+    .leverage-card .leverage-label {
+      padding: 7px 11px;
+      border-right: 1px solid var(--line);
+      background: var(--gold);
+    }
+    .leverage-card h2 {
+      margin: 0 0 3px;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.16;
+    }
+    .leverage-card span {
+      display: block;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 8.6px;
+      line-height: 1.25;
+    }
+    .leverage-card .leverage-copy {
+      padding: 6px 13px;
+      display: flex;
+      align-items: center;
+    }
+    .leverage-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10.6px;
+      line-height: 1.3;
+    }
+    .leverage-card strong {
+      color: var(--ink);
+      font-weight: 850;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      padding: 8px 9px;
+    }
+    .metric span {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+    .metric strong { display: block; color: var(--brand); font-size: 14px; line-height: 1; }
+    .snapshot-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr 1fr;
+      row-gap: 8px;
+      column-gap: 12px;
+      align-items: baseline;
+      font-size: 11px;
+    }
+    .snapshot-grid .head {
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 850;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 6px;
+    }
+    .snapshot-grid .label { color: var(--ink); font-weight: 790; }
+    .snapshot-grid .value {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-weight: 760;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .assumption-row {
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: baseline;
+    }
+    .assumption-row div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .assumption-row strong {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+    .event-grid {
+      display: grid;
+      grid-template-columns: 18mm minmax(0, 1fr) 28mm 28mm;
+      row-gap: 9px;
+      column-gap: 10px;
+      align-items: baseline;
+      font-size: 11px;
+    }
+    .event-grid .age,
+    .event-grid .basis { color: var(--muted); }
+    .event-grid .name { color: var(--ink); font-weight: 790; }
+    .event-grid .amount {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-weight: 760;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .event-note {
+      margin: 10px 0 0;
+      padding-top: 9px;
+      border-top: 1px solid var(--line);
+      font-size: 10.8px;
+    }
+    .disclaimer {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    .disclaimer h2 { margin: 0 0 4px; font-size: 12px; }
+    .disclaimer p { margin: 0; font-size: 10.3px; line-height: 1.36; }
+
+    .detail-page {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 10px;
+      min-height: 0;
+    }
+    .detail-page.compact-detail {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+    .detail-page.estate-detail {
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+    }
+    .notes-page {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+      min-height: 0;
+    }
+    .notes-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 28px;
+      align-content: start;
+    }
+    .note-section {
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .note-section h2 {
+      margin: 0 0 6px;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .note-section p {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 10.8px;
+      line-height: 1.44;
+    }
+    .note-section ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+    .note-section li {
+      display: grid;
+      grid-template-columns: 13px minmax(0, 1fr);
+      gap: 7px;
+      color: var(--muted);
+      font-size: 10.8px;
+      line-height: 1.38;
+    }
+    .note-section li::before {
+      content: "•";
+      color: var(--gold);
+      font-size: 16px;
+      line-height: 0.8;
+    }
+    .note-section.wide {
+      grid-column: 1 / -1;
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-height: 23mm;
+      padding: 10px 12px;
+    }
+    .summary-card span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+    }
+    .summary-card strong {
+      display: block;
+      color: var(--brand);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-size: 17px;
+      line-height: 1;
+    }
+    .summary-card small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 9.4px;
+      line-height: 1.25;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 10px;
+      min-height: 0;
+    }
+    .detail-grid.equal {
+      grid-template-columns: 1fr 1fr;
+    }
+    .detail-grid.full {
+      grid-template-columns: 1fr;
+    }
+    .detail-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 0;
+    }
+    .detail-card h2 {
+      margin: 0;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .planner-comment h2 {
+      background: #667085;
+      border-bottom-color: #667085;
+      color: #fff;
+    }
+    .detail-card .detail-body { padding: 10px 12px; }
+    .detail-card .detail-body.table-body { padding: 0; }
+    .detail-card.compact .detail-body { padding-top: 8px; padding-bottom: 8px; }
+    .planner-comment .detail-body {
+      min-height: 25mm;
+      display: flex;
+      align-items: flex-start;
+    }
+    .planner-comment p,
+    .trust-note p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.42;
+    }
+    .planner-comment p strong {
+      color: var(--ink);
+      font-weight: 850;
+    }
+    .simple-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.7px;
+      line-height: 1.25;
+    }
+    .simple-table th {
+      padding: 0 0 7px;
+      color: var(--muted);
+      font-size: 8.3px;
+      font-weight: 850;
+      letter-spacing: 0.6px;
+      text-align: left;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+    }
+    .simple-table td {
+      padding: 7px 0;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    .simple-table tr:last-child td { border-bottom: 0; }
+    .simple-table .name { color: var(--ink); font-weight: 800; }
+    .simple-table .money,
+    .simple-table .num-cell {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-weight: 760;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .simple-table .right { text-align: right; }
+    .simple-table.account-table {
+      font-size: 10.3px;
+    }
+    .simple-table.account-table th,
+    .simple-table.account-table td {
+      padding-top: 9px;
+      padding-bottom: 9px;
+    }
+    .simple-table.account-table th {
+      background: var(--blue-soft);
+      color: #fff;
+      padding-left: 7px;
+      padding-right: 7px;
+      border-bottom: 1px solid var(--line);
+    }
+    .simple-table.account-table td {
+      padding-left: 7px;
+      padding-right: 7px;
+    }
+    .simple-table.account-table .person-total td {
+      background: var(--gold-soft);
+      color: #fff;
+      font-weight: 850;
+    }
+    .simple-table.account-table .household-total td {
+      background: var(--green-soft);
+      color: #fff;
+      font-weight: 850;
+    }
+    .simple-table.account-table .person-spacer td {
+      padding: 4px 0;
+      border-bottom: 0;
+      background: transparent;
+    }
+    .simple-table.risk-table {
+      font-size: 10.6px;
+    }
+    .simple-table.risk-table th {
+      background: var(--blue-soft);
+      color: #fff;
+      padding: 8px 7px;
+      border-bottom: 1px solid var(--line);
+    }
+    .simple-table.risk-table td {
+      padding: 8px 7px;
+    }
+    .simple-table.risk-table .person-total td {
+      background: var(--gold-soft);
+      color: #fff;
+      font-weight: 850;
+    }
+    .simple-table.risk-table .person-spacer td {
+      padding: 4px 0;
+      border-bottom: 0;
+      background: transparent;
+    }
+    .simple-table.estate-table {
+      font-size: 10px;
+    }
+    .simple-table.estate-table th {
+      background: var(--blue-soft);
+      color: #fff;
+      padding: 8px 7px;
+      border-bottom: 1px solid var(--line);
+    }
+    .simple-table.estate-table td {
+      padding: 8px 7px;
+      line-height: 1.28;
+    }
+    .fact-list {
+      display: grid;
+      gap: 7px;
+    }
+    .fact-row {
+      display: grid;
+      grid-template-columns: 32mm minmax(0, 1fr);
+      gap: 12px;
+      padding: 7px 9px;
+      background: var(--surface-2);
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.28;
+    }
+    .fact-row:nth-child(even) { background: #fff; }
+    .fact-row span {
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .decision-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .decision-list li {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10.2px;
+      line-height: 1.32;
+    }
+    .decision-list li::before {
+      content: "•";
+      color: var(--gold);
+      font-size: 17px;
+      line-height: 0.7;
+    }
+    .owner-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .owner-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .owner-panel h3 {
+      margin: 0;
+      padding: 8px 10px;
+      background: var(--surface-2);
+      font-size: 12px;
+    }
+    .owner-panel .simple-table th,
+    .owner-panel .simple-table td {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+      html, body { padding: 0; background: #fff; }
+      .deck { display: block; gap: 0; }
+      .page { width: 297mm; height: 210mm; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="page dark">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-cover.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">Prepared for private discussion</div>
+      </header>
+      <div class="body">
+        <div class="cover-layout">
+          <div>
+            <div class="kicker">Pre-meeting review document</div>
+            <h1 class="cover-title">David and Sarah</h1>
+            <p class="cover-subtitle">Prepared on 28 June 2026.</p>
+          </div>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">01 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="agenda-page">
+          <div class="page-title">
+            <div>
+              <div class="kicker">Annual review</div>
+              <h1>Annual Review Agenda Items.</h1>
+            </div>
+          </div>
+
+          <section class="agenda-list">
+            <article class="agenda-section rows-2 gold-label">
+              <div class="agenda-label">
+                <h2>Life planning</h2>
+                <span>Family, transitions, decisions, and anything material changing soon.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>1</span><div>Confirm any important family updates since the last review.</div></div>
+                <div class="agenda-question"><span>2</span><div>Discuss upcoming transitions expected in the next 12 to 24 months.</div></div>
+                <div class="agenda-question"><span>3</span><div>Identify any big family decisions that need to be made.</div></div>
+                <div class="agenda-question"><span>4</span><div>Note any personal priorities that should shape the financial plan.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-3">
+              <div class="agenda-label">
+                <h2>Cash flow planning</h2>
+                <span>Income, expenses, savings capacity, and known capital needs.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>5</span><div>Confirm expected income or expense changes in the coming year.</div></div>
+                <div class="agenda-question"><span>6</span><div>Confirm monthly surplus after household expenses.</div></div>
+                <div class="agenda-question"><span>7</span><div>Review emergency fund and short-term cash buffer.</div></div>
+                <div class="agenda-question"><span>8</span><div>Review whether debt is being serviced appropriately.</div></div>
+                <div class="agenda-question"><span>9</span><div>Decide whether contributions can increase.</div></div>
+                <div class="agenda-question"><span>10</span><div>Capture upcoming expenses, withdrawals, or capital needs.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-2">
+              <div class="agenda-label">
+                <h2>Investment planning</h2>
+                <span>Portfolio structure, contribution split, risk, fees, and platform use.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>11</span><div>Confirm the portfolio still supports the plan.</div></div>
+                <div class="agenda-question"><span>12</span><div>Review the retirement and discretionary asset split.</div></div>
+                <div class="agenda-question"><span>13</span><div>Check whether asset allocation remains appropriate.</div></div>
+                <div class="agenda-question"><span>14</span><div>Review fees, platform use, and simplification opportunities.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-3">
+              <div class="agenda-label">
+                <h2>Retirement projections</h2>
+                <span>Income goal, retirement age, capital events, and scenarios.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>15</span><div>Confirm the income goal is still appropriate.</div></div>
+                <div class="agenda-question"><span>16</span><div>Review projected income at the planned retirement age.</div></div>
+                <div class="agenda-question"><span>17</span><div>Compare projected income with current living expenses.</div></div>
+                <div class="agenda-question"><span>18</span><div>Decide whether a scenario should become the new baseline.</div></div>
+                <div class="agenda-question"><span>19</span><div>Confirm capital events included in the projection.</div></div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">02 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="agenda-page with-seasonal no-title">
+          <section class="agenda-list">
+            <article class="agenda-section rows-3">
+              <div class="agenda-label">
+                <h2>Risk planning</h2>
+                <span>Cover levels, income protection, beneficiaries, and ownership.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>20</span><div>Confirm income, debt, family, or employment changes.</div></div>
+                <div class="agenda-question"><span>21</span><div>Review whether life and disability cover remain appropriate.</div></div>
+                <div class="agenda-question"><span>22</span><div>Check income protection and critical illness cover.</div></div>
+                <div class="agenda-question"><span>23</span><div>Review provision for future healthcare needs.</div></div>
+                <div class="agenda-question"><span>24</span><div>Confirm beneficiaries and policy ownership where relevant.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-3">
+              <div class="agenda-label">
+                <h2>Estate planning</h2>
+                <span>Wills, beneficiaries, estate liquidity, and family changes.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>25</span><div>Confirm wills still reflect your wishes.</div></div>
+                <div class="agenda-question"><span>26</span><div>Review beneficiary nominations and estate liquidity.</div></div>
+                <div class="agenda-question"><span>27</span><div>Confirm living will or power of attorney documents if relevant.</div></div>
+                <div class="agenda-question"><span>28</span><div>Confirm guardians, trusts, or special arrangements if relevant.</div></div>
+                <div class="agenda-question"><span>29</span><div>Check whether major family or asset changes affect the plan.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-3">
+              <div class="agenda-label">
+                <h2>Tax planning</h2>
+                <span>Contribution allowances, tax-year planning, and tax admin.</span>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>30</span><div>Check whether recent tax or legislative changes affect the plan.</div></div>
+                <div class="agenda-question"><span>31</span><div>Review whether RA, TFSA, or CGT allowances should be used.</div></div>
+                <div class="agenda-question"><span>32</span><div>Note any tax-year top-up opportunity.</div></div>
+                <div class="agenda-question"><span>33</span><div>Check whether PAYE, CGT, or tax admin needs attention.</div></div>
+                <div class="agenda-question"><span>34</span><div>Confirm documents needed for tax season.</div></div>
+              </div>
+            </article>
+
+            <article class="agenda-section rows-1">
+              <div class="agenda-label">
+                <h2>Other</h2>
+              </div>
+              <div class="agenda-items">
+                <div class="agenda-question"><span>35</span><div>Anything else we haven’t covered.</div></div>
+              </div>
+            </article>
+          </section>
+
+          <section class="seasonal-strip">
+            <div>
+              <h2>Seasonal check-ins</h2>
+              <p>Between annual reviews, we also help with:</p>
+            </div>
+            <div class="seasonal-items">
+              <div class="seasonal-item">
+                <strong>Tax year-end</strong>
+                <span>Contribution opportunities before the tax year closes.</span>
+              </div>
+              <div class="seasonal-item">
+                <strong>Tax season</strong>
+                <span>Tax information summaries and available certificates.</span>
+              </div>
+              <div class="seasonal-item">
+                <strong>Life changes</strong>
+                <span>Urgent planning issues caused by major personal changes.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">03 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="detail-page">
+          <div class="page-title">
+            <div>
+              <div class="kicker">Investment detail</div>
+              <h1>Accounts and contributions.</h1>
+            </div>
+          </div>
+
+          <section class="summary-cards">
+            <div class="summary-card">
+              <span>Total investment assets</span>
+              <strong>R5 000 000</strong>
+              <small>Across retirement and discretionary accounts.</small>
+            </div>
+            <div class="summary-card">
+              <span>Retirement assets</span>
+              <strong>R4 000 000</strong>
+              <small>Included in the retirement projection.</small>
+            </div>
+            <div class="summary-card">
+              <span>Discretionary assets</span>
+              <strong>R1 000 000</strong>
+              <small>Available capital outside retirement wrappers.</small>
+            </div>
+            <div class="summary-card">
+              <span>Monthly contributions</span>
+              <strong>R36 000</strong>
+              <small>Current recurring investment contributions.</small>
+            </div>
+          </section>
+
+          <section class="detail-grid full">
+            <article class="detail-card">
+              <h2>Account summary</h2>
+              <div class="detail-body table-body">
+                <table class="simple-table account-table">
+                  <thead>
+                    <tr>
+                      <th>Owner</th>
+                      <th>Provider</th>
+                      <th>Type</th>
+                      <th>Account</th>
+                      <th class="right">Value</th>
+                      <th class="right">Contribution</th>
+                      <th class="right">Growth assets</th>
+                      <th class="right">Offshore assets</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="name">David</td>
+                      <td>Allan Gray</td>
+                      <td>Retirement</td>
+                      <td>Retirement annuity</td>
+                      <td class="money">R2 000 000</td>
+                      <td class="money">R15 000</td>
+                      <td class="num-cell">82%</td>
+                      <td class="num-cell">41%</td>
+                    </tr>
+                    <tr>
+                      <td class="name">David</td>
+                      <td>Allan Gray</td>
+                      <td>Discretionary</td>
+                      <td>Unit trust</td>
+                      <td class="money">R500 000</td>
+                      <td class="money">R3 000</td>
+                      <td class="num-cell">99%</td>
+                      <td class="num-cell">100%</td>
+                    </tr>
+                    <tr class="person-total">
+                      <td class="name" colspan="4">David total</td>
+                      <td class="money">R2 500 000</td>
+                      <td class="money">R18 000</td>
+                      <td class="num-cell">85%</td>
+                      <td class="num-cell">53%</td>
+                    </tr>
+                    <tr class="person-spacer"><td colspan="8"></td></tr>
+                    <tr>
+                      <td class="name">Sarah</td>
+                      <td>Allan Gray</td>
+                      <td>Retirement</td>
+                      <td>Retirement annuity</td>
+                      <td class="money">R2 000 000</td>
+                      <td class="money">R15 000</td>
+                      <td class="num-cell">82%</td>
+                      <td class="num-cell">41%</td>
+                    </tr>
+                    <tr>
+                      <td class="name">Sarah</td>
+                      <td>Allan Gray</td>
+                      <td>Discretionary</td>
+                      <td>Unit trust</td>
+                      <td class="money">R500 000</td>
+                      <td class="money">R3 000</td>
+                      <td class="num-cell">99%</td>
+                      <td class="num-cell">100%</td>
+                    </tr>
+                    <tr class="person-total">
+                      <td class="name" colspan="4">Sarah total</td>
+                      <td class="money">R2 500 000</td>
+                      <td class="money">R18 000</td>
+                      <td class="num-cell">85%</td>
+                      <td class="num-cell">53%</td>
+                    </tr>
+                    <tr class="person-spacer"><td colspan="8"></td></tr>
+                    <tr class="person-total household-total">
+                      <td class="name" colspan="4">Household total</td>
+                      <td class="money">R5 000 000</td>
+                      <td class="money">R36 000</td>
+                      <td class="num-cell">85%</td>
+                      <td class="num-cell">53%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">04 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="projection-page">
+          <section class="chart-panel">
+            <div class="chart-head">
+              <p>Projected starting retirement income, shown in today’s money and before tax.</p>
+            </div>
+            <div class="chart-wrap">
+              <svg class="chart" viewBox="0 0 1200 300" role="img" aria-label="Retirement income projection chart">
+                <g stroke="rgba(255,255,255,0.14)" stroke-width="1">
+                  <line x1="55" y1="244" x2="1170" y2="244"/>
+                  <line x1="55" y1="188" x2="1170" y2="188"/>
+                  <line x1="55" y1="132" x2="1170" y2="132"/>
+                  <line x1="55" y1="76" x2="1170" y2="76"/>
+                </g>
+                <g fill="rgba(255,255,255,0.68)" font-family="ui-sans-serif, sans-serif" font-weight="750" font-size="14">
+                  <text x="28" y="249">R0</text>
+                  <text x="10" y="193">R63k</text>
+                  <text x="3" y="137">R125k</text>
+                  <text x="3" y="81">R188k</text>
+                  <text x="52" y="276">46</text>
+                  <text x="240" y="276">51</text>
+                  <text x="433" y="276">56</text>
+                  <text x="625" y="276">61</text>
+                  <text x="817" y="276">66</text>
+                  <text x="1010" y="276">71</text>
+                  <text x="1159" y="276">75</text>
+                </g>
+                <line x1="55" y1="154" x2="1170" y2="154" stroke="#CD8F5E" stroke-width="2" stroke-dasharray="8 8"/>
+                <text x="1030" y="147" fill="rgba(255,255,255,0.72)" font-family="ui-sans-serif, sans-serif" font-weight="850" font-size="14">income goal</text>
+                <line x1="786" y1="76" x2="786" y2="244" stroke="rgba(255,255,255,0.48)" stroke-width="2"/>
+                <path d="M55 232 C150 228 255 220 345 207 C445 193 520 176 610 158 C685 145 740 151 786 154 C860 142 935 120 1015 96 C1090 72 1140 48 1170 28"
+                  fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="786" cy="154" r="7" fill="#CD8F5E"/>
+                <path d="M786 154 L835 126" stroke="#fff" stroke-width="3"/>
+                <rect x="835" y="110" width="174" height="56" rx="7" fill="#fff"/>
+                <text x="849" y="134" fill="#323E5D" font-family="ui-sans-serif, sans-serif" font-weight="850" font-size="13">Age 65</text>
+                <text x="849" y="156" fill="#323E5D" font-family="ui-sans-serif, sans-serif" font-weight="850" font-size="18">R97 130/mo</text>
+              </svg>
+            </div>
+          </section>
+
+          <section>
+            <div class="metric-grid">
+              <div class="metric"><span>Projected income</span><strong class="num">R97 130 /mo</strong></div>
+              <div class="metric"><span>Income goal</span><strong class="num">R100 000</strong></div>
+              <div class="metric"><span>Goal progress</span><strong class="num">97%</strong></div>
+              <div class="metric"><span>Retire at</span><strong>Age <span class="num">65</span></strong></div>
+            </div>
+            <div class="projection-summary">
+              <article class="card">
+                <div class="card-head"><h2>Current planning snapshot</h2></div>
+                <div class="card-body">
+                  <div class="snapshot-grid">
+                    <div class="head">Planning item</div>
+                    <div class="head" style="text-align:right;">Current balance</div>
+                    <div class="head" style="text-align:right;">Monthly contribution</div>
+                    <div class="label">Retirement assets</div>
+                    <div class="value">R4 000 000</div>
+                    <div class="value">R30 000</div>
+                    <div class="label">Discretionary assets</div>
+                    <div class="value">R1 000 000</div>
+                    <div class="value">R6 000</div>
+                  </div>
+                  <div class="assumption-row">
+                    <div><span>Expected return</span><strong>9.00%</strong></div>
+                    <div><span>Expected inflation</span><strong>5.00%</strong></div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="card-head"><h2>Capital events</h2></div>
+                <div class="card-body">
+                  <div class="event-grid">
+                    <div class="age">Age 47</div>
+                    <div class="name">Overseas (outflow)</div>
+                    <div class="amount">R100 000</div>
+                    <div class="basis">Today’s money</div>
+                    <div class="age">Age 56</div>
+                    <div class="name">Inheritance (inflow)</div>
+                    <div class="amount">R2 000 000</div>
+                    <div class="basis">Today’s money</div>
+                  </div>
+                  <p class="event-note">Capital events are assumptions used in the projection and should be confirmed before the meeting.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="leverage-card">
+            <div class="leverage-label">
+              <h2>Contribution leverage</h2>
+              <span>Estimated impact of saving more before retirement.</span>
+            </div>
+            <div class="leverage-copy">
+              <p>Each extra <strong>R1 000 a month</strong> saved until retirement, escalating annually, is projected to add about <strong>R1 229 a month</strong> of starting retirement income in today’s money.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">05 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="detail-page">
+          <div class="page-title">
+            <div>
+              <div class="kicker">Risk planning detail</div>
+              <h1>Policy summary.</h1>
+            </div>
+          </div>
+
+          <section class="detail-grid full">
+            <article class="detail-card">
+              <h2>Benefits by person and insurer</h2>
+              <div class="detail-body table-body">
+                <table class="simple-table risk-table">
+                  <thead>
+                    <tr>
+                      <th>Person</th>
+                      <th>Insurer</th>
+                      <th class="right">Life cover</th>
+                      <th class="right">Income disability</th>
+                      <th class="right">Capital disability</th>
+                      <th class="right">Critical illness</th>
+                      <th class="right">Impairment</th>
+                      <th>Waiting period</th>
+                      <th>Beneficiary</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="name">David</td>
+                      <td>Discovery Life</td>
+                      <td class="money">R4 500 000</td>
+                      <td class="money">R45 000</td>
+                      <td class="money">R3 000 000</td>
+                      <td class="money">R1 250 000</td>
+                      <td class="money">-</td>
+                      <td>30 days</td>
+                      <td>Sarah</td>
+                    </tr>
+                    <tr>
+                      <td class="name">David</td>
+                      <td>Old Mutual</td>
+                      <td class="money">R500 000</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td></td>
+                      <td>Estate</td>
+                    </tr>
+                    <tr class="person-total">
+                      <td class="name" colspan="2">David total</td>
+                      <td class="money">R5 000 000</td>
+                      <td class="money">R45 000</td>
+                      <td class="money">R3 000 000</td>
+                      <td class="money">R1 250 000</td>
+                      <td class="money">-</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr class="person-spacer"><td colspan="9"></td></tr>
+                    <tr>
+                      <td class="name">Sarah</td>
+                      <td>Discovery Life</td>
+                      <td class="money">R2 500 000</td>
+                      <td class="money">-</td>
+                      <td class="money">R1 500 000</td>
+                      <td class="money">R2 000 000</td>
+                      <td class="money">-</td>
+                      <td>30 days</td>
+                      <td>David</td>
+                    </tr>
+                    <tr>
+                      <td class="name">Sarah</td>
+                      <td>Group risk</td>
+                      <td class="money">R500 000</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td class="money">-</td>
+                      <td></td>
+                      <td>David</td>
+                    </tr>
+                    <tr class="person-total">
+                      <td class="name" colspan="2">Sarah total</td>
+                      <td class="money">R3 000 000</td>
+                      <td class="money">-</td>
+                      <td class="money">R1 500 000</td>
+                      <td class="money">R2 000 000</td>
+                      <td class="money">-</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+
+          <section class="detail-grid full">
+            <article class="detail-card planner-comment">
+              <h2>Comments</h2>
+              <div class="detail-body">
+                <p><strong>Planner comment:</strong> Existing cover appears broadly aligned with the current income and debt position, but the meeting should confirm whether the level of disability and severe illness cover remains appropriate after any income, family, or employment changes. Income protection waiting periods should also be checked against available cash reserves.</p>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">06 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="detail-page estate-detail">
+          <div class="page-title">
+            <div>
+              <div class="kicker">Estate planning detail</div>
+              <h1>Estate facts to confirm.</h1>
+            </div>
+          </div>
+
+          <section class="detail-grid full">
+            <article class="detail-card">
+              <h2>Wills and estate documents</h2>
+              <div class="detail-body table-body">
+                <table class="simple-table estate-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Marital regime</th>
+                      <th>Will on file</th>
+                      <th class="right">Date</th>
+                      <th>Executor</th>
+                      <th>Beneficiary / heirs</th>
+                      <th>Guardians</th>
+                      <th>Power of attorney</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="name">David</td>
+                      <td>ANC with accrual</td>
+                      <td>Yes, signed</td>
+                      <td class="num-cell">2023</td>
+                      <td>Sarah, failing nominated executor</td>
+                      <td>Sarah, failing children in trust</td>
+                      <td>To confirm</td>
+                      <td>No</td>
+                    </tr>
+                    <tr>
+                      <td class="name">Sarah</td>
+                      <td>ANC with accrual</td>
+                      <td>Yes, signed</td>
+                      <td class="num-cell">2023</td>
+                      <td>David, failing nominated executor</td>
+                      <td>David, failing children in trust</td>
+                      <td>To confirm</td>
+                      <td>No</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+
+          <section class="detail-grid full">
+            <article class="detail-card compact trust-note">
+              <h2>Trusts</h2>
+              <div class="detail-body">
+                <p>No active family trust is currently recorded. If a trust exists, this section should describe its purpose, the intended beneficiaries, and any trustee or liquidity points that should be confirmed.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="detail-grid full">
+            <article class="detail-card compact planner-comment">
+              <h2>Estate liquidity</h2>
+              <div class="detail-body">
+                <p><strong>Planner comment:</strong> Estate liquidity should be reviewed against expected debts, estate costs, tax, executor fees, and any cash needs that may arise before assets can be transferred or sold. The meeting should confirm whether life cover, available cash, and beneficiary nominations provide enough practical liquidity.</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="detail-grid full">
+            <article class="detail-card planner-comment">
+              <h2>Comments</h2>
+              <div class="detail-body">
+                <p><strong>Planner comment:</strong> The wills appear to be in place, but the meeting should confirm whether guardians, executors, beneficiaries, and any trust provisions still reflect the family’s wishes. If there have been material asset, family, or residency changes, the estate documents should be reviewed formally before relying on this summary.</p>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">07 / 08</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth">
+        </div>
+        <div class="meta">David and Sarah<br>28 June 2026</div>
+      </header>
+      <div class="body">
+        <div class="notes-page">
+          <div class="page-title">
+            <div>
+              <div class="kicker">Methodology and important information</div>
+              <h1>Notes for interpreting this report.</h1>
+            </div>
+          </div>
+
+          <section class="notes-layout">
+            <article class="note-section">
+              <h2>Purpose of this document</h2>
+              <p>This pre-meeting review document is prepared to support a planning conversation. It highlights factual information, planning assumptions, and agenda items that should be confirmed before recommendations are finalised.</p>
+              <ul>
+                <li>It is not intended to be a complete record of advice or a standalone recommendation.</li>
+                <li>Any agreed changes should be confirmed after the meeting before implementation.</li>
+              </ul>
+            </article>
+
+            <article class="note-section">
+              <h2>Projection methodology</h2>
+              <p>Retirement projections are illustrative and are based on the inputs, assumptions, and capital events recorded at the date prepared.</p>
+              <ul>
+                <li>Projected income is shown in today’s money and before tax unless stated otherwise.</li>
+                <li>Actual outcomes may differ because of investment returns, inflation, fees, tax, legislation, contribution changes, and personal circumstances.</li>
+              </ul>
+            </article>
+
+            <article class="note-section">
+              <h2>Investment and account information</h2>
+              <p>Account values, asset splits, contribution levels, growth-asset exposure, and offshore exposure are planning inputs used to guide the discussion.</p>
+              <ul>
+                <li>Values should be checked against the most recent available investment statements.</li>
+                <li>Portfolio changes should only be implemented after the agreed advice and instruction process.</li>
+              </ul>
+            </article>
+
+            <article class="note-section">
+              <h2>Risk and estate information</h2>
+              <p>Policy and estate summaries are factual planning summaries and should be read together with the official policy schedules, beneficiary nominations, wills, and estate-planning documents.</p>
+              <ul>
+                <li>Benefit amounts, beneficiaries, ownership, waiting periods, executors, guardians, and trustees should be confirmed where relevant.</li>
+                <li>Estate, tax, and legal matters may require input from appropriately qualified professionals.</li>
+              </ul>
+            </article>
+
+            <article class="note-section wide">
+              <h2>Regulatory and confidentiality note</h2>
+              <p>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637. This document is confidential and prepared for the named client family only. It should not be relied on by any other person. Information in this report depends on the accuracy of data provided by the client, product providers, and internal planning records.</p>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="num">08 / 08</span>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

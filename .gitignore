@@ -23,3 +23,9 @@ Thumbs.db
 
 # Local tests and scratch
 /tmp/
+
+# User's local safety backup of the tool — never commit or modify
+Meeting Report/backup.html
+
+# Generated report preview (embeds a specific client's data) — regenerable
+Meeting Report/review-report-preview.html
