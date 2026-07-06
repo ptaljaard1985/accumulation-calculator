@@ -1959,7 +1959,7 @@
   .review-report .rr-table .rr-right { text-align: right; }
   .review-report .rr-table .rr-empty { text-align: center; color: var(--rr-muted); font-style: italic; padding: 14px 6px; }
   .review-report .rr-account-table { font-size: 9px; }
-  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 2.6px 6px; }
+  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 3.6px 6px; }
   .review-report .rr-account-table th { background: var(--rr-brand); color: #fff; border-bottom: 1px solid var(--rr-line); }
   .review-report .rr-account-table .rr-person-total td { background: var(--rr-gold); color: #fff; font-weight: 850; }
   .review-report .rr-account-table .rr-household-total td { background: var(--rr-brand); color: #fff; font-weight: 850; }
@@ -1978,19 +1978,15 @@
   .review-report .rr-empty-note { margin: 0; padding: 12px; color: var(--rr-muted); font-size: 11px; font-style: italic; }
 
   /* ---------- Net worth strip (accounts page) ---------- */
-  .review-report .rr-networth { display: grid; gap: 8px; }
-  .review-report .rr-networth-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .review-report .rr-networth-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 9px 12px; }
-  .review-report .rr-networth-card span { display: block; margin-bottom: 5px; color: var(--rr-muted); font-size: 8.6px; font-weight: 850; letter-spacing: 0.6px; text-transform: uppercase; }
-  .review-report .rr-networth-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 15px; line-height: 1; }
-  .review-report .rr-networth-card.rr-net strong { color: var(--rr-gold); }
-  .review-report .rr-networth-items { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 9.5px; color: var(--rr-muted); }
-  .review-report .rr-networth-items span { white-space: nowrap; }
-  .review-report .rr-networth-items strong { color: var(--rr-ink); font-family: var(--mono); font-weight: 760; }
+  /* Net-worth page: a little roomier than the accounts table (far fewer rows). */
+  .review-report .rr-networth-table { font-size: 10.5px; }
+  .review-report .rr-networth-table th, .review-report .rr-networth-table td { padding: 5px 8px; }
+  .review-report .rr-summary-card.rr-nw-net strong { color: var(--rr-gold); }
+  .review-report .rr-nw-note { margin-top: 6px; color: var(--rr-muted); font-size: 10px; font-style: italic; }
 
   /* ---------- Summary cards (accounts page top) ---------- */
   .review-report .rr-summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 15mm; padding: 8px 12px; }
+  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 17mm; padding: 9px 12px; }
   .review-report .rr-summary-card span { display: block; margin-bottom: 6px; color: var(--rr-muted); font-size: 9px; font-weight: 850; letter-spacing: 0.7px; text-transform: uppercase; }
   .review-report .rr-summary-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 17px; line-height: 1; }
   .review-report .rr-summary-card small { display: block; margin-top: 6px; color: var(--rr-muted); font-size: 9.4px; line-height: 1.25; }
@@ -3237,16 +3233,54 @@
               </div>
             </article>
           </section>
-          <section class="rr-networth" id="rr-networth"></section>
         </div>
       </div>
       <footer class="rr-footer">
         <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
-        <span class="rr-num">04 / 08</span>
+        <span class="rr-num">04 / 09</span>
       </footer>
     </section>
 
-    <!-- 05 · Retirement projection -->
+    <!-- 05 · Net worth / balance sheet -->
+    <section class="rr-page" data-page="networth">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-detail-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Balance sheet</div>
+              <h1>Net worth.</h1>
+            </div>
+          </div>
+          <section class="rr-summary-cards" id="rr-nw-cards"></section>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Assets and liabilities</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-account-table rr-networth-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th><th>Category</th><th>Owner</th><th class="rr-right">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rr-nw-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <p class="rr-nw-note">The investment portfolio is itemised on the previous page. Household net worth combines it with the held-away assets and liabilities above.</p>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">05 / 09</span>
+      </footer>
+    </section>
+
+    <!-- 06 · Retirement projection -->
     <section class="rr-page" data-page="projection">
       <header class="rr-header">
         <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
@@ -6795,10 +6829,8 @@
     return html;
   }
 
-  // Net-worth strip: investment assets (from the accounts summary) + property /
-  // business assets - liabilities = household net worth, plus an itemised list
-  // so netWorthItems is surfaced rather than orphaned.
-  function renderReviewNetWorthHtml(){
+  // Net-worth rollup shared by the summary cards and the total row.
+  function reviewNetWorthTotals(){
     var items = (reviewData && reviewData.netWorthItems) || [];
     var invest = reviewAccountsSummary().totalInvest;
     var otherAssets = 0, liabilities = 0;
@@ -6806,19 +6838,58 @@
       var v = Number(it.value) || 0;
       if (it.kind === 'liability') liabilities += v; else otherAssets += v;
     });
-    var net = invest + otherAssets - liabilities;
-    var itemBits = items.map(function(it){
+    return { invest: invest, otherAssets: otherAssets, liabilities: liabilities,
+             net: invest + otherAssets - liabilities };
+  }
+
+  // Human label for a balance-sheet category.
+  function reviewNetWorthCategory(cat){
+    var map = {
+      business_interest: 'Business interest', primary_residence: 'Primary residence',
+      investment_property: 'Investment property', debt: 'Debt', cash: 'Cash',
+      retirement_investment: 'Retirement (held-away)', discretionary_investment: 'Discretionary (held-away)',
+      other_asset: 'Other asset'
+    };
+    return map[cat] || (cat ? String(cat).replace(/_/g, ' ') : '—');
+  }
+
+  // The four net-worth summary cards.
+  function renderReviewNetWorthCards(){
+    var t = reviewNetWorthTotals();
+    function card(label, val, note, cls){
+      return '<div class="rr-summary-card' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><strong>'
+        + val + '</strong>' + (note ? '<small>' + note + '</small>' : '') + '</div>';
+    }
+    return card('Investment portfolio', fmtR(t.invest), 'Managed and held-away accounts.')
+      + card('Property &amp; business', fmtR(t.otherAssets), 'Held-away assets outside the portfolio.')
+      + card('Liabilities', t.liabilities ? ('-' + fmtR(t.liabilities)) : fmtR(0), 'Debts and bonds.')
+      + card('Household net worth', fmtR(t.net), 'Assets less liabilities.', 'rr-nw-net');
+  }
+
+  // The balance-sheet table: the investment portfolio, each held-away asset /
+  // liability, and a household net-worth total row.
+  function renderReviewNetWorthTable(){
+    var items = (reviewData && reviewData.netWorthItems) || [];
+    var t = reviewNetWorthTotals();
+    var rows = '<tr>'
+      + '<td class="rr-name">Investment portfolio</td>'
+      + '<td>Managed and held-away accounts</td>'
+      + '<td>Household</td>'
+      + '<td class="rr-money">' + fmtR(t.invest) + '</td></tr>';
+    items.forEach(function(it){
       var raw = Number(it.value) || 0;
-      var val = (it.value == null) ? '—' : (it.kind === 'liability' ? '-' + fmtR(raw) : fmtR(raw));
-      return '<span>' + escapeHtml(it.description || it.category || 'Item') + ' <strong>' + val + '</strong></span>';
-    }).join('');
-    return '<div class="rr-networth-cards">'
-      + '<div class="rr-networth-card"><span>Investment assets</span><strong>' + fmtR(invest) + '</strong></div>'
-      + '<div class="rr-networth-card"><span>Property &amp; business</span><strong>' + fmtR(otherAssets) + '</strong></div>'
-      + '<div class="rr-networth-card"><span>Liabilities</span><strong>' + (liabilities ? ('-' + fmtR(liabilities)) : fmtR(0)) + '</strong></div>'
-      + '<div class="rr-networth-card rr-net"><span>Household net worth</span><strong>' + fmtR(net) + '</strong></div>'
-      + '</div>'
-      + (items.length ? '<div class="rr-networth-items">' + itemBits + '</div>' : '');
+      var isLia = it.kind === 'liability';
+      var val = (it.value == null) ? '—' : (isLia ? '-' + fmtR(raw) : fmtR(raw));
+      rows += '<tr>'
+        + '<td class="rr-name">' + escapeHtml(it.description || '—') + '</td>'
+        + '<td>' + escapeHtml(reviewNetWorthCategory(it.category)) + '</td>'
+        + '<td>' + escapeHtml(it.ownerName || 'Household') + '</td>'
+        + '<td class="rr-money">' + val + '</td></tr>';
+    });
+    rows += '<tr class="rr-person-total rr-household-total">'
+      + '<td class="rr-name" colspan="3">Household net worth</td>'
+      + '<td class="rr-money">' + fmtR(t.net) + '</td></tr>';
+    return rows;
   }
 
   // Risk table tbody: one row per policy, grouped by person; a per-person total
@@ -7034,7 +7105,10 @@
     setRRText('acc-discretionary', fmtR(s.discTotal));
     setRRText('acc-monthly', fmtR(s.monthly));
     setRRHtmlById('rr-accounts-body', renderReviewAccountRowsHtml());
-    setRRHtmlById('rr-networth', renderReviewNetWorthHtml());
+
+    // Net-worth / balance-sheet page.
+    setRRHtmlById('rr-nw-cards', renderReviewNetWorthCards());
+    setRRHtmlById('rr-nw-body', renderReviewNetWorthTable());
 
     // Projection page (live engine over the confirmed planning inputs).
     var p = baseline ? baseline.p : lastProjection;
@@ -7069,6 +7143,19 @@
     setRRHtmlById('rr-estate-trusts', renderReviewTrustsHtml());
     setRRHtmlById('rr-estate-liquidity', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.estateLiquidityComment));
     setRRHtmlById('rr-estate-comments', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.comments));
+
+    renumberReviewPages();
+  }
+
+  // Stamp each page footer with its position + the live page count, so the
+  // "NN / TT" numbering stays correct if pages are added or removed.
+  function renumberReviewPages(){
+    var pages = document.querySelectorAll('.review-report .rr-page');
+    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    for (var i = 0; i < pages.length; i++){
+      var el = pages[i].querySelector('.rr-footer .rr-num');
+      if (el) el.textContent = pad(i + 1) + ' / ' + pad(pages.length);
+    }
   }
 
   // Export entry point (wired to #btn-review-report). Injects the landscape
