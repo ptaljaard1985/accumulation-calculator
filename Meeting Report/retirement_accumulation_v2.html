@@ -1768,7 +1768,7 @@
   .review-report .rr-meta { text-align: right; color: var(--rr-muted); font-size: 11px; line-height: 1.5; }
   .review-report .rr-dark .rr-meta,
   .review-report .rr-dark .rr-footer { color: rgba(255,255,255,0.82); }
-  .review-report .rr-body { flex: 1 1 auto; min-height: 0; padding: 7mm 13mm 6mm; }
+  .review-report .rr-body { flex: 1 1 auto; min-height: 0; padding: 6mm 13mm 5mm; }
   .review-report .rr-footer {
     height: 12mm; padding: 0 13mm; border-top: 1px solid var(--rr-line);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -1789,7 +1789,10 @@
   .review-report .rr-dark p { color: rgba(255,255,255,0.74); }
 
   /* ---------- Cover ---------- */
-  .review-report .rr-cover-layout { height: 100%; display: grid; align-content: center; gap: 12px; }
+  /* Cover content vertically centred. Scoped to the cover so the flex model
+     used by every other page (top-aligned, content-flow) is untouched. */
+  .review-report .rr-cover .rr-body { display: flex; flex-direction: column; }
+  .review-report .rr-cover-layout { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
   .review-report .rr-cover-title {
     margin: 6px 0 12px; max-width: 940px; color: var(--rr-gold);
     font-size: 54px; line-height: 1.02; letter-spacing: -0.05em;
@@ -1921,8 +1924,8 @@
   /* Content-flow: sections stack at their natural height, top-aligned, so a
      card is bound by the space it needs (no stretch, no clipping/overlap). The
      page grows past 210mm only if the content genuinely needs it. */
-  .review-report .rr-detail-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 10px; }
-  .review-report .rr-detail-page.rr-compact-detail { gap: 10px; }
+  .review-report .rr-detail-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 8px; }
+  .review-report .rr-detail-page.rr-compact-detail { gap: 8px; }
   .review-report .rr-detail-page.rr-estate-detail { gap: 9px; }
   .review-report .rr-detail-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; min-height: 0; }
   .review-report .rr-detail-grid.rr-full { grid-template-columns: 1fr; }
@@ -1949,7 +1952,7 @@
   .review-report .rr-table .rr-right { text-align: right; }
   .review-report .rr-table .rr-empty { text-align: center; color: var(--rr-muted); font-style: italic; padding: 14px 6px; }
   .review-report .rr-account-table { font-size: 9px; }
-  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 4px 6px; }
+  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 2.6px 6px; }
   .review-report .rr-account-table th { background: var(--rr-brand); color: #fff; border-bottom: 1px solid var(--rr-line); }
   .review-report .rr-account-table .rr-person-total td { background: var(--rr-gold); color: #fff; font-weight: 850; }
   .review-report .rr-account-table .rr-household-total td { background: var(--rr-brand); color: #fff; font-weight: 850; }
@@ -1980,7 +1983,7 @@
 
   /* ---------- Summary cards (accounts page top) ---------- */
   .review-report .rr-summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 20mm; padding: 10px 12px; }
+  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 15mm; padding: 8px 12px; }
   .review-report .rr-summary-card span { display: block; margin-bottom: 6px; color: var(--rr-muted); font-size: 9px; font-weight: 850; letter-spacing: 0.7px; text-transform: uppercase; }
   .review-report .rr-summary-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 17px; line-height: 1; }
   .review-report .rr-summary-card small { display: block; margin-top: 6px; color: var(--rr-muted); font-size: 9.4px; line-height: 1.25; }
