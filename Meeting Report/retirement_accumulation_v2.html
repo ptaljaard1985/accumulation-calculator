@@ -6049,15 +6049,21 @@
     document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
       el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
     });
-    // Family + client name from the CRM displayName / shared surname.
+    // Family + client name. The client name reads "<first A> and <first B>
+    // <shared surname>" when the couple share a surname (e.g. "Dean Andre and
+    // Justine Lesley van der Westhuizen"), else the CRM displayName.
     var cf = reviewData.clientFamily || {};
-    var famLabel = reviewSharedSurname(slots) || cf.displayName || '';
+    var surname = reviewSharedSurname(slots);
+    var famLabel = surname || cf.displayName || '';
+    var clientName = (slots.A && slots.B && surname)
+      ? ((slots.A.firstName || 'Spouse A') + ' and ' + (slots.B.firstName || 'Spouse B') + ' ' + surname)
+      : (cf.displayName || famLabel || '');
     var famEl = document.getElementById('family-name');
     if (famEl && famLabel){ famEl.textContent = famLabel; famEl.classList.remove('is-placeholder'); }
     var cn = document.getElementById('client-name');
-    if (cn) cn.value = cf.displayName || famLabel || '';
+    if (cn) cn.value = clientName;
     var cne = document.getElementById('client-name-edit');
-    if (cne) cne.value = cf.displayName || famLabel || '';
+    if (cne) cne.value = clientName;
 
     // Money buckets.
     setHpFormatted('hp-ret-A', t.A.ret);   setHpFormatted('hp-ret-contrib-A', t.A.retC);
@@ -6755,6 +6761,13 @@
 
   // Group accounts by owner, ordered primary (A), spouse (B), children, then
   // joint / other. Each group is { key, accounts }.
+  // Account type ordering within an owner group: Retirement, then Discretionary,
+  // then Tax-Free, then anything else.
+  function reviewTypeRank(type){
+    var order = { 'Retirement': 0, 'Discretionary': 1, 'Tax-Free': 2 };
+    return Object.prototype.hasOwnProperty.call(order, type) ? order[type] : 3;
+  }
+
   function reviewAccountGroups(){
     var accounts = (reviewData && reviewData.accounts) || [];
     var groups = {}, order = [];
@@ -6771,7 +6784,13 @@
       return reviewMemberRole(key) === 'child' ? 3 : 4;
     }
     order.sort(function(x, y){ return rank(x) - rank(y); });
-    return order.map(function(key){ return { key: key, accounts: groups[key] }; });
+    return order.map(function(key){
+      // Sort each owner's accounts by type (stable), retirement first.
+      var accts = groups[key].slice().sort(function(a, b){
+        return reviewTypeRank(a.type) - reviewTypeRank(b.type);
+      });
+      return { key: key, accounts: accts };
+    });
   }
 
   function reviewOwnerLabel(g){

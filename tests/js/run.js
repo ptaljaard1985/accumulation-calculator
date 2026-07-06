@@ -1180,6 +1180,10 @@ check('review import: confirmMapping sets the eight hp-* inputs + ages + assumpt
   assert.ok(/applyMappingAssumptions\(/.test(src), 'modal assumptions not applied');
   assert.ok(/projectionRequested = true/.test(src) && /refresh\(\)/.test(src),
     'confirm should build the projection');
+  // Client name = "<first A> and <first B> <shared surname>".
+  assert.ok(/reviewSharedSurname\(slots\)/.test(src), 'client name should derive the shared surname');
+  assert.ok(/firstName[\s\S]*' and '[\s\S]*firstName[\s\S]*surname/.test(src),
+    'client name should read first names + shared surname');
 });
 
 // ============================================================
@@ -1190,14 +1194,14 @@ const reviewReport = new Function('realData',
   ['fmtR', 'fmtShort', 'fmtPct', 'escapeHtml', 'isFiniteNum', 'resolveMemberSlots',
    'normalizeReviewBucket', 'accountOwnerSlot', 'defaultAccountDecisions', 'aggregateReviewData',
    'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
-   'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewAccountGroups', 'reviewOwnerLabel',
+   'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewTypeRank', 'reviewAccountGroups', 'reviewOwnerLabel',
    'renderReviewAccountRowsHtml', 'reviewNetWorthTotals', 'reviewNetWorthCategory',
    'renderReviewNetWorthCards', 'renderReviewNetWorthTable', 'renderReviewRiskRowsHtml',
    'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml',
    'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
   ';reviewSlots=resolveMemberSlots(reviewData.clientFamily.members);' +
   'mappingDecisions=defaultAccountDecisions(reviewData.accounts, reviewSlots);' +
-  'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(),' +
+  'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(), groups:reviewAccountGroups(),' +
   ' nwCards:renderReviewNetWorthCards(), nw:renderReviewNetWorthTable(), risk:renderReviewRiskRowsHtml(),' +
   ' wills:renderReviewWillsRowsHtml(), poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml() };'
 )(realReview);
@@ -1218,6 +1222,22 @@ check('review report: accounts table = 13 rows + 4 owner subtotals + household t
   assert.ok(stripSpace(reviewReport.acct).includes('10 743 007'), 'household total value missing');
   assert.strictEqual((reviewReport.acct.match(/>Ignore</g) || []).length, 2,
     'exactly the two child accounts should be labelled Ignore');
+});
+
+check('review report: accounts sorted by type within owner (retirement first)', () => {
+  const rank = new Function(extractFn(inline, 'reviewTypeRank') + '; return reviewTypeRank;')();
+  assert.ok(rank('Retirement') < rank('Discretionary') && rank('Discretionary') < rank('Tax-Free'),
+    'type rank order should be Retirement < Discretionary < Tax-Free');
+  // Every owner group's accounts are non-decreasing in type rank.
+  reviewReport.groups.forEach(g => {
+    const ranks = g.accounts.map(a => rank(a.type));
+    for (let i = 1; i < ranks.length; i++)
+      assert.ok(ranks[i] >= ranks[i - 1],
+        'group not type-sorted: ' + g.accounts.map(a => a.type).join(','));
+  });
+  // Dean (the group with multiple accounts) starts with Retirement.
+  const dean = reviewReport.groups.find(g => g.accounts.length > 1);
+  assert.strictEqual(dean.accounts[0].type, 'Retirement', 'first Dean row should be Retirement');
 });
 
 check('review report: net worth on its own page (table + cards), reconciles to total', () => {
