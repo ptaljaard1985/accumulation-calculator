@@ -1222,19 +1222,29 @@ const reviewReport = new Function('realData',
 )(realReview);
 const stripSpace = s => s.replace(/ /g, ' ');
 
-check('review report: summary cards match confirmed buckets (children Ignored)', () => {
-  const r2 = n => Math.round(n * 100) / 100;
-  assert.strictEqual(r2(reviewReport.summary.totalInvest), 10743007.09);
-  assert.strictEqual(r2(reviewReport.summary.retTotal), 7820376.68);
-  assert.strictEqual(r2(reviewReport.summary.discTotal), 2514692.73);  // excludes the two child TFIs
-  assert.strictEqual(r2(reviewReport.summary.monthly), 7281.54);
+check('review report: summary reconciles exactly (whole-rand, in-projection = ret + disc)', () => {
+  const s = reviewReport.summary;
+  // Values are rounded to whole rand so subtotals equal the sum of displayed rows.
+  assert.strictEqual(s.totalInvest, 10743008);                   // all accounts (for net worth)
+  assert.strictEqual(s.retTotal, 7820377);
+  assert.strictEqual(s.discTotal, 2514693);
+  // Card total is the in-projection scope and equals retirement + discretionary exactly.
+  assert.strictEqual(s.includedValue, 10335070);
+  assert.strictEqual(s.retTotal + s.discTotal, s.includedValue);
+  // Included + excluded reconciles to the grand total exactly.
+  assert.strictEqual(s.excludedValue, 407938);                   // the two child TFIs
+  assert.strictEqual(s.includedValue + s.excludedValue, s.totalInvest);
+  assert.strictEqual(s.includedMonthly, 7282);
+  assert.strictEqual(s.excludedMonthly, 450);                    // R225 x 2
 });
 
-check('review report: accounts table = 13 rows + 4 owner subtotals + household total, 2 Ignored', () => {
+check('review report: accounts table has reconciling in-projection + excluded totals', () => {
   const trs = (reviewReport.acct.match(/<tr/g) || []).length;
-  assert.strictEqual(trs, 18, 'expected 18 <tr>, got ' + trs);
-  assert.ok(/Household total/.test(reviewReport.acct), 'household total row missing');
-  assert.ok(stripSpace(reviewReport.acct).includes('10 743 007'), 'household total value missing');
+  assert.strictEqual(trs, 19, 'expected 19 <tr> (13 accounts + 4 owner subtotals + 2 total rows), got ' + trs);
+  const a = stripSpace(reviewReport.acct);
+  assert.ok(/Total in projection/.test(a) && a.includes('10 335 070'), 'in-projection total missing/wrong');
+  assert.ok(/Excluded from projection/.test(a) && a.includes('407 938'), 'excluded total missing/wrong');
+  assert.ok(!/Household total/.test(a), 'old ambiguous "Household total" should be replaced');
   assert.strictEqual((reviewReport.acct.match(/>Ignore</g) || []).length, 2,
     'exactly the two child accounts should be labelled Ignore');
 });
@@ -1261,8 +1271,8 @@ check('review report: net worth on its own page (table + cards), reconciles to t
   const nw = stripSpace(reviewReport.nw);
   assert.ok(/Investment portfolio/.test(nw), 'investment portfolio row missing');
   assert.ok(/Ocuwise Capital/.test(nw) && /Nelspruit house bond/.test(nw), 'held-away items missing');
-  assert.ok(/Household net worth/.test(nw) && nw.includes('26 293 007'), 'net worth total row missing/wrong');
-  assert.ok(stripSpace(reviewReport.nwCards).includes('26 293 007'), 'net-worth summary card missing');
+  assert.ok(/Household net worth/.test(nw) && nw.includes('26 293 008'), 'net worth total row missing/wrong');
+  assert.ok(stripSpace(reviewReport.nwCards).includes('26 293 008'), 'net-worth summary card missing');
   // Balance-sheet items live on their own page, not below the accounts table.
   assert.ok(/id="rr-nw-cards"/.test(html) && /id="rr-nw-body"/.test(html), 'net-worth page containers missing');
   assert.ok(!/id="rr-networth"/.test(html), 'old net-worth strip should be gone from the accounts page');

@@ -1966,6 +1966,8 @@
   .review-report .rr-account-table .rr-person-total .rr-money, .review-report .rr-account-table .rr-household-total .rr-money,
   .review-report .rr-account-table .rr-person-total .rr-num-cell, .review-report .rr-account-table .rr-household-total .rr-num-cell,
   .review-report .rr-account-table .rr-person-total .rr-name, .review-report .rr-account-table .rr-household-total .rr-name { color: #fff; }
+  .review-report .rr-account-table .rr-excluded-total td { background: var(--rr-muted); color: #fff; font-weight: 700; }
+  .review-report .rr-account-table .rr-excluded-total .rr-money, .review-report .rr-account-table .rr-excluded-total .rr-num-cell, .review-report .rr-account-table .rr-excluded-total .rr-name { color: #fff; }
   .review-report .rr-risk-table { font-size: 10px; }
   .review-report .rr-risk-table th { background: var(--rr-brand); color: #fff; padding: 8px 7px; border-bottom: 1px solid var(--rr-line); }
   .review-report .rr-risk-table td { padding: 8px 7px; }
@@ -3196,9 +3198,9 @@
           </div>
           <section class="rr-summary-cards">
             <div class="rr-summary-card">
-              <span>Total investment assets</span>
+              <span>Assets in the projection</span>
               <strong data-rr="acc-total">—</strong>
-              <small>Across all imported investment accounts.</small>
+              <small>Retirement and discretionary combined.</small>
             </div>
             <div class="rr-summary-card">
               <span>Retirement assets</span>
@@ -3213,7 +3215,7 @@
             <div class="rr-summary-card">
               <span>Monthly contributions</span>
               <strong data-rr="acc-monthly">—</strong>
-              <small>Recurring invested contributions.</small>
+              <small>Into the mapped accounts.</small>
             </div>
           </section>
           <section class="rr-detail-grid rr-full">
@@ -6770,16 +6772,22 @@
   // (retirement or discretionary), i.e. not ignored.
   function reviewAccountsSummary(){
     var accounts = (reviewData && reviewData.accounts) || [];
-    var totalInvest = 0, retTotal = 0, discTotal = 0, monthly = 0;
+    var totalInvest = 0, retTotal = 0, discTotal = 0, monthly = 0, excludedValue = 0, excludedMonthly = 0;
     accounts.forEach(function(a){
-      var v = Number(a.value) || 0;
+      // Round to whole rand so every displayed subtotal equals the sum of its
+      // rows (avoids "sum of rounded != rounded sum" R1 mismatches in the report).
+      var v = Math.round(Number(a.value) || 0), c = Math.round(Number(a.monthlyContribution) || 0);
       totalInvest += v;
       var b = (mappingDecisions[a.accountId] || {}).bucket;
-      if (b === 'retirementAssets') retTotal += v;
-      else if (b === 'discretionaryAssets') discTotal += v;
-      if (b === 'retirementAssets' || b === 'discretionaryAssets') monthly += Number(a.monthlyContribution) || 0;
+      if (b === 'retirementAssets'){ retTotal += v; monthly += c; }
+      else if (b === 'discretionaryAssets'){ discTotal += v; monthly += c; }
+      else { excludedValue += v; excludedMonthly += c; }
     });
-    return { totalInvest: totalInvest, retTotal: retTotal, discTotal: discTotal, monthly: monthly };
+    // includedValue/Monthly are the in-projection scope (Retirement + Discretionary);
+    // excluded* are the Ignored accounts. includedValue + excludedValue == totalInvest.
+    return { totalInvest: totalInvest, retTotal: retTotal, discTotal: discTotal, monthly: monthly,
+             includedValue: retTotal + discTotal, includedMonthly: monthly,
+             excludedValue: excludedValue, excludedMonthly: excludedMonthly };
   }
 
   // Group accounts by owner, ordered primary (A), spouse (B), children, then
@@ -6834,9 +6842,9 @@
       var owner = reviewOwnerLabel(g);
       var subV = 0, subM = 0;
       g.accounts.forEach(function(a){
-        var v = (a.value == null) ? null : Number(a.value);
+        var v = (a.value == null) ? null : Math.round(Number(a.value));
         subV += (v || 0);
-        subM += Number(a.monthlyContribution) || 0;
+        subM += Math.round(Number(a.monthlyContribution) || 0);
         html += '<tr>'
           + '<td class="rr-name">' + escapeHtml(owner) + '</td>'
           + '<td>' + escapeHtml(a.provider || '—') + '</td>'
@@ -6858,16 +6866,37 @@
         + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(g.accounts, 'offshoreAssetsPercent')) + '</td>'
         + '</tr>';
     });
-    var totV = 0, totM = 0;
-    accounts.forEach(function(a){ totV += Number(a.value) || 0; totM += Number(a.monthlyContribution) || 0; });
+    // Two reconciling total rows: "Total in projection" sums the Retirement +
+    // Discretionary accounts (matching the summary cards); "Excluded from
+    // projection" sums the Ignored accounts (the children). Together they equal
+    // every account value shown above.
+    var s = reviewAccountsSummary();
+    var included = accounts.filter(function(a){
+      var b = (mappingDecisions[a.accountId] || {}).bucket;
+      return b === 'retirementAssets' || b === 'discretionaryAssets';
+    });
+    var excluded = accounts.filter(function(a){
+      var b = (mappingDecisions[a.accountId] || {}).bucket;
+      return b !== 'retirementAssets' && b !== 'discretionaryAssets';
+    });
     html += '<tr class="rr-person-total rr-household-total">'
-      + '<td class="rr-name" colspan="4">Household total</td>'
-      + '<td class="rr-money">' + fmtR(totV) + '</td>'
-      + '<td class="rr-money">' + fmtR(totM) + '</td>'
+      + '<td class="rr-name" colspan="4">Total in projection</td>'
+      + '<td class="rr-money">' + fmtR(s.includedValue) + '</td>'
+      + '<td class="rr-money">' + fmtR(s.includedMonthly) + '</td>'
       + '<td></td>'
-      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(accounts, 'growthAssetsPercent')) + '</td>'
-      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(accounts, 'offshoreAssetsPercent')) + '</td>'
+      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(included, 'growthAssetsPercent')) + '</td>'
+      + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(included, 'offshoreAssetsPercent')) + '</td>'
       + '</tr>';
+    if (excluded.length){
+      html += '<tr class="rr-person-total rr-excluded-total">'
+        + '<td class="rr-name" colspan="4">Excluded from projection</td>'
+        + '<td class="rr-money">' + fmtR(s.excludedValue) + '</td>'
+        + '<td class="rr-money">' + fmtR(s.excludedMonthly) + '</td>'
+        + '<td></td>'
+        + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(excluded, 'growthAssetsPercent')) + '</td>'
+        + '<td class="rr-num-cell">' + fmtReviewPct(reviewWeightedPct(excluded, 'offshoreAssetsPercent')) + '</td>'
+        + '</tr>';
+    }
     return html;
   }
 
@@ -7178,10 +7207,13 @@
 
     // Accounts page.
     var s = reviewAccountsSummary();
-    setRRText('acc-total', fmtR(s.totalInvest));
+    // Cards reflect the in-projection scope so they reconcile: the total equals
+    // retirement + discretionary, and the monthly matches the "Total in
+    // projection" row. Ignored (child) accounts are shown on their own row.
+    setRRText('acc-total', fmtR(s.includedValue));
     setRRText('acc-retirement', fmtR(s.retTotal));
     setRRText('acc-discretionary', fmtR(s.discTotal));
-    setRRText('acc-monthly', fmtR(s.monthly));
+    setRRText('acc-monthly', fmtR(s.includedMonthly));
     setRRHtmlById('rr-accounts-body', renderReviewAccountRowsHtml());
 
     // Net-worth / balance-sheet page.
