@@ -85,7 +85,7 @@ Member fields:
 | `coverKicker` | string | yes | Example: `Pre-meeting review document`. |
 | `coverTitle` | string | yes | Usually the client family display name. |
 | `coverSubtitle` | string | yes | Short cover explanation with date prepared. |
-| `pageCount` | number | yes | Current design uses 8 pages. |
+| `pageCount` | number | yes | Current design uses 9 pages. |
 | `includePages` | array | yes | Stable page keys to render. |
 
 Current page keys:
@@ -94,10 +94,11 @@ Current page keys:
 2. `agendaPrimary`
 3. `agendaSecondary`
 4. `accounts`
-5. `retirementProjection`
-6. `risk`
-7. `estate`
-8. `notes`
+5. `netWorth`
+6. `retirementProjection`
+7. `risk`
+8. `estate`
+9. `notes`
 
 ## `agenda`
 
@@ -131,6 +132,8 @@ Agenda item fields:
 ## `accounts`
 
 The account page is factual. It should show account-level CRM data and the mapped totals used by the planning tool.
+
+Balance-sheet / net-worth items (business, property, debt) now render on their own `netWorth` page (page 5, after `accounts`) as summary cards plus a balance-sheet table, rather than in a cramped strip under the accounts table.
 
 | Field | Type | Required | Notes |
 |---|---:|---:|---|
