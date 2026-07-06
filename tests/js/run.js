@@ -1180,10 +1180,25 @@ check('review import: confirmMapping sets the eight hp-* inputs + ages + assumpt
   assert.ok(/applyMappingAssumptions\(/.test(src), 'modal assumptions not applied');
   assert.ok(/projectionRequested = true/.test(src) && /refresh\(\)/.test(src),
     'confirm should build the projection');
-  // Client name = "<first A> and <first B> <shared surname>".
-  assert.ok(/reviewSharedSurname\(slots\)/.test(src), 'client name should derive the shared surname');
-  assert.ok(/firstName[\s\S]*' and '[\s\S]*firstName[\s\S]*surname/.test(src),
-    'client name should read first names + shared surname');
+  assert.ok(/reviewClientName\(slots\)/.test(src), 'client name should come from reviewClientName');
+});
+
+check('review import: reviewClientName handles surname rules + preferred name', () => {
+  const fn = new Function(
+    extractFn(inline, 'reviewPreferredName') + extractFn(inline, 'reviewClientName') +
+    '; return reviewClientName;')();
+  const M = (first, last, pref) => ({ firstName: first, lastName: last, preferredName: pref });
+  // Shared surname: "<A> and <B> <surname>".
+  assert.strictEqual(fn({ A: M('Dean', 'van der Westhuizen'), B: M('Justine', 'van der Westhuizen') }),
+    'Dean and Justine van der Westhuizen');
+  // Different surnames: each carries their own.
+  assert.strictEqual(fn({ A: M('Dean', 'Smith'), B: M('Justine', 'Jones') }),
+    'Dean Smith and Justine Jones');
+  // preferredName overrides firstName.
+  assert.strictEqual(fn({ A: M('Dean Andre', 'Bloggs', 'Dean'), B: M('Justine Lesley', 'Bloggs', 'Jus') }),
+    'Dean and Jus Bloggs');
+  // Solo client.
+  assert.strictEqual(fn({ A: M('Dean', 'Smith') }), 'Dean Smith');
 });
 
 // ============================================================

@@ -5876,6 +5876,33 @@
     return null;
   }
 
+  // A member's display first name: the CRM preferredName if it supplies one,
+  // else the firstName.
+  function reviewPreferredName(member){
+    if (!member) return '';
+    return (member.preferredName || member.firstName || '').trim();
+  }
+
+  // The report / plan name for the household:
+  //   shared surname  -> "<pref A> and <pref B> <surname>"
+  //   different names -> "<pref A> <surname A> and <pref B> <surname B>"
+  //   solo            -> "<pref A> <surname A>"
+  // Surnames are omitted where absent.
+  function reviewClientName(slots){
+    slots = slots || {};
+    var a = slots.A, b = slots.B;
+    var nameA = reviewPreferredName(a), nameB = reviewPreferredName(b);
+    var surA = (a && a.lastName) ? a.lastName.trim() : '';
+    var surB = (b && b.lastName) ? b.lastName.trim() : '';
+    var withSur = function(n, s){ return s ? (n + ' ' + s) : n; };
+    if (nameA && nameB){
+      if (surA && surA === surB) return nameA + ' and ' + nameB + ' ' + surA;
+      return withSur(nameA, surA) + ' and ' + withSur(nameB, surB);
+    }
+    if (nameA) return withSur(nameA, surA);
+    return '';
+  }
+
   // Space-separated ZAR (matches setHpFormatted / the money fields).
   function fmtGoalInput(n){ return Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' '); }
   // Set a percentage input, trimming float cruft (5 not 5.00000001).
@@ -6049,15 +6076,11 @@
     document.querySelectorAll('[data-sync-spouse-name]').forEach(function(el){
       el.value = spouseNames[el.getAttribute('data-sync-spouse-name')] || '';
     });
-    // Family + client name. The client name reads "<first A> and <first B>
-    // <shared surname>" when the couple share a surname (e.g. "Dean Andre and
-    // Justine Lesley van der Westhuizen"), else the CRM displayName.
+    // Family + client name (see reviewClientName: shared surname -> "<A> and <B>
+    // <surname>"; different surnames -> "<A> <surname A> and <B> <surname B>").
     var cf = reviewData.clientFamily || {};
-    var surname = reviewSharedSurname(slots);
-    var famLabel = surname || cf.displayName || '';
-    var clientName = (slots.A && slots.B && surname)
-      ? ((slots.A.firstName || 'Spouse A') + ' and ' + (slots.B.firstName || 'Spouse B') + ' ' + surname)
-      : (cf.displayName || famLabel || '');
+    var famLabel = reviewSharedSurname(slots) || cf.displayName || '';
+    var clientName = reviewClientName(slots) || cf.displayName || '';
     var famEl = document.getElementById('family-name');
     if (famEl && famLabel){ famEl.textContent = famLabel; famEl.classList.remove('is-placeholder'); }
     var cn = document.getElementById('client-name');
@@ -7111,8 +7134,9 @@
     var d = reviewData || {};
     var cf = d.clientFamily || {};
 
-    // Cover + running header identity.
-    setRRText('cover-title', cf.displayName || 'Household review');
+    // Cover + running header identity. Cover title uses the full household name
+    // (preferred names + surname rules); the running header stays short.
+    setRRText('cover-title', reviewClientName(reviewSlots) || cf.displayName || 'Household review');
     setRRText('cover-subtitle', 'Prepared on ' + reviewPreparedDate() + '.');
     setRRText('meta-names', reviewNamesLine());
     setRRText('meta-date', reviewPreparedDate());
