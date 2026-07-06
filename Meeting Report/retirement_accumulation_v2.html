@@ -1674,6 +1674,13 @@
     margin: 12px 0 0; padding: 9px 12px; border-radius: 6px;
     background: var(--gold-pale); color: var(--gold-2); font-size: 12.5px; line-height: 1.4;
   }
+  .mapping-assumptions { margin: 14px 0 0; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--paper-2); }
+  .mapping-assumptions-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin-bottom: 9px; }
+  .mapping-assumptions-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .map-assum { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+  .map-assum-input { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; height: 32px; }
+  .map-assum-input input { flex: 1; min-width: 0; border: 0; background: transparent; font-family: var(--mono); font-size: 13px; color: var(--ink); text-align: right; padding: 0; outline: none; }
+  .map-assum-prefix, .map-assum-suffix { color: var(--mute); font-size: 12px; }
   .mapping-head, .map-row {
     display: grid;
     grid-template-columns: 1.35fr 1.2fr 1.25fr 0.8fr 0.8fr 1fr 1.75fr;
@@ -3510,6 +3517,19 @@
       <h2 id="mapping-modal-title">Map imported accounts</h2>
       <p id="mapping-modal-sub">Confirm each account as Retirement, Discretionary, or Ignore.</p>
       <div class="mapping-note" id="mapping-assumptions-note" style="display:none"></div>
+      <div class="mapping-assumptions">
+        <div class="mapping-assumptions-head">Projection assumptions</div>
+        <div class="mapping-assumptions-grid">
+          <label class="map-assum">Expected return
+            <span class="map-assum-input"><input id="map-return" type="number" step="0.25" min="0" max="15"><span class="map-assum-suffix">%</span></span></label>
+          <label class="map-assum">Expected inflation
+            <span class="map-assum-input"><input id="map-cpi" type="number" step="0.25" min="0" max="15"><span class="map-assum-suffix">%</span></span></label>
+          <label class="map-assum">Monthly income goal
+            <span class="map-assum-input"><span class="map-assum-prefix">R</span><input id="map-goal" type="text" inputmode="numeric" placeholder="—"></span></label>
+          <label class="map-assum">Retirement age
+            <span class="map-assum-input"><input id="map-retage" type="number" min="45" max="90" step="1"></span></label>
+        </div>
+      </div>
       <div class="mapping-head">
         <div>Owner</div>
         <div>Provider · Type</div>
@@ -5822,6 +5842,11 @@
     return null;
   }
 
+  // Space-separated ZAR (matches setHpFormatted / the money fields).
+  function fmtGoalInput(n){ return Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' '); }
+  // Set a percentage input, trimming float cruft (5 not 5.00000001).
+  function setMapAssumNum(id, v){ var el = document.getElementById(id); if (el) el.value = String(Math.round(Number(v) * 100) / 100); }
+
   function openReviewData(obj){
     reviewData = obj;
     var members = (obj.clientFamily && obj.clientFamily.members) || [];
@@ -5835,16 +5860,27 @@
       sub.textContent = fam + ' · ' + n + ' account' + (n === 1 ? '' : 's') +
         ' imported from the CRM. Confirm each as Retirement, Discretionary, or Ignore.';
     }
+    // Pre-fill the projection-assumption inputs from the CRM seeds where present,
+    // else from the tool's current canonical values (defaults on a fresh load).
+    // Confirm applies these straight to the projection, so the advisor never has
+    // to open the Edit-info drawer before generating the report.
+    var s = obj.assumptionSeeds || {};
+    var curReturn = document.getElementById('return');
+    var curCpi = document.getElementById('cpi');
+    var curGoal = document.getElementById('income-goal');
+    var curRetAge = document.getElementById('retirement-age');
+    setMapAssumNum('map-return', isFiniteNum(s.expectedReturn) ? (s.expectedReturn * 100) : (curReturn ? curReturn.value : 5));
+    setMapAssumNum('map-cpi', isFiniteNum(s.expectedInflation) ? (s.expectedInflation * 100) : (curCpi ? curCpi.value : 5));
+    var goalEl = document.getElementById('map-goal');
+    if (goalEl) goalEl.value = isFiniteNum(s.incomeGoalMonthly) ? fmtGoalInput(s.incomeGoalMonthly) : ((curGoal && curGoal.value) || '');
+    setMapAssumNum('map-retage', (curRetAge && curRetAge.value) ? curRetAge.value : 65);
+
     var note = document.getElementById('mapping-assumptions-note');
     if (note){
-      var s = obj.assumptionSeeds || {};
       var hasSeed = isFiniteNum(s.expectedReturn) || isFiniteNum(s.expectedInflation) || isFiniteNum(s.incomeGoalMonthly);
-      if (hasSeed){ note.style.display = 'none'; note.textContent = ''; }
-      else {
-        note.style.display = '';
-        note.textContent = 'The CRM supplied no return, inflation or income-goal assumptions, ' +
-          'so the projection will use the tool defaults. Set these on the market-assumptions sliders after building.';
-      }
+      note.style.display = hasSeed ? 'none' : '';
+      note.textContent = hasSeed ? '' :
+        'The CRM supplied no assumptions, so the tool defaults are shown below. Adjust them for this projection.';
     }
     renderMappingRows();
     openMappingModal();
@@ -5942,12 +5978,21 @@
     el.value = String(v);
   }
 
-  function applyAssumptionSeeds(seeds){
-    seeds = seeds || {};
-    if (isFiniteNum(seeds.expectedReturn)) setSliderClamped('return', seeds.expectedReturn * 100);
-    if (isFiniteNum(seeds.expectedInflation)) setSliderClamped('cpi', seeds.expectedInflation * 100);
-    if (isFiniteNum(seeds.incomeGoalMonthly)) setHpFormatted('income-goal', seeds.incomeGoalMonthly);
-    // lifeExpectancy is a drawdown-tool input; esc + retirement-age keep defaults.
+  // Apply the projection-assumption inputs the advisor set on the mapping modal
+  // (return / inflation / income goal / retirement age) to the canonical inputs,
+  // so no trip to the Edit-info drawer is needed before generating the report.
+  function applyMappingAssumptions(){
+    var mr = parseFloat((document.getElementById('map-return') || {}).value);
+    if (isFinite(mr)) setSliderClamped('return', mr);
+    var mc = parseFloat((document.getElementById('map-cpi') || {}).value);
+    if (isFinite(mc)) setSliderClamped('cpi', mc);
+    var mg = String((document.getElementById('map-goal') || {}).value || '').replace(/[^0-9]/g, '');
+    var goalEl = document.getElementById('income-goal');
+    if (mg) setHpFormatted('income-goal', parseFloat(mg));
+    else if (goalEl) goalEl.value = '';
+    var mra = parseInt((document.getElementById('map-retage') || {}).value, 10);
+    var retAgeEl = document.getElementById('retirement-age');
+    if (retAgeEl && isFinite(mra)) retAgeEl.value = String(mra);
   }
 
   function confirmMapping(){
@@ -5986,7 +6031,7 @@
     setHpFormatted('hp-ret-B', t.B.ret);   setHpFormatted('hp-ret-contrib-B', t.B.retC);
     setHpFormatted('hp-disc-B', t.B.disc); setHpFormatted('hp-disc-contrib-B', t.B.discC);
 
-    applyAssumptionSeeds(reviewData.assumptionSeeds);
+    applyMappingAssumptions();
 
     reviewLoaded = true;
     updateReviewReportButton();
