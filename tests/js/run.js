@@ -1284,12 +1284,22 @@ check('review report: estate rebuilt to schema 1.3.0 (no old willOnFile / per-ro
     'wills should surface the testamentary-trust flag');
 });
 
-check('review report: risk table shows impairment, omits the (absent) waiting-period column', () => {
+check('review report: risk table omits impairment + waiting-period columns', () => {
   const src = extractFn(inline, 'renderReviewRiskRowsHtml');
-  assert.ok(/impairment/.test(src), 'impairment column missing');
+  assert.ok(!/impairment/i.test(src), 'impairment column should be removed');
   assert.ok(!/waitingPeriod|waiting-period|Waiting period/i.test(src),
     'waiting-period column should be omitted (no data field for it)');
+  assert.ok(!/Impairment/.test(html.slice(html.indexOf('rr-risk-body') - 1200, html.indexOf('rr-risk-body'))),
+    'Impairment header should be removed from the risk table markup');
   assert.strictEqual((reviewReport.risk.match(/<tr>/g) || []).length, 2, 'two policy rows');
+});
+
+check('review report: income chart shows early + late retirement callouts', () => {
+  const src = extractFn(inline, 'renderReviewIncomeChart');
+  assert.ok(/selectedAge - 5/.test(src) && /selectedAge \+ 5/.test(src),
+    'chart should mark 5 years before and after the selected retirement age');
+  assert.ok(/Early retirement/.test(src) && /Late retirement/.test(src),
+    'early/late retirement callouts missing');
 });
 
 check('review report: estate has three separate sections (wills, POA, trusts); no readiness box', () => {

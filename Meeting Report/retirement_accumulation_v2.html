@@ -3373,7 +3373,7 @@
                       <th>Person</th><th>Insurer</th>
                       <th class="rr-right">Life cover</th><th class="rr-right">Income disability</th>
                       <th class="rr-right">Capital disability</th><th class="rr-right">Critical illness</th>
-                      <th class="rr-right">Impairment</th><th>Beneficiary</th>
+                      <th>Beneficiary</th>
                     </tr>
                   </thead>
                   <tbody id="rr-risk-body"></tbody>
@@ -6935,22 +6935,21 @@
   }
 
   // Risk table tbody: one row per policy, grouped by person; a per-person total
-  // row only when a person has more than one policy. Impairment is shown even
-  // when zero (rendered as R0).
+  // row only when a person has more than one policy.
   function renderReviewRiskRowsHtml(){
     var rows = (reviewData && reviewData.risk && reviewData.risk.policyBenefitRows) || [];
-    if (!rows.length) return '<tr><td colspan="8" class="rr-empty">No risk policies recorded.</td></tr>';
+    if (!rows.length) return '<tr><td colspan="7" class="rr-empty">No risk policies recorded.</td></tr>';
     var groups = {}, order = [];
     rows.forEach(function(r){
       var k = r.personId || r.personName || 'unknown';
       if (!groups[k]){ groups[k] = []; order.push(k); }
       groups[k].push(r);
     });
-    var fields = ['lifeCover', 'incomeDisabilityMonthly', 'capitalDisability', 'criticalIllness', 'impairment'];
+    var fields = ['lifeCover', 'incomeDisabilityMonthly', 'capitalDisability', 'criticalIllness'];
     var html = '';
     order.forEach(function(k, gi){
       var list = groups[k];
-      var sums = { lifeCover: 0, incomeDisabilityMonthly: 0, capitalDisability: 0, criticalIllness: 0, impairment: 0 };
+      var sums = { lifeCover: 0, incomeDisabilityMonthly: 0, capitalDisability: 0, criticalIllness: 0 };
       list.forEach(function(r){
         fields.forEach(function(f){ sums[f] += Number(r[f]) || 0; });
         html += '<tr>'
@@ -6960,7 +6959,6 @@
           + '<td class="rr-money">' + fmtR(Number(r.incomeDisabilityMonthly) || 0) + '</td>'
           + '<td class="rr-money">' + fmtR(Number(r.capitalDisability) || 0) + '</td>'
           + '<td class="rr-money">' + fmtR(Number(r.criticalIllness) || 0) + '</td>'
-          + '<td class="rr-money">' + fmtR(Number(r.impairment) || 0) + '</td>'
           + '<td>' + escapeHtml(r.beneficiary || '—') + '</td>'
           + '</tr>';
       });
@@ -6971,10 +6969,9 @@
           + '<td class="rr-money">' + fmtR(sums.incomeDisabilityMonthly) + '</td>'
           + '<td class="rr-money">' + fmtR(sums.capitalDisability) + '</td>'
           + '<td class="rr-money">' + fmtR(sums.criticalIllness) + '</td>'
-          + '<td class="rr-money">' + fmtR(sums.impairment) + '</td>'
           + '<td></td></tr>';
       }
-      if (gi < order.length - 1) html += '<tr class="rr-person-spacer"><td colspan="8"></td></tr>';
+      if (gi < order.length - 1) html += '<tr class="rr-person-spacer"><td colspan="7"></td></tr>';
     });
     return html;
   }
@@ -7107,6 +7104,30 @@
       dPath += (j === 0 ? 'M' : 'L') + ' ' + xForAge(points[j].age).toFixed(2) + ' ' + yForValue(points[j].income).toFixed(2) + ' ';
     }
     svg.appendChild(createSvgEl('path', { d: dPath.trim(), fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+
+    // Smaller "retire 5 years earlier / later" callouts. Early sits above the
+    // (lower) left point, late below the (higher) right point. Drawn before the
+    // main marker so the primary callout stays on top.
+    function reviewIncomeAt(age){
+      for (var m = 0; m < points.length; m++){ if (points[m].age === age) return points[m].income; }
+      return null;
+    }
+    function reviewSideCallout(age, label, above){
+      if (age < minAge || age > maxAge) return;
+      var inc = reviewIncomeAt(age);
+      if (inc == null) return;
+      var px = xForAge(age), py = yForValue(inc);
+      var boxW = 168, boxH = 44;
+      var bx = Math.max(pad.left, Math.min(px - boxW / 2, width - pad.right - boxW));
+      var by = above ? (py - boxH - 14) : (py + 14);
+      by = Math.max(pad.top + 2, Math.min(by, height - pad.bottom - boxH - 2));
+      svg.appendChild(createSvgEl('circle', { cx: px, cy: py, r: 4, fill: '#ffffff' }));
+      svg.appendChild(createSvgEl('rect', { x: bx, y: by, width: boxW, height: boxH, rx: 7, fill: '#ffffff', 'fill-opacity': 0.95 }));
+      svg.appendChild(createSvgEl('text', { x: bx + 12, y: by + 17, fill: '#b98936', 'font-size': 10.5, 'font-weight': 800, 'letter-spacing': 0.4 }, label));
+      svg.appendChild(createSvgEl('text', { x: bx + 12, y: by + 35, fill: '#323E5D', 'font-size': 13, 'font-weight': 800 }, 'Age ' + age + ' · ' + fmtR(inc) + ' /mo'));
+    }
+    reviewSideCallout(selectedAge - 5, 'Early retirement', true);
+    reviewSideCallout(selectedAge + 5, 'Late retirement', false);
 
     var sx = xForAge(selectedAge);
     var sy = yForValue(selectedIncome);
