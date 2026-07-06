@@ -1144,10 +1144,23 @@ check('review import: mapping modal markup + wiring present', () => {
   assert.ok(/id="mapping-list"/.test(html), '#mapping-list missing');
   assert.ok(/id="mapping-confirm-btn"/.test(html), '#mapping-confirm-btn missing');
   assert.ok(/id="mapping-assumptions-note"/.test(html), 'assumptions note missing');
+  ['map-return', 'map-cpi', 'map-goal', 'map-retage'].forEach(id =>
+    assert.ok(new RegExp('id="' + id + '"').test(html), id + ' assumption input missing'));
   assert.ok(/getElementById\('mapping-confirm-btn'\)\.addEventListener\('click', confirmMapping\)/.test(inline),
     'confirm button not wired');
   assert.ok(/getElementById\('mapping-list'\)\.addEventListener\('click', onMappingClick\)/.test(inline),
     'mapping seg clicks not wired');
+});
+
+check('review import: modal assumptions pre-fill on open and apply on confirm', () => {
+  const open = extractFn(inline, 'openReviewData');
+  ['map-return', 'map-cpi', 'map-goal', 'map-retage'].forEach(id =>
+    assert.ok(open.indexOf(id) !== -1, id + ' not pre-filled on open'));
+  const apply = extractFn(inline, 'applyMappingAssumptions');
+  assert.ok(/map-return/.test(apply) && /setSliderClamped\('return'/.test(apply), 'return not applied');
+  assert.ok(/map-cpi/.test(apply) && /setSliderClamped\('cpi'/.test(apply), 'inflation not applied');
+  assert.ok(/map-goal/.test(apply) && /income-goal/.test(apply), 'income goal not applied');
+  assert.ok(/map-retage/.test(apply) && /retirement-age/.test(apply), 'retirement age not applied');
 });
 
 check('review import: buildMappingRow tags children/held-away, shows dash for null value', () => {
@@ -1158,13 +1171,13 @@ check('review import: buildMappingRow tags children/held-away, shows dash for nu
   assert.ok(/map-seg-btn/.test(src) && /data-bucket/.test(src), 'bucket seg buttons missing');
 });
 
-check('review import: confirmMapping sets the eight hp-* inputs + ages + seeds + builds', () => {
+check('review import: confirmMapping sets the eight hp-* inputs + ages + assumptions + builds', () => {
   const src = extractFn(inline, 'confirmMapping');
   ['hp-ret-A', 'hp-ret-contrib-A', 'hp-disc-A', 'hp-disc-contrib-A',
    'hp-ret-B', 'hp-ret-contrib-B', 'hp-disc-B', 'hp-disc-contrib-B']
     .forEach(id => assert.ok(new RegExp("setHpFormatted\\('" + id + "'").test(src), id + ' not set'));
   assert.ok(/hp-age-A/.test(src) && /hp-age-B/.test(src), 'ages not set');
-  assert.ok(/applyAssumptionSeeds\(/.test(src), 'assumption seeds not applied');
+  assert.ok(/applyMappingAssumptions\(/.test(src), 'modal assumptions not applied');
   assert.ok(/projectionRequested = true/.test(src) && /refresh\(\)/.test(src),
     'confirm should build the projection');
 });
