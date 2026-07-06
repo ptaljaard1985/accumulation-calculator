@@ -3293,7 +3293,7 @@
               <p>Projected starting retirement income, shown in today's money and before tax.</p>
             </div>
             <div class="rr-chart-wrap">
-              <svg id="rr-income-chart" class="rr-chart" viewBox="0 0 940 350" role="img" aria-label="Retirement income projection chart"></svg>
+              <svg id="rr-income-chart" class="rr-chart" viewBox="0 0 1460 350" role="img" aria-label="Retirement income projection chart"></svg>
             </div>
           </section>
           <section>
@@ -7067,7 +7067,10 @@
     if (!svg || !data) return;
     var points = data.points.slice().sort(function(a, b){ return a.age - b.age; });
     if (!points.length) return;
-    var width = 940, height = 350;
+    // Wide, short viewBox to match the panel's aspect (~4.2:1) so the chart fills
+    // the width instead of letterboxing. The vertical scale (350) is unchanged, so
+    // font/box sizes render the same physical size.
+    var width = 1460, height = 350;
     var pad = { top: 22, right: 30, bottom: 38, left: 68 };
     var chartW = width - pad.left - pad.right;
     var chartH = height - pad.top - pad.bottom;
@@ -7105,41 +7108,52 @@
     }
     svg.appendChild(createSvgEl('path', { d: dPath.trim(), fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
 
-    // Smaller "retire 5 years earlier / later" callouts. Early sits above the
-    // (lower) left point, late below the (higher) right point. Drawn before the
-    // main marker so the primary callout stays on top.
+    // Main selected-age marker + primary callout box, computed first so the
+    // "retire earlier / later" callouts can dodge it.
+    var sx = xForAge(selectedAge);
+    var sy = yForValue(selectedIncome);
+    var mW = 196, mH = 56;
+    var mcx = (sx + mW + 18 > width - pad.right) ? sx - mW - 18 : sx + 14;
+    var mcy = Math.max(pad.top + 4, Math.min(sy - 40, height - pad.bottom - mH - 4));
+    var mainBox = { x: mcx, y: mcy, w: mW, h: mH };
+    svg.appendChild(createSvgEl('line', { x1: sx, y1: pad.top, x2: sx, y2: height - pad.bottom, stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 1.5 }));
+    svg.appendChild(createSvgEl('circle', { cx: sx, cy: sy, r: 6, fill: '#b98936' }));
+
+    // Smaller "retire 5 years earlier / later" callouts. Each prefers to sit
+    // above its point, falls back to below, and finally clears above the main
+    // box, so it is never hidden behind the primary callout.
     function reviewIncomeAt(age){
       for (var m = 0; m < points.length; m++){ if (points[m].age === age) return points[m].income; }
       return null;
     }
-    function reviewSideCallout(age, label, above){
+    function reviewBoxClear(a, b){
+      var m = 8;
+      return (a.x + a.w + m < b.x) || (a.x > b.x + b.w + m) || (a.y + a.h + m < b.y) || (a.y > b.y + b.h + m);
+    }
+    function reviewSideCallout(age, label){
       if (age < minAge || age > maxAge) return;
       var inc = reviewIncomeAt(age);
       if (inc == null) return;
-      var px = xForAge(age), py = yForValue(inc);
-      var boxW = 168, boxH = 44;
+      var px = xForAge(age), py = yForValue(inc), boxW = 168, boxH = 44;
       var bx = Math.max(pad.left, Math.min(px - boxW / 2, width - pad.right - boxW));
-      var by = above ? (py - boxH - 14) : (py + 14);
-      by = Math.max(pad.top + 2, Math.min(by, height - pad.bottom - boxH - 2));
+      function clampY(y){ return Math.max(pad.top + 2, Math.min(y, height - pad.bottom - boxH - 2)); }
+      var by = clampY(py - boxH - 16);
+      if (!reviewBoxClear({ x: bx, y: by, w: boxW, h: boxH }, mainBox)){
+        var below = clampY(py + 16);
+        by = reviewBoxClear({ x: bx, y: below, w: boxW, h: boxH }, mainBox) ? below : clampY(mainBox.y - boxH - 10);
+      }
       svg.appendChild(createSvgEl('circle', { cx: px, cy: py, r: 4, fill: '#ffffff' }));
       svg.appendChild(createSvgEl('rect', { x: bx, y: by, width: boxW, height: boxH, rx: 7, fill: '#ffffff', 'fill-opacity': 0.95 }));
       svg.appendChild(createSvgEl('text', { x: bx + 12, y: by + 17, fill: '#b98936', 'font-size': 10.5, 'font-weight': 800, 'letter-spacing': 0.4 }, label));
       svg.appendChild(createSvgEl('text', { x: bx + 12, y: by + 35, fill: '#323E5D', 'font-size': 13, 'font-weight': 800 }, 'Age ' + age + ' · ' + fmtR(inc) + ' /mo'));
     }
-    reviewSideCallout(selectedAge - 5, 'Early retirement', true);
-    reviewSideCallout(selectedAge + 5, 'Late retirement', false);
+    reviewSideCallout(selectedAge - 5, 'Early retirement');
+    reviewSideCallout(selectedAge + 5, 'Late retirement');
 
-    var sx = xForAge(selectedAge);
-    var sy = yForValue(selectedIncome);
-    svg.appendChild(createSvgEl('line', { x1: sx, y1: pad.top, x2: sx, y2: height - pad.bottom, stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 1.5 }));
-    svg.appendChild(createSvgEl('circle', { cx: sx, cy: sy, r: 6, fill: '#b98936' }));
-
-    var calloutW = 196, calloutH = 56;
-    var cx = (sx + calloutW + 18 > width - pad.right) ? sx - calloutW - 18 : sx + 14;
-    var cy = Math.max(pad.top + 4, Math.min(sy - 40, height - pad.bottom - calloutH - 4));
-    svg.appendChild(createSvgEl('rect', { x: cx, y: cy, width: calloutW, height: calloutH, rx: 8, fill: '#ffffff' }));
-    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 22, fill: '#323E5D', 'font-size': 14, 'font-weight': 750 }, 'Age ' + selectedAge));
-    svg.appendChild(createSvgEl('text', { x: cx + 14, y: cy + 46, fill: '#323E5D', 'font-size': 18, 'font-weight': 850 }, fmtR(selectedIncome) + ' /mo'));
+    // Primary callout box, drawn last so it stays on top.
+    svg.appendChild(createSvgEl('rect', { x: mcx, y: mcy, width: mW, height: mH, rx: 8, fill: '#ffffff' }));
+    svg.appendChild(createSvgEl('text', { x: mcx + 14, y: mcy + 22, fill: '#323E5D', 'font-size': 14, 'font-weight': 750 }, 'Age ' + selectedAge));
+    svg.appendChild(createSvgEl('text', { x: mcx + 14, y: mcy + 46, fill: '#323E5D', 'font-size': 18, 'font-weight': 850 }, fmtR(selectedIncome) + ' /mo'));
 
     var labelStep = Math.max(1, Math.ceil(points.length / 6));
     for (var k = 0; k < points.length; k++){
