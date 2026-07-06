@@ -1191,14 +1191,15 @@ const reviewReport = new Function('realData',
    'normalizeReviewBucket', 'accountOwnerSlot', 'defaultAccountDecisions', 'aggregateReviewData',
    'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
    'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewAccountGroups', 'reviewOwnerLabel',
-   'renderReviewAccountRowsHtml', 'renderReviewNetWorthHtml', 'renderReviewRiskRowsHtml',
+   'renderReviewAccountRowsHtml', 'reviewNetWorthTotals', 'reviewNetWorthCategory',
+   'renderReviewNetWorthCards', 'renderReviewNetWorthTable', 'renderReviewRiskRowsHtml',
    'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml',
    'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
   ';reviewSlots=resolveMemberSlots(reviewData.clientFamily.members);' +
   'mappingDecisions=defaultAccountDecisions(reviewData.accounts, reviewSlots);' +
   'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(),' +
-  ' nw:renderReviewNetWorthHtml(), risk:renderReviewRiskRowsHtml(), wills:renderReviewWillsRowsHtml(),' +
-  ' poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml() };'
+  ' nwCards:renderReviewNetWorthCards(), nw:renderReviewNetWorthTable(), risk:renderReviewRiskRowsHtml(),' +
+  ' wills:renderReviewWillsRowsHtml(), poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml() };'
 )(realReview);
 const stripSpace = s => s.replace(/ /g, ' ');
 
@@ -1219,9 +1220,17 @@ check('review report: accounts table = 13 rows + 4 owner subtotals + household t
     'exactly the two child accounts should be labelled Ignore');
 });
 
-check('review report: net worth reconciles to household total', () => {
-  assert.ok(stripSpace(reviewReport.nw).includes('26 293 007'),
-    'net worth should be R26 293 007 (investments + property/business - liabilities)');
+check('review report: net worth on its own page (table + cards), reconciles to total', () => {
+  // Dedicated net-worth page: a table (investment portfolio + held-away items +
+  // household-total row) and four summary cards, not the old wrapped strip.
+  const nw = stripSpace(reviewReport.nw);
+  assert.ok(/Investment portfolio/.test(nw), 'investment portfolio row missing');
+  assert.ok(/Ocuwise Capital/.test(nw) && /Nelspruit house bond/.test(nw), 'held-away items missing');
+  assert.ok(/Household net worth/.test(nw) && nw.includes('26 293 007'), 'net worth total row missing/wrong');
+  assert.ok(stripSpace(reviewReport.nwCards).includes('26 293 007'), 'net-worth summary card missing');
+  // Balance-sheet items live on their own page, not below the accounts table.
+  assert.ok(/id="rr-nw-cards"/.test(html) && /id="rr-nw-body"/.test(html), 'net-worth page containers missing');
+  assert.ok(!/id="rr-networth"/.test(html), 'old net-worth strip should be gone from the accounts page');
 });
 
 check('review report: estate rebuilt to schema 1.3.0 (no old willOnFile / per-row POA)', () => {
@@ -1257,7 +1266,7 @@ check('review report: estate has three separate sections (wills, POA, trusts); n
 
 check('review report: markup, button, export-mode gating + afterprint teardown present', () => {
   assert.ok(/class="review-report"/.test(html), '.review-report section missing');
-  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 8, 'expected 8 report pages');
+  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 9, 'expected 9 report pages');
   assert.ok(/id="btn-review-report"/.test(html), '#btn-review-report missing');
   assert.ok(/getElementById\('btn-review-report'\)\.addEventListener\('click', runReviewReport\)/.test(inline),
     'review report button not wired');
