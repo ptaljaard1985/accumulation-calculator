@@ -14,7 +14,7 @@ Given two spouses' current retirement-fund and discretionary balances, their mon
 
 Secondary features: optional **capital events** (one-off inflows like inheritances or bonuses, outflows like house purchases), **Real / Nominal** toggle for all displayed numbers, a compliance-ready **print / PDF** export with inputs, outputs, methodology, and the FAIS/POPIA disclaimer, a landscape **Report** — a compact 3–4 page client deliverable (cover, projection with a crisp SVG income-by-retirement-age chart, an optional scenario comparison when a baseline is locked, and a methodology/compliance page), and **Save / Open plan** — file-based persistence that writes the client's inputs to a portable `.json` file and restores them later (opt-in restore only; a plain refresh always starts blank, so one client's numbers never leak into the next session).
 
-The tool can also **import a CRM `sw-review-data` export**: opening one routes to a per-account mapping screen where each account is set to Retirement, Discretionary, or Ignore (child/dependant-owned accounts default to Ignore); the confirmed buckets are summed per spouse into the planning inputs. From the loaded CRM facts plus the live projection the tool then generates an **8-page pre-meeting review report**.
+The tool can also **import a CRM `sw-review-data` export**: opening one routes to a per-account mapping screen where each account is set to Retirement, Discretionary, or Ignore (child/dependant-owned accounts default to Ignore); the confirmed buckets are summed per spouse into the planning inputs. The same import mapping modal captures the projection assumptions (expected return, expected inflation, monthly income goal, retirement age), pre-filled from the CRM assumption seeds or tool defaults and applied on confirm, so the advisor does not need to open the Edit-info drawer first. From the loaded CRM facts plus the live projection the tool then generates a **9-page pre-meeting review report**, including a dedicated Net worth / balance-sheet page.
 
 ## Running it
 
@@ -40,7 +40,7 @@ docs/
 tests/
   README.md                     how to run tests
   python/                       math audits (pytest, 60 tests)
-  js/                           JS tests against the shipped v2 HTML (node, 87 tests)
+  js/                           JS tests against the shipped v2 HTML (node, 88 tests)
 ```
 
 ## Running the tests

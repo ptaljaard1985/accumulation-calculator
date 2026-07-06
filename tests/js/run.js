@@ -1144,10 +1144,23 @@ check('review import: mapping modal markup + wiring present', () => {
   assert.ok(/id="mapping-list"/.test(html), '#mapping-list missing');
   assert.ok(/id="mapping-confirm-btn"/.test(html), '#mapping-confirm-btn missing');
   assert.ok(/id="mapping-assumptions-note"/.test(html), 'assumptions note missing');
+  ['map-return', 'map-cpi', 'map-goal', 'map-retage'].forEach(id =>
+    assert.ok(new RegExp('id="' + id + '"').test(html), id + ' assumption input missing'));
   assert.ok(/getElementById\('mapping-confirm-btn'\)\.addEventListener\('click', confirmMapping\)/.test(inline),
     'confirm button not wired');
   assert.ok(/getElementById\('mapping-list'\)\.addEventListener\('click', onMappingClick\)/.test(inline),
     'mapping seg clicks not wired');
+});
+
+check('review import: modal assumptions pre-fill on open and apply on confirm', () => {
+  const open = extractFn(inline, 'openReviewData');
+  ['map-return', 'map-cpi', 'map-goal', 'map-retage'].forEach(id =>
+    assert.ok(open.indexOf(id) !== -1, id + ' not pre-filled on open'));
+  const apply = extractFn(inline, 'applyMappingAssumptions');
+  assert.ok(/map-return/.test(apply) && /setSliderClamped\('return'/.test(apply), 'return not applied');
+  assert.ok(/map-cpi/.test(apply) && /setSliderClamped\('cpi'/.test(apply), 'inflation not applied');
+  assert.ok(/map-goal/.test(apply) && /income-goal/.test(apply), 'income goal not applied');
+  assert.ok(/map-retage/.test(apply) && /retirement-age/.test(apply), 'retirement age not applied');
 });
 
 check('review import: buildMappingRow tags children/held-away, shows dash for null value', () => {
@@ -1158,13 +1171,13 @@ check('review import: buildMappingRow tags children/held-away, shows dash for nu
   assert.ok(/map-seg-btn/.test(src) && /data-bucket/.test(src), 'bucket seg buttons missing');
 });
 
-check('review import: confirmMapping sets the eight hp-* inputs + ages + seeds + builds', () => {
+check('review import: confirmMapping sets the eight hp-* inputs + ages + assumptions + builds', () => {
   const src = extractFn(inline, 'confirmMapping');
   ['hp-ret-A', 'hp-ret-contrib-A', 'hp-disc-A', 'hp-disc-contrib-A',
    'hp-ret-B', 'hp-ret-contrib-B', 'hp-disc-B', 'hp-disc-contrib-B']
     .forEach(id => assert.ok(new RegExp("setHpFormatted\\('" + id + "'").test(src), id + ' not set'));
   assert.ok(/hp-age-A/.test(src) && /hp-age-B/.test(src), 'ages not set');
-  assert.ok(/applyAssumptionSeeds\(/.test(src), 'assumption seeds not applied');
+  assert.ok(/applyMappingAssumptions\(/.test(src), 'modal assumptions not applied');
   assert.ok(/projectionRequested = true/.test(src) && /refresh\(\)/.test(src),
     'confirm should build the projection');
 });
@@ -1178,14 +1191,15 @@ const reviewReport = new Function('realData',
    'normalizeReviewBucket', 'accountOwnerSlot', 'defaultAccountDecisions', 'aggregateReviewData',
    'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
    'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewAccountGroups', 'reviewOwnerLabel',
-   'renderReviewAccountRowsHtml', 'renderReviewNetWorthHtml', 'renderReviewRiskRowsHtml',
-   'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml', 'estateStatusReady',
-   'renderReviewReadinessHtml', 'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
+   'renderReviewAccountRowsHtml', 'reviewNetWorthTotals', 'reviewNetWorthCategory',
+   'renderReviewNetWorthCards', 'renderReviewNetWorthTable', 'renderReviewRiskRowsHtml',
+   'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml',
+   'reviewCommentHtml'].map(n => extractFn(inline, n)).join('\n') +
   ';reviewSlots=resolveMemberSlots(reviewData.clientFamily.members);' +
   'mappingDecisions=defaultAccountDecisions(reviewData.accounts, reviewSlots);' +
   'return { summary:reviewAccountsSummary(), acct:renderReviewAccountRowsHtml(),' +
-  ' nw:renderReviewNetWorthHtml(), risk:renderReviewRiskRowsHtml(), wills:renderReviewWillsRowsHtml(),' +
-  ' poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml(), ready:renderReviewReadinessHtml() };'
+  ' nwCards:renderReviewNetWorthCards(), nw:renderReviewNetWorthTable(), risk:renderReviewRiskRowsHtml(),' +
+  ' wills:renderReviewWillsRowsHtml(), poa:renderReviewPoaHtml(), trusts:renderReviewTrustsHtml() };'
 )(realReview);
 const stripSpace = s => s.replace(/ /g, ' ');
 
@@ -1206,9 +1220,17 @@ check('review report: accounts table = 13 rows + 4 owner subtotals + household t
     'exactly the two child accounts should be labelled Ignore');
 });
 
-check('review report: net worth reconciles to household total', () => {
-  assert.ok(stripSpace(reviewReport.nw).includes('26 293 007'),
-    'net worth should be R26 293 007 (investments + property/business - liabilities)');
+check('review report: net worth on its own page (table + cards), reconciles to total', () => {
+  // Dedicated net-worth page: a table (investment portfolio + held-away items +
+  // household-total row) and four summary cards, not the old wrapped strip.
+  const nw = stripSpace(reviewReport.nw);
+  assert.ok(/Investment portfolio/.test(nw), 'investment portfolio row missing');
+  assert.ok(/Ocuwise Capital/.test(nw) && /Nelspruit house bond/.test(nw), 'held-away items missing');
+  assert.ok(/Household net worth/.test(nw) && nw.includes('26 293 007'), 'net worth total row missing/wrong');
+  assert.ok(stripSpace(reviewReport.nwCards).includes('26 293 007'), 'net-worth summary card missing');
+  // Balance-sheet items live on their own page, not below the accounts table.
+  assert.ok(/id="rr-nw-cards"/.test(html) && /id="rr-nw-body"/.test(html), 'net-worth page containers missing');
+  assert.ok(!/id="rr-networth"/.test(html), 'old net-worth strip should be gone from the accounts page');
 });
 
 check('review report: estate rebuilt to schema 1.3.0 (no old willOnFile / per-row POA)', () => {
@@ -1235,13 +1257,16 @@ check('review report: risk table shows impairment, omits the (absent) waiting-pe
   assert.strictEqual((reviewReport.risk.match(/<tr>/g) || []).length, 2, 'two policy rows');
 });
 
-check('review report: estate-readiness flags the unfinalised wills/POAs/trustees', () => {
-  assert.ok(/not yet finalised/.test(reviewReport.ready), 'readiness should flag unfinalised documents');
+check('review report: estate has three separate sections (wills, POA, trusts); no readiness box', () => {
+  assert.ok(/id="rr-estate-wills"/.test(html) && /id="rr-estate-poa"/.test(html) && /id="rr-estate-trusts"/.test(html),
+    'wills/POA/trusts containers all present');
+  assert.ok(!/id="rr-estate-readiness"/.test(html), 'estate-readiness box should be removed');
+  assert.ok(!/renderReviewReadinessHtml|estateStatusReady/.test(inline), 'readiness render functions should be removed');
 });
 
 check('review report: markup, button, export-mode gating + afterprint teardown present', () => {
   assert.ok(/class="review-report"/.test(html), '.review-report section missing');
-  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 8, 'expected 8 report pages');
+  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 9, 'expected 9 report pages');
   assert.ok(/id="btn-review-report"/.test(html), '#btn-review-report missing');
   assert.ok(/getElementById\('btn-review-report'\)\.addEventListener\('click', runReviewReport\)/.test(inline),
     'review report button not wired');

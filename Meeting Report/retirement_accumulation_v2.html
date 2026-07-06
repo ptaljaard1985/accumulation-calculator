@@ -1674,6 +1674,13 @@
     margin: 12px 0 0; padding: 9px 12px; border-radius: 6px;
     background: var(--gold-pale); color: var(--gold-2); font-size: 12.5px; line-height: 1.4;
   }
+  .mapping-assumptions { margin: 14px 0 0; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--paper-2); }
+  .mapping-assumptions-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin-bottom: 9px; }
+  .mapping-assumptions-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .map-assum { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+  .map-assum-input { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; height: 32px; }
+  .map-assum-input input { flex: 1; min-width: 0; border: 0; background: transparent; font-family: var(--mono); font-size: 13px; color: var(--ink); text-align: right; padding: 0; outline: none; }
+  .map-assum-prefix, .map-assum-suffix { color: var(--mute); font-size: 12px; }
   .mapping-head, .map-row {
     display: grid;
     grid-template-columns: 1.35fr 1.2fr 1.25fr 0.8fr 0.8fr 1fr 1.75fr;
@@ -1747,11 +1754,11 @@
   }
 
   .review-report .rr-page {
-    width: 297mm; height: 210mm; box-sizing: border-box;
+    width: 297mm; min-height: 210mm; box-sizing: border-box;
     background: var(--rr-paper); color: var(--rr-ink);
     font-family: var(--sans); font-size: 13px; line-height: 1.45;
-    display: grid; grid-template-rows: auto minmax(0, 1fr) 12mm;
-    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    position: relative;
     page-break-after: always; break-after: page;
   }
   .review-report .rr-page:last-of-type { page-break-after: auto; break-after: auto; }
@@ -1768,7 +1775,7 @@
   .review-report .rr-meta { text-align: right; color: var(--rr-muted); font-size: 11px; line-height: 1.5; }
   .review-report .rr-dark .rr-meta,
   .review-report .rr-dark .rr-footer { color: rgba(255,255,255,0.82); }
-  .review-report .rr-body { min-height: 0; padding: 7mm 13mm 6mm; }
+  .review-report .rr-body { flex: 1 1 auto; min-height: 0; padding: 6mm 13mm 5mm; }
   .review-report .rr-footer {
     height: 12mm; padding: 0 13mm; border-top: 1px solid var(--rr-line);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -1789,7 +1796,10 @@
   .review-report .rr-dark p { color: rgba(255,255,255,0.74); }
 
   /* ---------- Cover ---------- */
-  .review-report .rr-cover-layout { height: 100%; display: grid; align-content: center; gap: 12px; }
+  /* Cover content vertically centred. Scoped to the cover so the flex model
+     used by every other page (top-aligned, content-flow) is untouched. */
+  .review-report .rr-cover .rr-body { display: flex; flex-direction: column; }
+  .review-report .rr-cover-layout { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
   .review-report .rr-cover-title {
     margin: 6px 0 12px; max-width: 940px; color: var(--rr-gold);
     font-size: 54px; line-height: 1.02; letter-spacing: -0.05em;
@@ -1918,9 +1928,12 @@
   .review-report .rr-event-note { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--rr-line); font-size: 10.4px; color: var(--rr-muted); }
 
   /* ---------- Detail pages (accounts / risk / estate) ---------- */
-  .review-report .rr-detail-page { height: 100%; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 10px; min-height: 0; }
-  .review-report .rr-detail-page.rr-compact-detail { grid-template-rows: auto minmax(0,1fr) auto; }
-  .review-report .rr-detail-page.rr-estate-detail { grid-template-rows: auto; grid-auto-rows: auto; align-content: start; gap: 9px; }
+  /* Content-flow: sections stack at their natural height, top-aligned, so a
+     card is bound by the space it needs (no stretch, no clipping/overlap). The
+     page grows past 210mm only if the content genuinely needs it. */
+  .review-report .rr-detail-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 8px; }
+  .review-report .rr-detail-page.rr-compact-detail { gap: 8px; }
+  .review-report .rr-detail-page.rr-estate-detail { gap: 9px; }
   .review-report .rr-detail-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; min-height: 0; }
   .review-report .rr-detail-grid.rr-full { grid-template-columns: 1fr; }
   .review-report .rr-detail-grid.rr-equal { grid-template-columns: 1fr 1fr; }
@@ -1946,7 +1959,7 @@
   .review-report .rr-table .rr-right { text-align: right; }
   .review-report .rr-table .rr-empty { text-align: center; color: var(--rr-muted); font-style: italic; padding: 14px 6px; }
   .review-report .rr-account-table { font-size: 9px; }
-  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 4px 6px; }
+  .review-report .rr-account-table th, .review-report .rr-account-table td { padding: 3.6px 6px; }
   .review-report .rr-account-table th { background: var(--rr-brand); color: #fff; border-bottom: 1px solid var(--rr-line); }
   .review-report .rr-account-table .rr-person-total td { background: var(--rr-gold); color: #fff; font-weight: 850; }
   .review-report .rr-account-table .rr-household-total td { background: var(--rr-brand); color: #fff; font-weight: 850; }
@@ -1965,29 +1978,18 @@
   .review-report .rr-empty-note { margin: 0; padding: 12px; color: var(--rr-muted); font-size: 11px; font-style: italic; }
 
   /* ---------- Net worth strip (accounts page) ---------- */
-  .review-report .rr-networth { display: grid; gap: 8px; }
-  .review-report .rr-networth-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .review-report .rr-networth-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 9px 12px; }
-  .review-report .rr-networth-card span { display: block; margin-bottom: 5px; color: var(--rr-muted); font-size: 8.6px; font-weight: 850; letter-spacing: 0.6px; text-transform: uppercase; }
-  .review-report .rr-networth-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 15px; line-height: 1; }
-  .review-report .rr-networth-card.rr-net strong { color: var(--rr-gold); }
-  .review-report .rr-networth-items { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 9.5px; color: var(--rr-muted); }
-  .review-report .rr-networth-items span { white-space: nowrap; }
-  .review-report .rr-networth-items strong { color: var(--rr-ink); font-family: var(--mono); font-weight: 760; }
+  /* Net-worth page: a little roomier than the accounts table (far fewer rows). */
+  .review-report .rr-networth-table { font-size: 10.5px; }
+  .review-report .rr-networth-table th, .review-report .rr-networth-table td { padding: 5px 8px; }
+  .review-report .rr-summary-card.rr-nw-net strong { color: var(--rr-gold); }
+  .review-report .rr-nw-note { margin-top: 6px; color: var(--rr-muted); font-size: 10px; font-style: italic; }
 
   /* ---------- Summary cards (accounts page top) ---------- */
   .review-report .rr-summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 20mm; padding: 10px 12px; }
+  .review-report .rr-summary-card { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); min-height: 17mm; padding: 9px 12px; }
   .review-report .rr-summary-card span { display: block; margin-bottom: 6px; color: var(--rr-muted); font-size: 9px; font-weight: 850; letter-spacing: 0.7px; text-transform: uppercase; }
   .review-report .rr-summary-card strong { display: block; color: var(--rr-brand); font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; font-size: 17px; line-height: 1; }
   .review-report .rr-summary-card small { display: block; margin-top: 6px; color: var(--rr-muted); font-size: 9.4px; line-height: 1.25; }
-
-  /* ---------- Estate readiness note ---------- */
-  .review-report #rr-estate-readiness p { margin: 0 0 6px; color: var(--rr-ink); font-size: 11px; font-weight: 700; }
-  .review-report #rr-estate-readiness ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
-  .review-report #rr-estate-readiness li { display: grid; grid-template-columns: 13px minmax(0,1fr); gap: 7px; color: var(--rr-muted); font-size: 10.5px; line-height: 1.34; }
-  .review-report #rr-estate-readiness li::before { content: "\2022"; color: var(--rr-gold); font-size: 15px; line-height: 0.8; }
-  .review-report #rr-estate-readiness .rr-clear-list li::before { color: var(--rr-brand); }
 
   /* ---------- Notes (page 8) ---------- */
   .review-report .rr-notes-page { height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); gap: 14px; min-height: 0; }
@@ -2015,9 +2017,9 @@
       gap: 0 !important; background: transparent !important;
     }
     html.export-printing #calc-root[data-export-mode="review"] .rr-page {
-      width: 297mm !important; height: 210mm !important;
+      width: 297mm !important; min-height: 210mm !important; height: auto !important;
       margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-      overflow: hidden !important; break-after: page; page-break-after: always;
+      overflow: visible !important; break-after: page; page-break-after: always;
     }
     html.export-printing #calc-root[data-export-mode="review"] .rr-page:last-of-type {
       break-after: auto; page-break-after: auto;
@@ -3231,16 +3233,54 @@
               </div>
             </article>
           </section>
-          <section class="rr-networth" id="rr-networth"></section>
         </div>
       </div>
       <footer class="rr-footer">
         <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
-        <span class="rr-num">04 / 08</span>
+        <span class="rr-num">04 / 09</span>
       </footer>
     </section>
 
-    <!-- 05 · Retirement projection -->
+    <!-- 05 · Net worth / balance sheet -->
+    <section class="rr-page" data-page="networth">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-detail-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Balance sheet</div>
+              <h1>Net worth.</h1>
+            </div>
+          </div>
+          <section class="rr-summary-cards" id="rr-nw-cards"></section>
+          <section class="rr-detail-grid rr-full">
+            <article class="rr-detail-card">
+              <h2>Assets and liabilities</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-account-table rr-networth-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th><th>Category</th><th>Owner</th><th class="rr-right">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rr-nw-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+          <p class="rr-nw-note">The investment portfolio is itemised on the previous page. Household net worth combines it with the held-away assets and liabilities above.</p>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">05 / 09</span>
+      </footer>
+    </section>
+
+    <!-- 06 · Retirement projection -->
     <section class="rr-page" data-page="projection">
       <header class="rr-header">
         <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
@@ -3387,20 +3427,16 @@
               </div>
             </article>
           </section>
-          <section class="rr-detail-grid rr-equal">
+          <section class="rr-detail-grid rr-full">
             <article class="rr-detail-card">
               <h2>Powers of attorney</h2>
               <div class="rr-detail-body rr-table-body" id="rr-estate-poa"></div>
             </article>
-            <article class="rr-detail-card">
-              <h2>Trusts</h2>
-              <div class="rr-detail-body rr-table-body" id="rr-estate-trusts"></div>
-            </article>
           </section>
           <section class="rr-detail-grid rr-full">
             <article class="rr-detail-card">
-              <h2>Estate readiness</h2>
-              <div class="rr-detail-body" id="rr-estate-readiness"></div>
+              <h2>Trusts</h2>
+              <div class="rr-detail-body rr-table-body" id="rr-estate-trusts"></div>
             </article>
           </section>
           <section class="rr-detail-grid rr-equal">
@@ -3515,6 +3551,19 @@
       <h2 id="mapping-modal-title">Map imported accounts</h2>
       <p id="mapping-modal-sub">Confirm each account as Retirement, Discretionary, or Ignore.</p>
       <div class="mapping-note" id="mapping-assumptions-note" style="display:none"></div>
+      <div class="mapping-assumptions">
+        <div class="mapping-assumptions-head">Projection assumptions</div>
+        <div class="mapping-assumptions-grid">
+          <label class="map-assum">Expected return
+            <span class="map-assum-input"><input id="map-return" type="number" step="0.25" min="0" max="15"><span class="map-assum-suffix">%</span></span></label>
+          <label class="map-assum">Expected inflation
+            <span class="map-assum-input"><input id="map-cpi" type="number" step="0.25" min="0" max="15"><span class="map-assum-suffix">%</span></span></label>
+          <label class="map-assum">Monthly income goal
+            <span class="map-assum-input"><span class="map-assum-prefix">R</span><input id="map-goal" type="text" inputmode="numeric" placeholder="—"></span></label>
+          <label class="map-assum">Retirement age
+            <span class="map-assum-input"><input id="map-retage" type="number" min="45" max="90" step="1"></span></label>
+        </div>
+      </div>
       <div class="mapping-head">
         <div>Owner</div>
         <div>Provider · Type</div>
@@ -5827,6 +5876,11 @@
     return null;
   }
 
+  // Space-separated ZAR (matches setHpFormatted / the money fields).
+  function fmtGoalInput(n){ return Math.round(n).toLocaleString('en-ZA').replace(/,/g, ' '); }
+  // Set a percentage input, trimming float cruft (5 not 5.00000001).
+  function setMapAssumNum(id, v){ var el = document.getElementById(id); if (el) el.value = String(Math.round(Number(v) * 100) / 100); }
+
   function openReviewData(obj){
     reviewData = obj;
     var members = (obj.clientFamily && obj.clientFamily.members) || [];
@@ -5840,16 +5894,27 @@
       sub.textContent = fam + ' · ' + n + ' account' + (n === 1 ? '' : 's') +
         ' imported from the CRM. Confirm each as Retirement, Discretionary, or Ignore.';
     }
+    // Pre-fill the projection-assumption inputs from the CRM seeds where present,
+    // else from the tool's current canonical values (defaults on a fresh load).
+    // Confirm applies these straight to the projection, so the advisor never has
+    // to open the Edit-info drawer before generating the report.
+    var s = obj.assumptionSeeds || {};
+    var curReturn = document.getElementById('return');
+    var curCpi = document.getElementById('cpi');
+    var curGoal = document.getElementById('income-goal');
+    var curRetAge = document.getElementById('retirement-age');
+    setMapAssumNum('map-return', isFiniteNum(s.expectedReturn) ? (s.expectedReturn * 100) : (curReturn ? curReturn.value : 5));
+    setMapAssumNum('map-cpi', isFiniteNum(s.expectedInflation) ? (s.expectedInflation * 100) : (curCpi ? curCpi.value : 5));
+    var goalEl = document.getElementById('map-goal');
+    if (goalEl) goalEl.value = isFiniteNum(s.incomeGoalMonthly) ? fmtGoalInput(s.incomeGoalMonthly) : ((curGoal && curGoal.value) || '');
+    setMapAssumNum('map-retage', (curRetAge && curRetAge.value) ? curRetAge.value : 65);
+
     var note = document.getElementById('mapping-assumptions-note');
     if (note){
-      var s = obj.assumptionSeeds || {};
       var hasSeed = isFiniteNum(s.expectedReturn) || isFiniteNum(s.expectedInflation) || isFiniteNum(s.incomeGoalMonthly);
-      if (hasSeed){ note.style.display = 'none'; note.textContent = ''; }
-      else {
-        note.style.display = '';
-        note.textContent = 'The CRM supplied no return, inflation or income-goal assumptions, ' +
-          'so the projection will use the tool defaults. Set these on the market-assumptions sliders after building.';
-      }
+      note.style.display = hasSeed ? 'none' : '';
+      note.textContent = hasSeed ? '' :
+        'The CRM supplied no assumptions, so the tool defaults are shown below. Adjust them for this projection.';
     }
     renderMappingRows();
     openMappingModal();
@@ -5947,12 +6012,21 @@
     el.value = String(v);
   }
 
-  function applyAssumptionSeeds(seeds){
-    seeds = seeds || {};
-    if (isFiniteNum(seeds.expectedReturn)) setSliderClamped('return', seeds.expectedReturn * 100);
-    if (isFiniteNum(seeds.expectedInflation)) setSliderClamped('cpi', seeds.expectedInflation * 100);
-    if (isFiniteNum(seeds.incomeGoalMonthly)) setHpFormatted('income-goal', seeds.incomeGoalMonthly);
-    // lifeExpectancy is a drawdown-tool input; esc + retirement-age keep defaults.
+  // Apply the projection-assumption inputs the advisor set on the mapping modal
+  // (return / inflation / income goal / retirement age) to the canonical inputs,
+  // so no trip to the Edit-info drawer is needed before generating the report.
+  function applyMappingAssumptions(){
+    var mr = parseFloat((document.getElementById('map-return') || {}).value);
+    if (isFinite(mr)) setSliderClamped('return', mr);
+    var mc = parseFloat((document.getElementById('map-cpi') || {}).value);
+    if (isFinite(mc)) setSliderClamped('cpi', mc);
+    var mg = String((document.getElementById('map-goal') || {}).value || '').replace(/[^0-9]/g, '');
+    var goalEl = document.getElementById('income-goal');
+    if (mg) setHpFormatted('income-goal', parseFloat(mg));
+    else if (goalEl) goalEl.value = '';
+    var mra = parseInt((document.getElementById('map-retage') || {}).value, 10);
+    var retAgeEl = document.getElementById('retirement-age');
+    if (retAgeEl && isFinite(mra)) retAgeEl.value = String(mra);
   }
 
   function confirmMapping(){
@@ -5991,7 +6065,7 @@
     setHpFormatted('hp-ret-B', t.B.ret);   setHpFormatted('hp-ret-contrib-B', t.B.retC);
     setHpFormatted('hp-disc-B', t.B.disc); setHpFormatted('hp-disc-contrib-B', t.B.discC);
 
-    applyAssumptionSeeds(reviewData.assumptionSeeds);
+    applyMappingAssumptions();
 
     reviewLoaded = true;
     updateReviewReportButton();
@@ -6755,10 +6829,8 @@
     return html;
   }
 
-  // Net-worth strip: investment assets (from the accounts summary) + property /
-  // business assets - liabilities = household net worth, plus an itemised list
-  // so netWorthItems is surfaced rather than orphaned.
-  function renderReviewNetWorthHtml(){
+  // Net-worth rollup shared by the summary cards and the total row.
+  function reviewNetWorthTotals(){
     var items = (reviewData && reviewData.netWorthItems) || [];
     var invest = reviewAccountsSummary().totalInvest;
     var otherAssets = 0, liabilities = 0;
@@ -6766,19 +6838,58 @@
       var v = Number(it.value) || 0;
       if (it.kind === 'liability') liabilities += v; else otherAssets += v;
     });
-    var net = invest + otherAssets - liabilities;
-    var itemBits = items.map(function(it){
+    return { invest: invest, otherAssets: otherAssets, liabilities: liabilities,
+             net: invest + otherAssets - liabilities };
+  }
+
+  // Human label for a balance-sheet category.
+  function reviewNetWorthCategory(cat){
+    var map = {
+      business_interest: 'Business interest', primary_residence: 'Primary residence',
+      investment_property: 'Investment property', debt: 'Debt', cash: 'Cash',
+      retirement_investment: 'Retirement (held-away)', discretionary_investment: 'Discretionary (held-away)',
+      other_asset: 'Other asset'
+    };
+    return map[cat] || (cat ? String(cat).replace(/_/g, ' ') : '—');
+  }
+
+  // The four net-worth summary cards.
+  function renderReviewNetWorthCards(){
+    var t = reviewNetWorthTotals();
+    function card(label, val, note, cls){
+      return '<div class="rr-summary-card' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><strong>'
+        + val + '</strong>' + (note ? '<small>' + note + '</small>' : '') + '</div>';
+    }
+    return card('Investment portfolio', fmtR(t.invest), 'Managed and held-away accounts.')
+      + card('Property &amp; business', fmtR(t.otherAssets), 'Held-away assets outside the portfolio.')
+      + card('Liabilities', t.liabilities ? ('-' + fmtR(t.liabilities)) : fmtR(0), 'Debts and bonds.')
+      + card('Household net worth', fmtR(t.net), 'Assets less liabilities.', 'rr-nw-net');
+  }
+
+  // The balance-sheet table: the investment portfolio, each held-away asset /
+  // liability, and a household net-worth total row.
+  function renderReviewNetWorthTable(){
+    var items = (reviewData && reviewData.netWorthItems) || [];
+    var t = reviewNetWorthTotals();
+    var rows = '<tr>'
+      + '<td class="rr-name">Investment portfolio</td>'
+      + '<td>Managed and held-away accounts</td>'
+      + '<td>Household</td>'
+      + '<td class="rr-money">' + fmtR(t.invest) + '</td></tr>';
+    items.forEach(function(it){
       var raw = Number(it.value) || 0;
-      var val = (it.value == null) ? '—' : (it.kind === 'liability' ? '-' + fmtR(raw) : fmtR(raw));
-      return '<span>' + escapeHtml(it.description || it.category || 'Item') + ' <strong>' + val + '</strong></span>';
-    }).join('');
-    return '<div class="rr-networth-cards">'
-      + '<div class="rr-networth-card"><span>Investment assets</span><strong>' + fmtR(invest) + '</strong></div>'
-      + '<div class="rr-networth-card"><span>Property &amp; business</span><strong>' + fmtR(otherAssets) + '</strong></div>'
-      + '<div class="rr-networth-card"><span>Liabilities</span><strong>' + (liabilities ? ('-' + fmtR(liabilities)) : fmtR(0)) + '</strong></div>'
-      + '<div class="rr-networth-card rr-net"><span>Household net worth</span><strong>' + fmtR(net) + '</strong></div>'
-      + '</div>'
-      + (items.length ? '<div class="rr-networth-items">' + itemBits + '</div>' : '');
+      var isLia = it.kind === 'liability';
+      var val = (it.value == null) ? '—' : (isLia ? '-' + fmtR(raw) : fmtR(raw));
+      rows += '<tr>'
+        + '<td class="rr-name">' + escapeHtml(it.description || '—') + '</td>'
+        + '<td>' + escapeHtml(reviewNetWorthCategory(it.category)) + '</td>'
+        + '<td>' + escapeHtml(it.ownerName || 'Household') + '</td>'
+        + '<td class="rr-money">' + val + '</td></tr>';
+    });
+    rows += '<tr class="rr-person-total rr-household-total">'
+      + '<td class="rr-name" colspan="3">Household net worth</td>'
+      + '<td class="rr-money">' + fmtR(t.net) + '</td></tr>';
+    return rows;
   }
 
   // Risk table tbody: one row per policy, grouped by person; a per-person total
@@ -6900,46 +7011,6 @@
       + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
 
-  // A will / POA status counts as "ready" only when it is on file / signed and
-  // not flagged unsigned, outstanding, or not discussed.
-  function estateStatusReady(status){
-    var s = (status || '').toLowerCase();
-    if (!s) return false;
-    if (s.indexOf('unsigned') !== -1 || s.indexOf('not discussed') !== -1 ||
-        s.indexOf('outstanding') !== -1 || s.indexOf('none') !== -1) return false;
-    return s.indexOf('on file') !== -1 || s.indexOf('signed') !== -1;
-  }
-
-  // Estate readiness: list the gaps (unfinalised wills / POAs, trusts with no
-  // trustees). When nothing is flagged, a single reassuring line.
-  function renderReviewReadinessHtml(){
-    var est = (reviewData && reviewData.estate) || {};
-    var gaps = [];
-    (est.willRows || []).forEach(function(w){
-      if (!estateStatusReady(w.willStatus)){
-        gaps.push(escapeHtml(reviewShortName(w.personId, w.name)) + "'s will is not yet finalised (status: "
-          + escapeHtml(w.willStatus || 'no status recorded') + ").");
-      }
-    });
-    (est.powersOfAttorney || []).forEach(function(pw){
-      if (!estateStatusReady(pw.status)){
-        gaps.push(escapeHtml(reviewShortName(pw.personId, pw.name)) + "'s "
-          + escapeHtml((pw.poaType || 'general').toLowerCase()) + " power of attorney is not yet finalised (status: "
-          + escapeHtml(pw.status || 'no status recorded') + ").");
-      }
-    });
-    (est.trusts || []).forEach(function(t){
-      if (t.trustees == null || String(t.trustees).trim() === ''){
-        gaps.push('Trustees for ' + escapeHtml(t.name || 'the recorded trust') + ' are not recorded and should be confirmed.');
-      }
-    });
-    if (!gaps.length){
-      return '<ul class="rr-clear-list"><li>No outstanding estate-readiness items were flagged from the recorded data. Confirm the documents remain current at the meeting.</li></ul>';
-    }
-    return '<p>Items to confirm or finalise before relying on the estate plan:</p><ul>'
-      + gaps.map(function(g){ return '<li>' + g + '</li>'; }).join('') + '</ul>';
-  }
-
   // Comment box text with paragraph breaks preserved.
   function reviewCommentHtml(text){
     var t = (text || '').trim();
@@ -7034,7 +7105,10 @@
     setRRText('acc-discretionary', fmtR(s.discTotal));
     setRRText('acc-monthly', fmtR(s.monthly));
     setRRHtmlById('rr-accounts-body', renderReviewAccountRowsHtml());
-    setRRHtmlById('rr-networth', renderReviewNetWorthHtml());
+
+    // Net-worth / balance-sheet page.
+    setRRHtmlById('rr-nw-cards', renderReviewNetWorthCards());
+    setRRHtmlById('rr-nw-body', renderReviewNetWorthTable());
 
     // Projection page (live engine over the confirmed planning inputs).
     var p = baseline ? baseline.p : lastProjection;
@@ -7067,9 +7141,21 @@
     setRRHtmlById('rr-estate-wills', renderReviewWillsRowsHtml());
     setRRHtmlById('rr-estate-poa', renderReviewPoaHtml());
     setRRHtmlById('rr-estate-trusts', renderReviewTrustsHtml());
-    setRRHtmlById('rr-estate-readiness', renderReviewReadinessHtml());
     setRRHtmlById('rr-estate-liquidity', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.estateLiquidityComment));
     setRRHtmlById('rr-estate-comments', '<strong>Planner comment:</strong> ' + reviewCommentHtml(d.estate && d.estate.comments));
+
+    renumberReviewPages();
+  }
+
+  // Stamp each page footer with its position + the live page count, so the
+  // "NN / TT" numbering stays correct if pages are added or removed.
+  function renumberReviewPages(){
+    var pages = document.querySelectorAll('.review-report .rr-page');
+    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    for (var i = 0; i < pages.length; i++){
+      var el = pages[i].querySelector('.rr-footer .rr-num');
+      if (el) el.textContent = pad(i + 1) + ' / ' + pad(pages.length);
+    }
   }
 
   // Export entry point (wired to #btn-review-report). Injects the landscape
