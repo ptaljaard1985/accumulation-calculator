@@ -6,7 +6,7 @@ Current template:
 
 `report_master.html`
 
-**Ported into the tool (2026-07-03):** `report_master.html` now also lives inside the planning tool as the scoped `.review-report` 8-page deck, data-bound and rendered from a loaded `sw-review-data` file plus the live projection, with the estate page rebuilt to schema 1.3.0. `report_master.html` remains the standalone design reference.
+**Ported into the tool (2026-07-03):** `report_master.html` now also lives inside the planning tool as the scoped `.review-report` 9-page deck, data-bound and rendered from a loaded `sw-review-data` file plus the live projection, with the estate page rebuilt to schema 1.3.0. `report_master.html` remains the standalone design reference.
 
 Current local logo assets:
 
@@ -25,10 +25,18 @@ The HTML template is the presentation layer. It should receive prepared data and
 | 2 | `agendaPrimary` | Life planning, cash flow, investment, and retirement agenda sections. |
 | 3 | `agendaSecondary` | Risk, estate, tax, other, and seasonal check-ins. |
 | 4 | `accounts` | Investment account and contribution detail. |
-| 5 | `retirementProjection` | Projection chart, planning snapshot, capital events, and contribution leverage. |
-| 6 | `risk` | Policy benefit summary and risk comment. |
-| 7 | `estate` | Wills, trusts, estate liquidity, and estate comment. |
-| 8 | `notes` | Methodology, limitations, regulatory wording, and confidentiality. |
+| 5 | `netWorth` | Net worth / balance sheet: four summary cards plus a balance-sheet table (investment portfolio row, one row per held-away item, and a household net-worth total). |
+| 6 | `retirementProjection` | Projection chart, planning snapshot, capital events, and contribution leverage. |
+| 7 | `risk` | Policy benefit summary and risk comment. |
+| 8 | `estate` | Wills, powers of attorney, and trusts as three stacked sections. |
+| 9 | `notes` | Methodology, limitations, regulatory wording, and confidentiality. |
+
+Notes:
+
+- The report renders inside the planning tool from a loaded `sw-review-data` file plus the live projection; `report_master.html` is the standalone design reference.
+- Net-worth / balance-sheet items (business, property, debt) render on their own `netWorth` page rather than in a strip under the accounts table.
+- The estate page presents Wills, powers of attorney, and trusts as three separate stacked sections (the earlier estate-readiness box was removed).
+- The import mapping modal captures the projection assumptions (expected return, expected inflation, monthly income goal, retirement age), pre-filled from the CRM assumption seeds or tool defaults and applied on confirm, so the advisor does not need to open the Edit-info drawer before generating the report.
 
 ## Design System
 

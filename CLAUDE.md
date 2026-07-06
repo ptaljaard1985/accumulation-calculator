@@ -99,7 +99,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 87 tests
+# JS tests (actual shipped JS) — 88 tests
 cd tests/js
 node run.js
 ```
@@ -116,7 +116,7 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (60 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (87 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (88 tests).
 
 ## What not to do
 
@@ -134,6 +134,26 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 26 — 2026-07-06
+
+**Shipped (review-report layout + two feature tweaks, off `main` after PR #26 merged):** print-review feedback on the Session-25 pre-meeting report, plus two advisor-workflow asks. All on the `report-layout-fixes` branch. No engine change; the report is render/markup/CSS only.
+
+1. **Content-flow page model (fixes stretch + overlap).** The report pages were fixed `height: 210mm` grids whose `.rr-detail-page` used a `minmax(0,1fr)` track — which forced the accounts table into a fixed slot (net-worth strip overlapping it) and stretched short pages (the risk card ballooned to fill). Switched every `.rr-page` to `min-height: 210mm` + flex column, `.rr-body` to `flex: 1 1 auto`, and `.rr-detail-page` (+ compact/estate variants) to `grid-auto-rows: auto; align-content: start`. Every card is now bound by the space it needs; pages grow past 210mm only if genuinely needed. Print block matched (`min-height`, `height: auto`, `overflow: visible`).
+
+2. **Estate page restructured.** Wills / POA / Trusts are now three separate full-width stacked sections (POA + Trusts were side by side); the **Estate readiness box was removed** (the wills table already carries each will's status), along with `renderReviewReadinessHtml` / `estateStatusReady` and their CSS.
+
+3. **Net worth on its own page (report is now 9 pages).** The held-away balance-sheet items (business, property, debt) were a cramped wrapped strip under the accounts table. Moved to a dedicated **Net worth** page (page 5, after Accounts): four summary cards (Investment portfolio · Property & business · Liabilities · Household net worth) + a proper balance-sheet table (an Investment-portfolio row, one row per held-away item with humanised category + owner + value, and a Household net-worth total row that reconciles to R26 293 007). New page order: cover, agenda ×2, accounts, **netWorth**, projection, risk, estate, notes. New `renderReviewNetWorthCards` / `renderReviewNetWorthTable` / `reviewNetWorthTotals` / `reviewNetWorthCategory`; the old strip renderer + CSS removed. `renumberReviewPages()` now stamps each footer `NN / TT` from the live page count at populate time (footers are dynamic, not hardcoded).
+
+4. **Cover centering restored.** The flex model top-aligned the cover content (it relied on `height:100%` against the old grid track). Re-centred via a cover-scoped flex column, so the other pages' top-aligned flow is untouched. (The `-cover.png` logo is the white-text version and was already correct.)
+
+5. **Projection assumptions on the import modal.** The mapping modal gained four inputs — Expected return, Expected inflation, Monthly income goal, Retirement age — that pre-fill from the CRM `assumptionSeeds` (or the tool's current/default values) and apply on Confirm via new `applyMappingAssumptions()` (replacing the seed-only `applyAssumptionSeeds`). The advisor no longer has to open the Edit-info drawer to set assumptions before generating the report.
+
+**Tests:** 88 JS (87 + 1 modal-assumptions test; the readiness test swapped for an estate-three-sections test; net-worth + page-count tests updated to the 9-page shape) + 60 Python (unchanged), all green.
+
+**Verification:** the user print-tested to PDF. Confirmed fixed there: the accounts/net-worth overlap, the estate restructure. The blank page after Accounts (footer spilling ~a few mm over one sheet) and the cover centering were fixed in this branch; a faithful static render is regenerated at `Meeting Report/review-report-preview.html` (git-ignored — embeds client data) via a scratchpad generator. Page-fit of all 9 sheets still wants a final browser print-preview.
+
+**Docs updated:** `CLAUDE.md` (this entry + counts 87 → 88), `README.md`, `tests/README.md`, `Meeting Report/report-data-contract.md` (9 page keys incl. `netWorth`), `report-template-notes.md`.
 
 ### Session 25 — 2026-07-03
 
