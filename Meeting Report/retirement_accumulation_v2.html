@@ -3464,7 +3464,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Risk planning detail</div>
-              <h1>Policy summary.</h1>
+              <h1>Risk Planning Summary</h1>
             </div>
           </div>
           <section class="rr-detail-grid rr-full">
@@ -3512,7 +3512,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Estate planning detail</div>
-              <h1>Estate facts to confirm.</h1>
+              <h1>Estate Planning Summary</h1>
             </div>
           </div>
           <section class="rr-detail-grid rr-full">
@@ -7456,12 +7456,17 @@
           deltaNodes[di].classList.toggle('delta-negative', sc.cmp.deltaNeg);
           deltaNodes[di].classList.toggle('delta-positive', !sc.cmp.deltaNeg && sc.cmp.delta !== '(no change)');
         }
-        // Split the levers into two side-by-side columns (four each) so the
-        // full set fits on one page without the table splitting across the break.
-        var scRows = sc.cmp.rows || [];
-        var scHalf = Math.ceil(scRows.length / 2);
-        setRRHtmlById('rr-scenario-changes', renderReviewScenarioRows(scRows.slice(0, scHalf)));
-        setRRHtmlById('rr-scenario-changes-b', renderReviewScenarioRows(scRows.slice(scHalf)));
+        // Six levers in two fixed columns: the client's own decisions on the
+        // left (contributions + retirement age), the assumptions on the right.
+        // Income goal and the derived goal-progress row are intentionally
+        // omitted (the hero already carries the income outcome).
+        var scByLabel = {};
+        (sc.cmp.rows || []).forEach(function(r){ scByLabel[r.label] = r; });
+        function scPick(labels){ return labels.map(function(l){ return scByLabel[l]; }).filter(Boolean); }
+        var scLeft = scPick(['Retirement contributions', 'Discretionary contributions', 'Retirement age']);
+        var scRight = scPick(['Expected return', 'Assumed inflation', 'Contribution escalation']);
+        setRRHtmlById('rr-scenario-changes', renderReviewScenarioRows(scLeft));
+        setRRHtmlById('rr-scenario-changes-b', renderReviewScenarioRows(scRight));
         renderReviewScenarioChart(sc);
       }
     }
