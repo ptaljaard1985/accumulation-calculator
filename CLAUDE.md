@@ -99,7 +99,7 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 88 tests
+# JS tests (actual shipped JS) — 92 tests
 cd tests/js
 node run.js
 ```
@@ -116,7 +116,7 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (60 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (88 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (92 tests).
 
 ## What not to do
 
@@ -134,6 +134,26 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 Ask. Pierre would rather answer one question now than fix a silent regression later.
 
 ## Session Log
+
+### Session 27 — 2026-07-07
+
+**Shipped (optional scenario page on the review report, `review-scenario-page` branch off `main` after PR #31):** the CRM-driven pre-meeting report (`.review-report`, 9 always-on pages) now gains an **optional 10th page — a scenario comparison** — that shows clients how a tweak to their plan changes the projected outcome. Reuses the existing lock-baseline + scenario-levers machinery; no engine change and no new form. Follows the same conditional-page pattern as the old landscape deck's scenario page (§13).
+
+- **Workflow.** The advisor locks a baseline (Compare), moves the scenario levers (contributions / return / retirement age), then clicks **Report**. If a baseline is locked, `startReviewReport()` opens `#review-scenario-modal` (Cancel / Export without scenario / Include scenario, mirroring `#report-scenario-modal`); with no baseline it runs `runReviewReport(false)` directly. `runReviewReport(includeScenario)` closes the modal, enters review export mode, and calls `populateReviewReport(includeScenario)`.
+- **The page** (`data-page="scenario"`, `data-enabled="false"` in markup, inserted between projection and risk, footer `06 / 09` → renumbered live). `.rr-scenario-page`: an overlaid two-curve income chart (`#rr-scenario-chart`, viewBox `0 0 1460 320` to match the panel aspect — no letterboxing), a two-tile hero (Current plan vs Scenario, with a signed income delta), a "What changed" lever table, and two note lines (result + which inputs changed).
+- **New JS (after `renderReviewIncomeChart`):**
+  - `buildReviewScenarioData()` — returns `null` unless `baseline && lastProjection`; otherwise `{ cmp, current, scenario, goal }` where `cmp = buildScenarioComparison(lastProjection, baseline)` (the existing pure comparison used by the landscape deck — baseline is the "current" side, live plan is the "scenario" side), and `current`/`scenario` carry `{ points, markerAge, markerIncome }` from `incomeCurveData` on each input set.
+  - `renderReviewScenarioRows(rows)` — maps `cmp.rows` to `<tr>`s (lever / current / scenario / signed change, the change cell carrying `delta-positive`/`delta-negative`).
+  - `renderReviewScenarioChart(data)` — SVG generator: current-plan curve (white, dashed) + scenario curve (gold, solid), a vertical marker at each retirement age, gridlines, optional goal line, and x-axis age labels.
+- **`populateReviewReport(includeScenario)`** — computes `showScenario = !!(includeScenario && baseline && lastProjection)`, toggles the page's `data-enabled`, and when shown fills the hero (`scen-current`/`scen-plan`/`scen-delta` + the delta's colour class), the changes table, the two notes, and the chart. `renumberReviewPages()` filters out `data-enabled="false"` pages before stamping `NN / TT`, so the report is 9 pages without a scenario and 10 with one. A print-block rule hides disabled pages under headless `--print-to-pdf` too.
+
+**Decisions (and why):** reuse `buildScenarioComparison` (pure data, already tested and em-dash-free) rather than a bespoke scenario form — the levers the advisor already knows are the input surface, and the comparison logic is shared with the landscape deck so the two reports can't drift. Baseline = "current plan", live plan = "scenario" matches how the advisor thinks in the meeting (lock what we have, then explore). Chart viewBox widened to 1460×320 to fill the panel (the 940-wide income-chart viewBox letterboxed with side padding — same fix applied to the income chart in the prior session).
+
+**Tests:** 92 JS (88 + 4: page-count now 10 = 9 always-on + 1 conditional scenario; button wired to `startReviewReport`; scenario page markup + `data-enabled="false"` + `rr-scenario-chart`/`rr-scenario-changes`; `renumberReviewPages` skips disabled; `startReviewReport` gates on baseline; `buildReviewScenarioData` reuses `buildScenarioComparison(lastProjection, baseline)` + both `incomeCurveData` calls; `populateReviewReport` requires `includeScenario && baseline && lastProjection`) + 60 Python (unchanged — no math change), all green. Regenerated `Meeting Report/review-report-preview.html` (git-ignored) with a sample tweak (+R5 000/mo retirement, retire at 67): current R49 852 → scenario R59 213 (+R9 361), 7-row change table, overlaid two-curve chart, page 06 / 10.
+
+**Known caveat:** No headless browser this session. The scenario page fit (two-curve chart legibility, hero + table + notes within 210mm, no blank page) wants a final browser print-preview. The no-scenario path is unchanged, so the existing 9-page output is safe.
+
+**Docs updated:** `CLAUDE.md` (this entry + counts 88 → 92), `README.md`, `tests/README.md`.
 
 ### Session 26 — 2026-07-06
 

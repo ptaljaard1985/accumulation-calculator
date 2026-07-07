@@ -1321,15 +1321,37 @@ check('review report: estate has three separate sections (wills, POA, trusts); n
 
 check('review report: markup, button, export-mode gating + afterprint teardown present', () => {
   assert.ok(/class="review-report"/.test(html), '.review-report section missing');
-  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 9, 'expected 9 report pages');
+  // 9 always-on pages + 1 conditional scenario page = 10 in markup.
+  assert.strictEqual((html.match(/class="rr-page[ "]/g) || []).length, 10, 'expected 10 report pages (incl. conditional scenario)');
   assert.ok(/id="btn-review-report"/.test(html), '#btn-review-report missing');
-  assert.ok(/getElementById\('btn-review-report'\)\.addEventListener\('click', runReviewReport\)/.test(inline),
-    'review report button not wired');
+  assert.ok(/getElementById\('btn-review-report'\)\.addEventListener\('click', startReviewReport\)/.test(inline),
+    'review report button not wired to startReviewReport');
   assert.ok(/\[data-export-mode="review"\]/.test(html), 'review export-mode CSS gate missing');
   const run = extractFn(inline, 'runReviewReport');
   assert.ok(/setAttribute\('data-export-mode', 'review'\)/.test(run) && /window\.print/.test(run),
     'runReviewReport should gate review mode and print');
   assert.ok(inline.includes("=== 'review'"), 'afterprint should tear down the review export mode');
+});
+
+check('review report: scenario page is conditional and reuses buildScenarioComparison', () => {
+  // Page present in markup but disabled by default.
+  assert.ok(/data-page="scenario" data-enabled="false"/.test(html), 'scenario page should default to disabled');
+  assert.ok(/id="rr-scenario-chart"/.test(html) && /id="rr-scenario-changes"/.test(html), 'scenario chart/table containers missing');
+  // Only the enabled pages are numbered.
+  assert.ok(/getAttribute\('data-enabled'\) !== 'false'/.test(extractFn(inline, 'renumberReviewPages')), 'renumber should skip disabled pages');
+  // startReviewReport asks about the scenario only when a baseline is locked.
+  const start = extractFn(inline, 'startReviewReport');
+  assert.ok(/if \(baseline\) openReviewScenarioModal/.test(start) && /runReviewReport\(false\)/.test(start),
+    'startReviewReport should gate on a locked baseline');
+  // The scenario data reuses the tested comparison + income-curve helpers.
+  const build = extractFn(inline, 'buildReviewScenarioData');
+  assert.ok(/buildScenarioComparison\(lastProjection, baseline\)/.test(build), 'scenario should compare live vs baseline');
+  assert.ok(/incomeCurveData\(baseline\.inputs\)/.test(build) && /incomeCurveData\(lastProjection\.inputs\)/.test(build),
+    'scenario chart should use both income curves');
+  // populate toggles the page + guards on a baseline.
+  const pop = extractFn(inline, 'populateReviewReport');
+  assert.ok(/includeScenario && baseline && lastProjection/.test(pop), 'scenario page should require include + a baseline');
+  assert.ok(/setAttribute\('data-enabled', showScenario/.test(pop), 'scenario page enable-toggle missing');
 });
 
 console.log();

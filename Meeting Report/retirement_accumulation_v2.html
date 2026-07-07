@@ -1875,6 +1875,35 @@
   .review-report .rr-chart-wrap { min-height: 0; padding: 0 4px 10px; }
   .review-report .rr-chart { display: block; width: 100%; height: 100%; overflow: visible; }
   .review-report .rr-chart text { font-family: var(--sans); }
+  /* Conditional pages (e.g. the scenario page) are hidden until enabled. */
+  .review-report .rr-page[data-enabled="false"] { display: none; }
+  /* Scenario comparison page */
+  .review-report .rr-scenario-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 9px; }
+  .review-report .rr-scenario-chart-panel { min-height: 60mm; }
+  .review-report .rr-scenario-legend { display: flex; gap: 18px; margin-top: 6px; }
+  .review-report .rr-leg { font-size: 11px; color: rgba(255,255,255,0.82); display: inline-flex; align-items: center; gap: 7px; }
+  .review-report .rr-leg::before { content: ""; width: 18px; height: 3px; border-radius: 2px; background: currentColor; }
+  .review-report .rr-leg-current { color: rgba(255,255,255,0.62); }
+  .review-report .rr-leg-current::before { background: transparent; height: 0; border-top: 3px dashed rgba(255,255,255,0.62); }
+  .review-report .rr-leg-scenario { color: var(--rr-gold); }
+  .review-report .rr-scenario-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .review-report .rr-scenario-tile { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 11px 16px; }
+  .review-report .rr-scenario-tile span { display: block; color: var(--rr-muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.6px; }
+  .review-report .rr-scenario-tile strong { display: block; margin-top: 4px; color: var(--rr-brand); font-size: 25px; line-height: 1; }
+  .review-report .rr-scenario-tile small { display: block; margin-top: 5px; color: var(--rr-muted); font-size: 10.5px; }
+  .review-report .rr-scenario-tile-plan { border-color: var(--rr-gold); box-shadow: inset 0 0 0 1px var(--rr-gold); }
+  .review-report .rr-scenario-tile-plan strong { color: var(--rr-gold); }
+  .review-report .rr-scenario-delta { font-weight: 800; }
+  .review-report .rr-scenario-delta.delta-positive { color: var(--rr-green); }
+  .review-report .rr-scenario-delta.delta-negative { color: var(--rr-red); }
+  .review-report .rr-scenario-detail { grid-template-columns: 1.35fr 0.65fr; }
+  .review-report .rr-scenario-table { font-size: 10.5px; }
+  .review-report .rr-scenario-table th { background: var(--rr-brand); color: #fff; padding: 6px 8px; border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-scenario-table td { padding: 5px 8px; color: var(--rr-ink-2); }
+  .review-report .rr-scenario-table th.rr-right, .review-report .rr-scenario-table td.rr-right { text-align: right; }
+  .review-report .rr-scenario-table .delta-positive { color: var(--rr-green); font-weight: 700; }
+  .review-report .rr-scenario-table .delta-negative { color: var(--rr-red); font-weight: 700; }
+  .review-report .rr-scenario-table .delta-neutral { color: var(--rr-muted); }
   .review-report .rr-projection-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 0; }
   .review-report .rr-card {
     background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
@@ -2026,6 +2055,7 @@
     html.export-printing #calc-root[data-export-mode="review"] .rr-page:last-of-type {
       break-after: auto; page-break-after: auto;
     }
+    html.export-printing #calc-root[data-export-mode="review"] .rr-page[data-enabled="false"] { display: none !important; }
     .report-modal-backdrop { display: none !important; }
   }
 
@@ -3351,6 +3381,72 @@
       </footer>
     </section>
 
+    <!-- 06 · Scenario comparison (only when a baseline is locked + the adviser includes it) -->
+    <section class="rr-page" data-page="scenario" data-enabled="false">
+      <header class="rr-header">
+        <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
+        <div class="rr-meta"><span data-rr="meta-names">—</span><br><span data-rr="meta-date">—</span></div>
+      </header>
+      <div class="rr-body">
+        <div class="rr-scenario-page">
+          <div class="rr-page-title">
+            <div>
+              <div class="rr-kicker">Scenario comparison</div>
+              <h1 data-rr="scen-title">How the tweaks change the outcome.</h1>
+            </div>
+          </div>
+          <section class="rr-chart-panel rr-scenario-chart-panel">
+            <div class="rr-chart-head">
+              <p>Current plan versus the scenario, starting monthly income in today's money.</p>
+              <div class="rr-scenario-legend">
+                <span class="rr-leg rr-leg-current">Current plan</span>
+                <span class="rr-leg rr-leg-scenario">Scenario</span>
+              </div>
+            </div>
+            <div class="rr-chart-wrap">
+              <svg id="rr-scenario-chart" class="rr-chart" viewBox="0 0 1460 320" role="img" aria-label="Scenario comparison chart"></svg>
+            </div>
+          </section>
+          <section class="rr-scenario-hero">
+            <div class="rr-scenario-tile">
+              <span>Current plan</span>
+              <strong class="rr-num" data-rr="scen-current">—</strong>
+              <small>monthly income, today's money</small>
+            </div>
+            <div class="rr-scenario-tile rr-scenario-tile-plan">
+              <span>Scenario</span>
+              <strong class="rr-num" data-rr="scen-plan">—</strong>
+              <small>monthly income, today's money <span class="rr-scenario-delta" data-rr="scen-delta"></span></small>
+            </div>
+          </section>
+          <section class="rr-detail-grid rr-scenario-detail">
+            <article class="rr-detail-card">
+              <h2>What changed</h2>
+              <div class="rr-detail-body rr-table-body">
+                <table class="rr-table rr-scenario-table">
+                  <thead>
+                    <tr><th>Lever</th><th class="rr-right">Current</th><th class="rr-right">Scenario</th><th class="rr-right">Change</th></tr>
+                  </thead>
+                  <tbody id="rr-scenario-changes"></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="rr-detail-card">
+              <h2>Notes</h2>
+              <div class="rr-detail-body">
+                <p data-rr="scen-note-result">—</p>
+                <p data-rr="scen-note-changed">—</p>
+              </div>
+            </article>
+          </section>
+        </div>
+      </div>
+      <footer class="rr-footer">
+        <span>Simple Wealth Pty Ltd is an authorized financial service provider, FSP number 50637.</span>
+        <span class="rr-num">06 / 09</span>
+      </footer>
+    </section>
+
     <!-- 06 · Risk / policy summary -->
     <section class="rr-page" data-page="risk">
       <header class="rr-header">
@@ -3530,6 +3626,19 @@
         <button class="btn ghost" id="report-modal-cancel" type="button">Cancel</button>
         <button class="btn" id="report-export-without" type="button">Export without scenario</button>
         <button class="btn primary" id="report-export-with" type="button">Include scenario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include-scenario prompt for the CRM review report -->
+  <div class="report-modal-backdrop" id="review-scenario-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="review-scenario-modal-title">
+    <div class="report-modal">
+      <h2 id="review-scenario-modal-title">Include the scenario comparison?</h2>
+      <p>A locked baseline is available. Add a scenario page comparing the current plan with your adjusted scenario, or generate the report without it.</p>
+      <div class="report-modal-actions">
+        <button class="btn ghost" id="review-modal-cancel" type="button">Cancel</button>
+        <button class="btn" id="review-export-without" type="button">Without scenario</button>
+        <button class="btn primary" id="review-export-with" type="button">Include scenario</button>
       </div>
     </div>
   </div>
@@ -7192,9 +7301,90 @@
     }
   }
 
+  // Scenario page data: the baseline (current) vs the live (tweaked) projection.
+  // Reuses buildScenarioComparison for the numbers/table/notes and incomeCurveData
+  // for the two income curves. Returns null unless a baseline is locked.
+  function buildReviewScenarioData(){
+    if (!baseline || !lastProjection) return null;
+    var cmp = buildScenarioComparison(lastProjection, baseline);
+    var curCd = incomeCurveData(baseline.inputs);
+    var scnCd = incomeCurveData(lastProjection.inputs);
+    function pts(cd){ return cd.ages.map(function(a, i){ return { age: a, income: cd.incomeReal[i] }; }); }
+    return {
+      cmp: cmp,
+      current: { points: pts(curCd), markerAge: curCd.markerAge, markerIncome: curCd.incomeReal[curCd.markerIndex] },
+      scenario: { points: pts(scnCd), markerAge: scnCd.markerAge, markerIncome: scnCd.incomeReal[scnCd.markerIndex] },
+      goal: (lastProjection.inputs.incomeGoal || 0)
+    };
+  }
+
+  // The "what changed" table rows for the scenario page.
+  function renderReviewScenarioRows(rows){
+    return (rows || []).map(function(r){
+      return '<tr>'
+        + '<td class="rr-name">' + escapeHtml(r.label) + '</td>'
+        + '<td class="rr-right">' + escapeHtml(r.cur) + '</td>'
+        + '<td class="rr-right">' + escapeHtml(r.plan) + '</td>'
+        + '<td class="rr-right ' + r.d.c + '">' + escapeHtml(r.d.t) + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // Overlaid income chart for the scenario page: the current plan (dashed, muted)
+  // and the scenario (solid gold), with a vertical marker at each retirement age.
+  function renderReviewScenarioChart(data){
+    var svg = document.getElementById('rr-scenario-chart');
+    if (!svg || !data) return;
+    var cur = (data.current.points || []).slice().sort(function(a, b){ return a.age - b.age; });
+    var scn = (data.scenario.points || []).slice().sort(function(a, b){ return a.age - b.age; });
+    if (!cur.length || !scn.length) return;
+    var width = 1460, height = 320;
+    var pad = { top: 20, right: 30, bottom: 36, left: 68 };
+    var chartW = width - pad.left - pad.right, chartH = height - pad.top - pad.bottom;
+    var minAge = Math.min(cur[0].age, scn[0].age);
+    var maxAge = Math.max(cur[cur.length - 1].age, scn[scn.length - 1].age);
+    var ageSpan = (maxAge - minAge) || 1;
+    var goal = data.goal || 0;
+    var largest = goal;
+    cur.concat(scn).forEach(function(p){ largest = Math.max(largest, p.income); });
+    var maxIncome = niceChartMax(largest * 1.1);
+    function xForAge(age){ return pad.left + chartW * ((age - minAge) / ageSpan); }
+    function yForValue(v){ return pad.top + chartH * (1 - v / maxIncome); }
+    function pathFor(pts){ var dp = ''; for (var j = 0; j < pts.length; j++){ dp += (j === 0 ? 'M' : 'L') + ' ' + xForAge(pts[j].age).toFixed(2) + ' ' + yForValue(pts[j].income).toFixed(2) + ' '; } return dp.trim(); }
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    for (var t = 0; t <= 4; t++){
+      var val = maxIncome * (1 - t / 4), y = yForValue(val);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: y, x2: width - pad.right, y2: y, stroke: 'rgba(255,255,255,0.16)', 'stroke-width': 1 }));
+      svg.appendChild(createSvgEl('text', { x: 14, y: y + 5, fill: 'rgba(255,255,255,0.65)', 'font-size': 15, 'font-weight': 600 }, fmtShort(val)));
+    }
+    if (goal > 0){
+      var gy = yForValue(goal);
+      svg.appendChild(createSvgEl('line', { x1: pad.left, y1: gy, x2: width - pad.right, y2: gy, stroke: 'rgba(185,137,54,0.5)', 'stroke-width': 2, 'stroke-dasharray': '8 6' }));
+      svg.appendChild(createSvgEl('text', { x: width - pad.right - 6, y: gy - 8, fill: 'rgba(255,255,255,0.6)', 'font-size': 14, 'font-weight': 700, 'text-anchor': 'end' }, 'Income goal'));
+    }
+    // Vertical markers at each retirement age.
+    function marker(age, income, colour, r){
+      var mx = xForAge(age), my = yForValue(income);
+      svg.appendChild(createSvgEl('line', { x1: mx, y1: pad.top, x2: mx, y2: height - pad.bottom, stroke: 'rgba(255,255,255,0.3)', 'stroke-width': 1 }));
+      svg.appendChild(createSvgEl('circle', { cx: mx, cy: my, r: r, fill: colour }));
+    }
+    marker(data.current.markerAge, data.current.markerIncome, 'rgba(255,255,255,0.85)', 5);
+    marker(data.scenario.markerAge, data.scenario.markerIncome, '#b98936', 6);
+    // Current plan (dashed, muted) then scenario (solid gold) on top.
+    svg.appendChild(createSvgEl('path', { d: pathFor(cur), fill: 'none', stroke: 'rgba(255,255,255,0.6)', 'stroke-width': 3, 'stroke-dasharray': '7 5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    svg.appendChild(createSvgEl('path', { d: pathFor(scn), fill: 'none', stroke: '#b98936', 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    // X-axis age labels (about 6).
+    var ages = []; for (var a = minAge; a <= maxAge; a++) ages.push(a);
+    var step = Math.max(1, Math.ceil(ages.length / 6));
+    for (var k = 0; k < ages.length; k++){
+      if (!(k === 0 || k === ages.length - 1 || k % step === 0)) continue;
+      svg.appendChild(createSvgEl('text', { x: xForAge(ages[k]), y: height - 12, fill: 'rgba(255,255,255,0.55)', 'font-size': 14, 'font-weight': 600, 'text-anchor': 'middle' }, ages[k]));
+    }
+  }
+
   // Fill every review-deck slot + container from reviewData + the live
   // projection. No math here beyond the marginal-income helper.
-  function populateReviewReport(){
+  function populateReviewReport(includeScenario){
     var d = reviewData || {};
     var cf = d.clientFamily || {};
 
@@ -7243,6 +7433,29 @@
       renderReviewIncomeChart(proj.chart);
     }
 
+    // Scenario page: shown only when a baseline is locked AND the adviser chose to
+    // include it. Compares the current plan (baseline) with the adjusted scenario.
+    var scenPage = document.querySelector('.review-report .rr-page[data-page="scenario"]');
+    var showScenario = !!(includeScenario && baseline && lastProjection);
+    if (scenPage) scenPage.setAttribute('data-enabled', showScenario ? 'true' : 'false');
+    if (showScenario){
+      var sc = buildReviewScenarioData();
+      if (sc){
+        setRRText('scen-current', sc.cmp.current);
+        setRRText('scen-plan', sc.cmp.planned);
+        setRRText('scen-delta', sc.cmp.delta);
+        var deltaNodes = document.querySelectorAll('.review-report [data-rr="scen-delta"]');
+        for (var di = 0; di < deltaNodes.length; di++){
+          deltaNodes[di].classList.toggle('delta-negative', sc.cmp.deltaNeg);
+          deltaNodes[di].classList.toggle('delta-positive', !sc.cmp.deltaNeg && sc.cmp.delta !== '(no change)');
+        }
+        setRRHtmlById('rr-scenario-changes', renderReviewScenarioRows(sc.cmp.rows));
+        setRRText('scen-note-result', sc.cmp.resultNote);
+        setRRText('scen-note-changed', sc.cmp.changedNote);
+        renderReviewScenarioChart(sc);
+      }
+    }
+
     // Risk page.
     setRRHtmlById('rr-risk-body', renderReviewRiskRowsHtml());
     setRRHtmlById('rr-risk-comment', reviewCommentHtml(d.risk && d.risk.comments));
@@ -7260,24 +7473,47 @@
   // Stamp each page footer with its position + the live page count, so the
   // "NN / TT" numbering stays correct if pages are added or removed.
   function renumberReviewPages(){
-    var pages = document.querySelectorAll('.review-report .rr-page');
+    // Number only the enabled pages (the scenario page may be disabled).
+    var all = document.querySelectorAll('.review-report .rr-page');
+    var pages = [];
+    for (var i = 0; i < all.length; i++){
+      if (all[i].getAttribute('data-enabled') !== 'false') pages.push(all[i]);
+    }
     var pad = function(n){ return (n < 10 ? '0' : '') + n; };
-    for (var i = 0; i < pages.length; i++){
-      var el = pages[i].querySelector('.rr-footer .rr-num');
-      if (el) el.textContent = pad(i + 1) + ' / ' + pad(pages.length);
+    for (var j = 0; j < pages.length; j++){
+      var el = pages[j].querySelector('.rr-footer .rr-num');
+      if (el) el.textContent = pad(j + 1) + ' / ' + pad(pages.length);
     }
   }
 
-  // Export entry point (wired to #btn-review-report). Injects the landscape
-  // @page sheet, gates #calc-root to review mode, populates the deck, then
-  // defers print() by two rAFs so layout flushes first. afterprint tears down.
-  function runReviewReport(){
+  function openReviewScenarioModal(){
+    var m = document.getElementById('review-scenario-modal');
+    if (m) m.setAttribute('data-open', 'true');
+  }
+  function closeReviewScenarioModal(){
+    var m = document.getElementById('review-scenario-modal');
+    if (m) m.setAttribute('data-open', 'false');
+  }
+
+  // Entry point (wired to #btn-review-report). If a baseline is locked, offer the
+  // scenario page; otherwise generate the report straight away.
+  function startReviewReport(){
     if (!reviewData) return;
+    if (baseline) openReviewScenarioModal();
+    else runReviewReport(false);
+  }
+
+  // Injects the landscape @page sheet, gates #calc-root to review mode, populates
+  // the deck (with or without the scenario page), then defers print() by two rAFs
+  // so layout flushes first. afterprint tears down.
+  function runReviewReport(includeScenario){
+    if (!reviewData) return;
+    closeReviewScenarioModal();
     ensureExportPageSheet();
     var root = document.getElementById('calc-root');
     root.setAttribute('data-export-mode', 'review');
     document.documentElement.classList.add('export-printing');
-    populateReviewReport();
+    populateReviewReport(includeScenario);
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){ window.print(); });
     });
@@ -7290,6 +7526,17 @@
     if (cancel) cancel.addEventListener('click', closeReportModal);
     if (without) without.addEventListener('click', function(){ runReportExport(false); });
     if (withScen) withScen.addEventListener('click', function(){ runReportExport(true); });
+  })();
+
+  (function wireReviewScenarioModal(){
+    var cancel = document.getElementById('review-modal-cancel');
+    var without = document.getElementById('review-export-without');
+    var withScen = document.getElementById('review-export-with');
+    if (cancel) cancel.addEventListener('click', closeReviewScenarioModal);
+    if (without) without.addEventListener('click', function(){ runReviewReport(false); });
+    if (withScen) withScen.addEventListener('click', function(){ runReviewReport(true); });
+    var m = document.getElementById('review-scenario-modal');
+    if (m) m.addEventListener('click', function(e){ if (e.target === this) closeReviewScenarioModal(); });
   })();
 
   // ===== Print handlers — accordions forced open, charts resized =====
@@ -7374,7 +7621,7 @@
   document.getElementById('btn-relock').addEventListener('click', lockBaseline);
   document.getElementById('btn-clear-baseline').addEventListener('click', clearBaseline);
   document.getElementById('btn-export-report').addEventListener('click', startExport);
-  document.getElementById('btn-review-report').addEventListener('click', runReviewReport);
+  document.getElementById('btn-review-report').addEventListener('click', startReviewReport);
   document.getElementById('btn-save-plan').addEventListener('click', savePlan);
   document.getElementById('btn-open-plan').addEventListener('click', openPlan);
   document.getElementById('btn-open-plan-empty').addEventListener('click', openPlan);
