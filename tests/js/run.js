@@ -1337,6 +1337,20 @@ check('review report: scenario page is conditional and reuses buildScenarioCompa
   // Page present in markup but disabled by default.
   assert.ok(/data-page="scenario" data-enabled="false"/.test(html), 'scenario page should default to disabled');
   assert.ok(/id="rr-scenario-chart"/.test(html) && /id="rr-scenario-changes"/.test(html), 'scenario chart/table containers missing');
+  // Levers render in two side-by-side columns (four each) so all eight fit on one page.
+  assert.ok(/id="rr-scenario-changes-b"/.test(html) && /rr-scenario-cols/.test(html),
+    'scenario levers should split into a two-column layout');
+  assert.ok(!/<h2>Notes<\/h2>/.test(html) && !/data-rr="scen-note-result"/.test(html),
+    'the scenario Notes box should be removed to make room for the levers');
+  assert.ok(/tr\.rr-row-changed td \{ color: var\(--rr-gold\)/.test(html),
+    'changed levers should be highlighted in the report gold');
+  // populate fills both lever columns from the shared comparison rows.
+  const popScen = extractFn(inline, 'populateReviewReport');
+  assert.ok(/rr-scenario-changes-b/.test(popScen) && /slice\(scHalf\)/.test(popScen),
+    'populate should split the lever rows across both columns');
+  // renderReviewScenarioRows tags a changed row so the gold rule applies.
+  assert.ok(/rr-row-changed/.test(extractFn(inline, 'renderReviewScenarioRows')),
+    'renderReviewScenarioRows should mark changed levers');
   // Only the enabled pages are numbered.
   assert.ok(/getAttribute\('data-enabled'\) !== 'false'/.test(extractFn(inline, 'renumberReviewPages')), 'renumber should skip disabled pages');
   // startReviewReport asks about the scenario only when a baseline is locked.
