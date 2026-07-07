@@ -3335,7 +3335,7 @@
               <p>Projected starting retirement income, shown in today's money and before tax.</p>
             </div>
             <div class="rr-chart-wrap">
-              <svg id="rr-income-chart" class="rr-chart" viewBox="0 0 1460 350" role="img" aria-label="Retirement income projection chart"></svg>
+              <svg id="rr-income-chart" class="rr-chart" viewBox="0 0 1460 260" role="img" aria-label="Retirement income projection chart"></svg>
             </div>
           </section>
           <section>
@@ -7225,10 +7225,12 @@
     if (!svg || !data) return;
     var points = data.points.slice().sort(function(a, b){ return a.age - b.age; });
     if (!points.length) return;
-    // Wide, short viewBox to match the panel's aspect (~4.2:1) so the chart fills
-    // the width instead of letterboxing. The vertical scale (350) is unchanged, so
-    // font/box sizes render the same physical size.
-    var width = 1460, height = 350;
+    // Wide, short viewBox to match the panel's aspect (~5.6:1 since the panel was
+    // shortened to 64mm to make room for the page title) so the chart fills the
+    // width instead of letterboxing the sides. Units render at the same physical
+    // size (the width scale, 269mm/1460, is unchanged), so font/box sizes are
+    // unaffected; only the vertical drawing area is more compact.
+    var width = 1460, height = 260;
     var pad = { top: 22, right: 30, bottom: 38, left: 68 };
     var chartW = width - pad.left - pad.right;
     var chartH = height - pad.top - pad.bottom;
