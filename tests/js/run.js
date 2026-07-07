@@ -1270,6 +1270,25 @@ check('review report: accounts sorted retirement > tax-free > discretionary; pre
   assert.ok(/preservation/i.test(dean.accounts[0].accountName), 'first retirement row should be the preservation fund');
 });
 
+check('review report: projection page — leverage tile, planner-comments box, planned-retirement callout', () => {
+  // "Retire at" tile replaced by a Contribution leverage tile (retirement age
+  // now lives on the chart callout).
+  // (">Retire at<" also appears in the screen compare cards, so scope to the review-report binding.)
+  assert.ok(!/data-rr="proj-retire"/.test(html), 'old proj-retire tile binding should be gone');
+  assert.ok(/>Contribution leverage<\/span><strong[^>]*data-rr="proj-leverage-num"/.test(html), 'leverage tile missing');
+  assert.ok(/rr-metric-sub">per extra R1 000\/mo/.test(html), 'leverage per-R1000 sub missing');
+  // Bottom band is now a planner-comments box; the old leverage band is gone.
+  assert.ok(/rr-notes-head">Planner comments/.test(html) && /id="rr-proj-notes"/.test(html), 'planner comments box missing');
+  assert.ok(!/rr-leverage-card|rr-leverage-copy/.test(html), 'old leverage band should be removed');
+  // Chart main callout renamed to name the planned retirement age.
+  assert.ok(/Planned retirement, age /.test(inline), 'income chart callout should read "Planned retirement, age N"');
+  // populate wires the leverage number + planner comments and drops proj-retire.
+  const pop = extractFn(inline, 'populateReviewReport');
+  assert.ok(/proj-leverage-num/.test(pop) && /rr-proj-notes/.test(pop) && /reviewCommentHtml\(reviewData\.projection/.test(pop),
+    'populate should set the leverage number + planner comments');
+  assert.ok(!/setRRText\('proj-retire'/.test(pop), 'proj-retire population should be removed');
+});
+
 check('review report: net worth on its own page (table + cards), reconciles to total', () => {
   // Dedicated net-worth page: a table (investment portfolio + held-away items +
   // household-total row) and four summary cards, not the old wrapped strip.

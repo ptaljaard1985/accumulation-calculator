@@ -135,6 +135,21 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 29 — 2026-07-07
+
+**Shipped (projection-page reshuffle + planner-comments box, own branch/PR off `main`):** advisor-requested redesign of the review report's Current Retirement Projections page. No engine change; render/markup/CSS + one new populate wiring.
+
+1. **Chart callout renamed.** The main income-chart callout `Age 65 / R114 068 /mo` → `Planned retirement, age 65 / R114 068 /mo` (so the retirement age now reads off the chart). Its box widened `mW 196 → 232` and label font `14 → 13px` to fit; the existing dodge logic keeps the three callouts (early/planned/late) non-overlapping (verified: 3 boxes, 0 overlaps, in-bounds of the 260 viewBox).
+2. **"Retire at" tile → "Contribution leverage" tile.** The 4th metric tile now shows the leverage figure compactly — `+R2 178 /mo` with a `.rr-metric-sub` sub-line "per extra R1 000/mo saved" (`data-rr="proj-leverage-num"`). The retirement-age tile was redundant with the renamed callout.
+3. **Bottom leverage band → Planner comments box.** The full-width `.rr-leverage-card` (gold-label + sentence) is replaced by `.rr-notes-card` (`#rr-proj-notes`), a free-text note box in the same spirit as the risk/estate comment boxes. Purpose: record things the client has but that are out of scope for the projection (e.g. a UK state pension that is not asset-linked). Rendered via the existing `reviewCommentHtml`. **Data source:** currently reads `reviewData.projection && reviewData.projection.comments` (a placeholder path — the CRM field is still to be decided with the advisor); falls back to "No comments recorded." when absent.
+4. **Character cap.** The notes box is full-width landscape (~271mm content, ~188 chars/line at 10.6px) with a 15mm min-height that holds ~2 lines without affecting the page's one-sheet fit. **Recommended CRM cap: ~300 characters** (≈2 lines, zero fit impact); up to ~450 would use a 3rd line, which still fits the page's remaining ~5mm slack but with less margin.
+
+The old `.rr-leverage-*` CSS + the `proj-leverage` sentence + the `proj-retire` populate were removed. Net page delta ≈ +3mm (the tile sub-line); the notes box keeps the leverage band's 15mm min-height so the row height is unchanged.
+
+**Tests:** 93 JS (+1: leverage tile + `proj-leverage-num`, planner-comments box + `#rr-proj-notes`, callout rename, populate wires the leverage number + `reviewCommentHtml(reviewData.projection…)` and drops `proj-retire`) + 60 Python (unchanged), all green. Preview regenerated with a sample UK-state-pension comment.
+
+**Known caveat:** No headless browser. The net +3mm keeps the page within the budget that already fit (64mm chart, ~8mm margin → ~5mm), and a compliant comment (≤~300 chars) stays within the box's fixed footprint, but a final Cmd+P is still the authoritative fit check. **Open item:** the "show contributions a better way" note from the advisor is not addressed here (ambiguous — awaiting clarification); the CRM field name for the comment is to be decided.
+
 ### Session 28 — 2026-07-07
 
 **Shipped (review-report account ordering + page-title cleanup, own branch/PR off `main` after PR #34 merged):** presentation-only tweaks to the CRM review report. No engine change; Python suite unchanged.

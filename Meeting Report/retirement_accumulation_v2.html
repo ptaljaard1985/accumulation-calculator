@@ -1924,20 +1924,19 @@
   }
   .review-report .rr-card-head h2 { margin: 0; font-size: 13px; }
   .review-report .rr-card-body { padding: 10px 12px; }
-  .review-report .rr-leverage-card {
+  .review-report .rr-notes-card {
     background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
-    display: grid; grid-template-columns: 52mm minmax(0,1fr); min-height: 15mm; overflow: hidden;
+    padding: 7px 13px; min-height: 15mm; overflow: hidden;
   }
-  .review-report .rr-leverage-label { padding: 7px 11px; border-right: 1px solid var(--rr-line); background: var(--rr-gold); }
-  .review-report .rr-leverage-card h2 { margin: 0 0 3px; color: #fff; font-size: 12px; line-height: 1.16; }
-  .review-report .rr-leverage-label span { display: block; color: rgba(255,255,255,0.82); font-size: 8.6px; line-height: 1.25; }
-  .review-report .rr-leverage-copy { padding: 6px 13px; display: flex; align-items: center; }
-  .review-report .rr-leverage-copy p { margin: 0; color: var(--rr-muted); font-size: 10.6px; line-height: 1.3; }
-  .review-report .rr-leverage-copy strong { color: var(--rr-ink); font-weight: 850; }
+  .review-report .rr-notes-head { margin-bottom: 3px; color: var(--rr-muted); font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.6px; }
+  .review-report .rr-notes-body { color: var(--rr-ink-2); font-size: 10.6px; line-height: 1.34; }
+  .review-report .rr-notes-body strong { color: var(--rr-ink); font-weight: 850; }
+  .review-report .rr-notes-body span { color: var(--rr-muted); font-style: italic; }
   .review-report .rr-metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 9px; }
   .review-report .rr-metric { border: 1px solid var(--rr-line); border-radius: var(--rr-radius); background: var(--rr-surface-2); padding: 8px 9px; }
   .review-report .rr-metric span { display: block; margin-bottom: 4px; color: var(--rr-muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
   .review-report .rr-metric strong { display: block; color: var(--rr-brand); font-size: 14px; line-height: 1; }
+  .review-report .rr-metric-sub { display: block; margin-top: 3px; color: var(--rr-muted); font-size: 8px; font-style: normal; line-height: 1.2; }
   .review-report .rr-snapshot-grid {
     display: grid; grid-template-columns: 1.05fr 1fr 1fr; row-gap: 8px; column-gap: 12px; align-items: baseline; font-size: 11px;
   }
@@ -3343,7 +3342,7 @@
               <div class="rr-metric"><span>Projected income</span><strong class="rr-num" data-rr="proj-income">—</strong></div>
               <div class="rr-metric"><span>Income goal</span><strong class="rr-num" data-rr="proj-goal">—</strong></div>
               <div class="rr-metric"><span>Goal progress</span><strong class="rr-num" data-rr="proj-progress">—</strong></div>
-              <div class="rr-metric"><span>Retire at</span><strong data-rr="proj-retire">—</strong></div>
+              <div class="rr-metric"><span>Contribution leverage</span><strong class="rr-num" data-rr="proj-leverage-num">—</strong><em class="rr-metric-sub">per extra R1 000/mo saved</em></div>
             </div>
             <div class="rr-projection-summary">
               <article class="rr-card">
@@ -3374,14 +3373,9 @@
               </article>
             </div>
           </section>
-          <section class="rr-leverage-card">
-            <div class="rr-leverage-label">
-              <h2>Contribution leverage</h2>
-              <span>Estimated impact of saving more before retirement.</span>
-            </div>
-            <div class="rr-leverage-copy">
-              <p data-rr="proj-leverage">—</p>
-            </div>
+          <section class="rr-notes-card">
+            <div class="rr-notes-head">Planner comments</div>
+            <div class="rr-notes-body" id="rr-proj-notes"><span>No comments recorded.</span></div>
           </section>
         </div>
       </div>
@@ -7272,7 +7266,7 @@
     // "retire earlier / later" callouts can dodge it.
     var sx = xForAge(selectedAge);
     var sy = yForValue(selectedIncome);
-    var mW = 196, mH = 56;
+    var mW = 232, mH = 56;
     var mcx = (sx + mW + 18 > width - pad.right) ? sx - mW - 18 : sx + 14;
     var mcy = Math.max(pad.top + 4, Math.min(sy - 40, height - pad.bottom - mH - 4));
     var mainBox = { x: mcx, y: mcy, w: mW, h: mH };
@@ -7312,7 +7306,7 @@
 
     // Primary callout box, drawn last so it stays on top.
     svg.appendChild(createSvgEl('rect', { x: mcx, y: mcy, width: mW, height: mH, rx: 8, fill: '#ffffff' }));
-    svg.appendChild(createSvgEl('text', { x: mcx + 14, y: mcy + 22, fill: '#323E5D', 'font-size': 14, 'font-weight': 750 }, 'Age ' + selectedAge));
+    svg.appendChild(createSvgEl('text', { x: mcx + 14, y: mcy + 22, fill: '#323E5D', 'font-size': 13, 'font-weight': 750 }, 'Planned retirement, age ' + selectedAge));
     svg.appendChild(createSvgEl('text', { x: mcx + 14, y: mcy + 46, fill: '#323E5D', 'font-size': 18, 'font-weight': 850 }, fmtR(selectedIncome) + ' /mo'));
 
     var labelStep = Math.max(1, Math.ceil(points.length / 6));
@@ -7442,16 +7436,17 @@
       setRRText('proj-goal', proj.assumptions.goal);
       var gp = computeGoalProgress(p);
       setRRText('proj-progress', gp ? (gp.pct + '%') : '—');
-      setRRText('proj-retire', 'Age ' + p.retirementAge);
+      setRRText('proj-leverage-num', '+' + fmtR(marginalIncomePer1000(inp)) + ' /mo');
       setRRText('snap-ret-bal', fmtR(inp.retA + inp.retB));
       setRRText('snap-ret-contrib', fmtR(inp.contribRetA + inp.contribRetB));
       setRRText('snap-disc-bal', fmtR(inp.discA + inp.discB));
       setRRText('snap-disc-contrib', fmtR(inp.contribDiscA + inp.contribDiscB));
       setRRText('proj-return', proj.assumptions.ret);
       setRRText('proj-inflation', proj.assumptions.cpi);
-      var marginal = marginalIncomePer1000(inp);
-      setRR('proj-leverage', 'Each extra <strong>R1 000 a month</strong> saved until retirement, escalating annually, '
-        + 'is projected to add about <strong>' + fmtR(marginal) + ' a month</strong> of starting retirement income in today’s money.');
+      // Planner comments: free-text note (e.g. income the client receives that is
+      // not asset-linked and so is out of scope for the projection). Sourced from
+      // the CRM review data; falls back to a placeholder when absent.
+      setRRHtmlById('rr-proj-notes', reviewCommentHtml(reviewData.projection && reviewData.projection.comments));
       setRRHtmlById('rr-proj-events', renderReviewEventsHtml(inp.events || []));
       renderReviewIncomeChart(proj.chart);
     }
