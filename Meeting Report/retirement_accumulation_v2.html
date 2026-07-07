@@ -1878,7 +1878,7 @@
   /* Conditional pages (e.g. the scenario page) are hidden until enabled. */
   .review-report .rr-page[data-enabled="false"] { display: none; }
   /* Scenario comparison page */
-  .review-report .rr-scenario-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 9px; }
+  .review-report .rr-scenario-page { display: grid; grid-auto-rows: auto; align-content: start; gap: 7px; }
   .review-report .rr-scenario-chart-panel { min-height: 60mm; }
   .review-report .rr-scenario-legend { display: flex; gap: 18px; margin-top: 6px; }
   .review-report .rr-leg { font-size: 11px; color: rgba(255,255,255,0.82); display: inline-flex; align-items: center; gap: 7px; }
@@ -1887,7 +1887,7 @@
   .review-report .rr-leg-current::before { background: transparent; height: 0; border-top: 3px dashed rgba(255,255,255,0.62); }
   .review-report .rr-leg-scenario { color: var(--rr-gold); }
   .review-report .rr-scenario-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .review-report .rr-scenario-tile { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 11px 16px; }
+  .review-report .rr-scenario-tile { background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius); padding: 9px 16px; }
   .review-report .rr-scenario-tile span { display: block; color: var(--rr-muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.6px; }
   .review-report .rr-scenario-tile strong { display: block; margin-top: 4px; color: var(--rr-brand); font-size: 25px; line-height: 1; }
   .review-report .rr-scenario-tile small { display: block; margin-top: 5px; color: var(--rr-muted); font-size: 10.5px; }
@@ -1896,14 +1896,21 @@
   .review-report .rr-scenario-delta { font-weight: 800; }
   .review-report .rr-scenario-delta.delta-positive { color: var(--rr-green); }
   .review-report .rr-scenario-delta.delta-negative { color: var(--rr-red); }
-  .review-report .rr-scenario-detail { grid-template-columns: 1.35fr 0.65fr; }
-  .review-report .rr-scenario-table { font-size: 10.5px; }
-  .review-report .rr-scenario-table th { background: var(--rr-brand); color: #fff; padding: 6px 8px; border-bottom: 1px solid var(--rr-line); }
-  .review-report .rr-scenario-table td { padding: 5px 8px; color: var(--rr-ink-2); }
+  .review-report .rr-scenario-detail { display: block; }
+  .review-report .rr-scenario-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+  /* table.rr-scenario-table wins the padding/font cascade over the generic
+     .rr-table rules (which are later in source at equal specificity). */
+  .review-report table.rr-scenario-table { font-size: 10px; line-height: 1.2; }
+  .review-report table.rr-scenario-table th { background: var(--rr-brand); color: #fff; padding: 5px 8px; border-bottom: 1px solid var(--rr-line); text-transform: none; font-size: 8.6px; }
+  .review-report table.rr-scenario-table td { padding: 4px 8px; color: var(--rr-ink-2); border-bottom: 1px solid var(--rr-line); }
+  .review-report .rr-scenario-table td.rr-name { white-space: nowrap; }
   .review-report .rr-scenario-table th.rr-right, .review-report .rr-scenario-table td.rr-right { text-align: right; }
   .review-report .rr-scenario-table .delta-positive { color: var(--rr-green); font-weight: 700; }
   .review-report .rr-scenario-table .delta-negative { color: var(--rr-red); font-weight: 700; }
   .review-report .rr-scenario-table .delta-neutral { color: var(--rr-muted); }
+  /* A lever that changed is highlighted in the report gold across the whole row
+     (overrides the per-cell green/red on the change column). */
+  .review-report .rr-scenario-table tr.rr-row-changed td { color: var(--rr-gold); font-weight: 700; }
   .review-report .rr-projection-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 0; }
   .review-report .rr-card {
     background: var(--rr-surface); border: 1px solid var(--rr-line); border-radius: var(--rr-radius);
@@ -3404,7 +3411,7 @@
               </div>
             </div>
             <div class="rr-chart-wrap">
-              <svg id="rr-scenario-chart" class="rr-chart" viewBox="0 0 1460 320" role="img" aria-label="Scenario comparison chart"></svg>
+              <svg id="rr-scenario-chart" class="rr-chart" viewBox="0 0 1460 260" role="img" aria-label="Scenario comparison chart"></svg>
             </div>
           </section>
           <section class="rr-scenario-hero">
@@ -3419,23 +3426,22 @@
               <small>monthly income, today's money <span class="rr-scenario-delta" data-rr="scen-delta"></span></small>
             </div>
           </section>
-          <section class="rr-detail-grid rr-scenario-detail">
+          <section class="rr-scenario-detail">
             <article class="rr-detail-card">
               <h2>What changed</h2>
-              <div class="rr-detail-body rr-table-body">
+              <div class="rr-detail-body rr-scenario-cols">
                 <table class="rr-table rr-scenario-table">
                   <thead>
                     <tr><th>Lever</th><th class="rr-right">Current</th><th class="rr-right">Scenario</th><th class="rr-right">Change</th></tr>
                   </thead>
                   <tbody id="rr-scenario-changes"></tbody>
                 </table>
-              </div>
-            </article>
-            <article class="rr-detail-card">
-              <h2>Notes</h2>
-              <div class="rr-detail-body">
-                <p data-rr="scen-note-result">—</p>
-                <p data-rr="scen-note-changed">—</p>
+                <table class="rr-table rr-scenario-table">
+                  <thead>
+                    <tr><th>Lever</th><th class="rr-right">Current</th><th class="rr-right">Scenario</th><th class="rr-right">Change</th></tr>
+                  </thead>
+                  <tbody id="rr-scenario-changes-b"></tbody>
+                </table>
               </div>
             </article>
           </section>
@@ -7321,7 +7327,8 @@
   // The "what changed" table rows for the scenario page.
   function renderReviewScenarioRows(rows){
     return (rows || []).map(function(r){
-      return '<tr>'
+      var changed = r.d && r.d.c !== 'delta-neutral' && r.input;
+      return '<tr' + (changed ? ' class="rr-row-changed"' : '') + '>'
         + '<td class="rr-name">' + escapeHtml(r.label) + '</td>'
         + '<td class="rr-right">' + escapeHtml(r.cur) + '</td>'
         + '<td class="rr-right">' + escapeHtml(r.plan) + '</td>'
@@ -7338,7 +7345,7 @@
     var cur = (data.current.points || []).slice().sort(function(a, b){ return a.age - b.age; });
     var scn = (data.scenario.points || []).slice().sort(function(a, b){ return a.age - b.age; });
     if (!cur.length || !scn.length) return;
-    var width = 1460, height = 320;
+    var width = 1460, height = 260;
     var pad = { top: 20, right: 30, bottom: 36, left: 68 };
     var chartW = width - pad.left - pad.right, chartH = height - pad.top - pad.bottom;
     var minAge = Math.min(cur[0].age, scn[0].age);
@@ -7449,9 +7456,12 @@
           deltaNodes[di].classList.toggle('delta-negative', sc.cmp.deltaNeg);
           deltaNodes[di].classList.toggle('delta-positive', !sc.cmp.deltaNeg && sc.cmp.delta !== '(no change)');
         }
-        setRRHtmlById('rr-scenario-changes', renderReviewScenarioRows(sc.cmp.rows));
-        setRRText('scen-note-result', sc.cmp.resultNote);
-        setRRText('scen-note-changed', sc.cmp.changedNote);
+        // Split the levers into two side-by-side columns (four each) so the
+        // full set fits on one page without the table splitting across the break.
+        var scRows = sc.cmp.rows || [];
+        var scHalf = Math.ceil(scRows.length / 2);
+        setRRHtmlById('rr-scenario-changes', renderReviewScenarioRows(scRows.slice(0, scHalf)));
+        setRRHtmlById('rr-scenario-changes-b', renderReviewScenarioRows(scRows.slice(scHalf)));
         renderReviewScenarioChart(sc);
       }
     }
