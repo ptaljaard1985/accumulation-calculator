@@ -1813,6 +1813,8 @@
     display: flex; justify-content: space-between; gap: 22px; align-items: flex-end;
     padding-bottom: 8px; border-bottom: 1px solid var(--rr-line); margin-bottom: 8px;
   }
+  /* One title per content page: hide the small kicker everywhere except the cover. */
+  .review-report .rr-page:not(.rr-cover) .rr-kicker { display: none; }
   .review-report .rr-page-title h1 { margin: 4px 0 0; font-size: 28px; }
   .review-report .rr-page-title p { max-width: 430px; margin: 0; text-align: right; font-size: 10.8px; }
 
@@ -1864,7 +1866,7 @@
 
   /* ---------- Projection (page 5) ---------- */
   .review-report .rr-projection-page {
-    height: 100%; display: grid; grid-template-rows: 80mm auto auto; gap: 10px; min-height: 0;
+    height: 100%; display: grid; grid-template-rows: auto 64mm auto auto; gap: 10px; min-height: 0;
   }
   .review-report .rr-chart-panel {
     background: var(--rr-brand); border-radius: var(--rr-radius); color: #fff; overflow: hidden;
@@ -3070,7 +3072,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Annual review</div>
-              <h1>Annual Review Agenda Items.</h1>
+              <h1>Annual Review Agenda Items</h1>
             </div>
           </div>
           <section class="rr-agenda-list">
@@ -3219,7 +3221,7 @@
       </footer>
     </section>
 
-    <!-- 04 · Accounts and contributions -->
+    <!-- 04 · Investment account summary -->
     <section class="rr-page" data-page="accounts">
       <header class="rr-header">
         <div class="rr-brand"><img class="rr-brand-logo" src="assets/simple-wealth-logo-standard.png" alt="Simple Wealth"></div>
@@ -3230,7 +3232,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Investment detail</div>
-              <h1>Accounts and contributions.</h1>
+              <h1>Investment Account Summary</h1>
             </div>
           </div>
           <section class="rr-summary-cards">
@@ -3291,7 +3293,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Balance sheet</div>
-              <h1>Net worth.</h1>
+              <h1>Family Balance Sheet</h1>
             </div>
           </div>
           <section class="rr-summary-cards" id="rr-nw-cards"></section>
@@ -3327,6 +3329,7 @@
       </header>
       <div class="rr-body">
         <div class="rr-projection-page">
+          <div class="rr-page-title"><div><h1>Current Retirement Projections</h1></div></div>
           <section class="rr-chart-panel">
             <div class="rr-chart-head">
               <p>Projected starting retirement income, shown in today's money and before tax.</p>
@@ -3399,7 +3402,7 @@
           <div class="rr-page-title">
             <div>
               <div class="rr-kicker">Scenario comparison</div>
-              <h1 data-rr="scen-title">How the tweaks change the outcome.</h1>
+              <h1 data-rr="scen-title">Scenario Comparison</h1>
             </div>
           </div>
           <section class="rr-chart-panel rr-scenario-chart-panel">
@@ -6910,8 +6913,16 @@
   // Account type ordering within an owner group: Retirement, then Discretionary,
   // then Tax-Free, then anything else.
   function reviewTypeRank(type){
-    var order = { 'Retirement': 0, 'Discretionary': 1, 'Tax-Free': 2 };
+    var order = { 'Retirement': 0, 'Tax-Free': 1, 'Discretionary': 2 };
     return Object.prototype.hasOwnProperty.call(order, type) ? order[type] : 3;
+  }
+
+  // Within the Retirement type, preservation funds are listed before retirement
+  // annuities (and any other retirement product). The CRM has no sub-type field,
+  // so the product is inferred from the account name.
+  function reviewRetirementSubRank(a){
+    if (!a || a.type !== 'Retirement') return 0;
+    return /preservation/i.test(a.accountName || '') ? 0 : 1;
   }
 
   function reviewAccountGroups(){
@@ -6931,9 +6942,12 @@
     }
     order.sort(function(x, y){ return rank(x) - rank(y); });
     return order.map(function(key){
-      // Sort each owner's accounts by type (stable), retirement first.
+      // Sort each owner's accounts by type (stable): retirement (preservation
+      // funds, then retirement annuities), then tax-free, then discretionary.
       var accts = groups[key].slice().sort(function(a, b){
-        return reviewTypeRank(a.type) - reviewTypeRank(b.type);
+        var t = reviewTypeRank(a.type) - reviewTypeRank(b.type);
+        if (t !== 0) return t;
+        return reviewRetirementSubRank(a) - reviewRetirementSubRank(b);
       });
       return { key: key, accounts: accts };
     });

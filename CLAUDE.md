@@ -135,6 +135,20 @@ Ask. Pierre would rather answer one question now than fix a silent regression la
 
 ## Session Log
 
+### Session 28 — 2026-07-07
+
+**Shipped (review-report account ordering + page-title cleanup, own branch/PR off `main` after PR #34 merged):** presentation-only tweaks to the CRM review report. No engine change; Python suite unchanged.
+
+1. **Accounts sorted by product, not just bucket.** `reviewTypeRank` changed to `{ Retirement: 0, Tax-Free: 1, Discretionary: 2 }` (tax-free now sits between retirement and discretionary, was last), and a new `reviewRetirementSubRank(a)` orders **preservation funds before retirement annuities** within the Retirement type. The CRM has no product sub-type field, so preservation is inferred from the account name (`/preservation/i`). `reviewAccountGroups` sorts each owner's accounts by `(typeRank, retirementSubRank)`, so within every owner block the order is now **preservation → retirement annuities → tax-free → discretionary**. Stable sort preserves original order among equal-rank rows (e.g. multiple RAs). Display-only — the aggregation (`aggregateReviewData`) is untouched.
+
+2. **One title per page (kicker removed).** Every content page showed a small uppercase kicker above the big h1 (e.g. "ANNUAL REVIEW" / "Annual Review Agenda Items."). A single CSS rule `.review-report .rr-page:not(.rr-cover) .rr-kicker { display: none }` hides the kicker on every page except the cover (which keeps its eyebrow as part of the cover design). The kicker `<div>`s stay in the markup, just hidden.
+
+3. **Page retitles** (client-facing wording, periods dropped to match): agenda `Annual Review Agenda Items.` → `Annual Review Agenda Items`; accounts `Accounts and contributions.` → **`Investment Account Summary`**; net-worth `Net worth.` → **`Family Balance Sheet`**; scenario `How the tweaks change the outcome.` → **`Scenario Comparison`** (static `data-rr="scen-title"` markup, nothing sets it dynamically). The **projection page had no title at all** — added `Current Retirement Projections` as a new `.rr-page-title` first grid child, with the page grid changed `80mm auto auto` → `auto 64mm auto auto` (title row added; chart trimmed 80→64mm so title+chart ≈ the original 80mm chart the page already fit within — an independent budget check flagged 72mm as too marginal at ~0mm headroom, so 64mm restores a ~8mm margin). Notes + cover left as-is ("rest are titled correctly"); risk/estate keep their Session-27 titles.
+
+**Known caveat:** No headless browser. The projection page fit was re-budgeted after the title addition (net change ~neutral vs the previously-fitting 80mm-chart page), but this repo has a history of page-fit spill on these pages (sessions 20/26/27), so the projection page wants a final Cmd+P print-preview. The accounts-order + kicker + other retitles are byte-safe.
+
+**Tests:** 92 JS (the accounts-order test rewritten: type order Retirement < Tax-Free < Discretionary, `reviewRetirementSubRank` preservation=0/RA=1/non-retirement=0, every owner group non-decreasing in `(type, sub)`, Dean's block starts with the preservation fund) + 60 Python (unchanged), all green. Preview regenerated: Dean's block reads preservation → RA → RA → tax-free → discretionary → discretionary; all seven titles present; kicker hidden.
+
 ### Session 27 — 2026-07-07
 
 **Shipped (optional scenario page on the review report, `review-scenario-page` branch off `main` after PR #31):** the CRM-driven pre-meeting report (`.review-report`, 9 always-on pages) now gains an **optional 10th page — a scenario comparison** — that shows clients how a tweak to their plan changes the projected outcome. Reuses the existing lock-baseline + scenario-levers machinery; no engine change and no new form. Follows the same conditional-page pattern as the old landscape deck's scenario page (§13).
