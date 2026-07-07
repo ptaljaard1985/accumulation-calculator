@@ -1209,7 +1209,7 @@ const reviewReport = new Function('realData',
   ['fmtR', 'fmtShort', 'fmtPct', 'escapeHtml', 'isFiniteNum', 'resolveMemberSlots',
    'normalizeReviewBucket', 'accountOwnerSlot', 'defaultAccountDecisions', 'aggregateReviewData',
    'reviewMembers', 'reviewMemberRole', 'reviewShortName', 'reviewNamesLine', 'reviewBucketLabel',
-   'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewTypeRank', 'reviewAccountGroups', 'reviewOwnerLabel',
+   'fmtReviewPct', 'reviewWeightedPct', 'reviewAccountsSummary', 'reviewTypeRank', 'reviewRetirementSubRank', 'reviewAccountGroups', 'reviewOwnerLabel',
    'renderReviewAccountRowsHtml', 'reviewNetWorthTotals', 'reviewNetWorthCategory',
    'renderReviewNetWorthCards', 'renderReviewNetWorthTable', 'renderReviewRiskRowsHtml',
    'renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml',
@@ -1249,20 +1249,25 @@ check('review report: accounts table has reconciling in-projection + excluded to
     'exactly the two child accounts should be labelled Ignore');
 });
 
-check('review report: accounts sorted by type within owner (retirement first)', () => {
+check('review report: accounts sorted retirement > tax-free > discretionary; preservation before RA', () => {
   const rank = new Function(extractFn(inline, 'reviewTypeRank') + '; return reviewTypeRank;')();
-  assert.ok(rank('Retirement') < rank('Discretionary') && rank('Discretionary') < rank('Tax-Free'),
-    'type rank order should be Retirement < Discretionary < Tax-Free');
-  // Every owner group's accounts are non-decreasing in type rank.
+  assert.ok(rank('Retirement') < rank('Tax-Free') && rank('Tax-Free') < rank('Discretionary'),
+    'type rank order should be Retirement < Tax-Free < Discretionary');
+  const sub = new Function(extractFn(inline, 'reviewRetirementSubRank') + '; return reviewRetirementSubRank;')();
+  assert.strictEqual(sub({ type: 'Retirement', accountName: 'Pension Preservation Fund' }), 0, 'preservation should rank first');
+  assert.strictEqual(sub({ type: 'Retirement', accountName: 'Retirement Annuity Fund' }), 1, 'RA should rank after preservation');
+  assert.strictEqual(sub({ type: 'Tax-Free', accountName: 'Tax-Free Investment' }), 0, 'non-retirement sub-rank is neutral');
+  // Every owner group is non-decreasing in (type rank, retirement sub-rank).
   reviewReport.groups.forEach(g => {
-    const ranks = g.accounts.map(a => rank(a.type));
-    for (let i = 1; i < ranks.length; i++)
-      assert.ok(ranks[i] >= ranks[i - 1],
-        'group not type-sorted: ' + g.accounts.map(a => a.type).join(','));
+    const keys = g.accounts.map(a => rank(a.type) * 10 + sub(a));
+    for (let i = 1; i < keys.length; i++)
+      assert.ok(keys[i] >= keys[i - 1],
+        'group not sorted: ' + g.accounts.map(a => a.type + '/' + a.accountName).join(', '));
   });
-  // Dean (the group with multiple accounts) starts with Retirement.
+  // Dean's block starts with his preservation fund, then his retirement annuities.
   const dean = reviewReport.groups.find(g => g.accounts.length > 1);
   assert.strictEqual(dean.accounts[0].type, 'Retirement', 'first Dean row should be Retirement');
+  assert.ok(/preservation/i.test(dean.accounts[0].accountName), 'first retirement row should be the preservation fund');
 });
 
 check('review report: net worth on its own page (table + cards), reconciles to total', () => {
