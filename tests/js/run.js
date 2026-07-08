@@ -10,8 +10,24 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const html = fs.readFileSync(
-  path.join(__dirname, '..', '..', 'Meeting Report', 'retirement_accumulation_v2.html'), 'utf8');
+// Locate a data file by name regardless of how the tool's folders are laid out
+// (this suite has to work both here — under a "Meeting Report/" folder — and after
+// the tool is moved into the CRM repo, where the html + fixture sit flat). Walk up
+// from this test and check each ancestor plus a few common data-folder names.
+function findFile(name) {
+  const subs = ['.', 'Meeting Report', 'fixtures', 'test-data', 'data', 'tests'];
+  let dir = __dirname;
+  for (let i = 0; i < 5; i++) {
+    for (const s of subs) {
+      const p = path.join(dir, s, name);
+      if (fs.existsSync(p)) return p;
+    }
+    dir = path.dirname(dir);
+  }
+  throw new Error('run.js: could not locate ' + name + ' anywhere near ' + __dirname);
+}
+
+const html = fs.readFileSync(findFile('retirement_accumulation_v2.html'), 'utf8');
 
 // Grab the inline <script>...</script> (skip the Chart.js src tag)
 const scripts = html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g) || [];
@@ -1077,8 +1093,7 @@ const reviewAgg = new Function(
 )();
 
 const realReview = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', '..', 'Meeting Report',
-    'dean-andre-and-justine-lesley-review-data-2026-07-02.json'), 'utf8'));
+  findFile('sample-household-review-data.json'), 'utf8'));
 
 check('review import: kind dispatch routes sw-review-data to the mapping screen', () => {
   const src = extractFn(inline, 'handlePlanText');
@@ -1100,15 +1115,15 @@ check('review import: aggregate produces the real per-spouse golden numbers', ()
   const dec = defaultAccountDecisions(realReview.accounts, slots);
   const t = aggregateReviewData(realReview.accounts, dec);
   const r2 = n => Math.round(n * 100) / 100;
-  assert.strictEqual(r2(t.A.ret), 4630416.00);
-  assert.strictEqual(r2(t.A.retC), 1458.35);
-  assert.strictEqual(r2(t.A.disc), 1676196.08);
-  assert.strictEqual(r2(t.A.discC), 2628.71);
-  assert.strictEqual(r2(t.B.ret), 3189960.68);
-  assert.strictEqual(r2(t.B.retC), 765.77);
-  assert.strictEqual(r2(t.B.disc), 838496.65);
-  assert.strictEqual(r2(t.B.discC), 2428.71);
-  assert.strictEqual(r2(t.excludedTotal), 407937.68);   // Lucy + Logan TFIs, default-Ignored
+  assert.strictEqual(r2(t.A.ret), 2840000.00);
+  assert.strictEqual(r2(t.A.retC), 10500.00);
+  assert.strictEqual(r2(t.A.disc), 209000.00);
+  assert.strictEqual(r2(t.A.discC), 3000.00);
+  assert.strictEqual(r2(t.B.ret), 925000.00);
+  assert.strictEqual(r2(t.B.retC), 15800.00);
+  assert.strictEqual(r2(t.B.disc), 260000.00);
+  assert.strictEqual(r2(t.B.discC), 3000.00);
+  assert.strictEqual(r2(t.excludedTotal), 201000.00);   // the children's accounts, default-Ignored
 });
 
 check('review import: children default to Ignore (not dropped, split, or mis-routed)', () => {
@@ -1116,7 +1131,7 @@ check('review import: children default to Ignore (not dropped, split, or mis-rou
   const slots = resolveMemberSlots(realReview.clientFamily.members);
   const dec = defaultAccountDecisions(realReview.accounts, slots);
   const childAccts = realReview.accounts.filter(a => accountOwnerSlot(a, slots) === 'other');
-  assert.strictEqual(childAccts.length, 2);
+  assert.strictEqual(childAccts.length, 6);
   childAccts.forEach(a => assert.strictEqual(dec[a.accountId].bucket, 'excluded'));
 });
 
@@ -1225,28 +1240,28 @@ const stripSpace = s => s.replace(/ /g, ' ');
 check('review report: summary reconciles exactly (whole-rand, in-projection = ret + disc)', () => {
   const s = reviewReport.summary;
   // Values are rounded to whole rand so subtotals equal the sum of displayed rows.
-  assert.strictEqual(s.totalInvest, 10743008);                   // all accounts (for net worth)
-  assert.strictEqual(s.retTotal, 7820377);
-  assert.strictEqual(s.discTotal, 2514693);
+  assert.strictEqual(s.totalInvest, 4435000);                    // all accounts (for net worth)
+  assert.strictEqual(s.retTotal, 3765000);
+  assert.strictEqual(s.discTotal, 469000);
   // Card total is the in-projection scope and equals retirement + discretionary exactly.
-  assert.strictEqual(s.includedValue, 10335070);
+  assert.strictEqual(s.includedValue, 4234000);
   assert.strictEqual(s.retTotal + s.discTotal, s.includedValue);
   // Included + excluded reconciles to the grand total exactly.
-  assert.strictEqual(s.excludedValue, 407938);                   // the two child TFIs
+  assert.strictEqual(s.excludedValue, 201000);                   // the children's excluded accounts
   assert.strictEqual(s.includedValue + s.excludedValue, s.totalInvest);
-  assert.strictEqual(s.includedMonthly, 7282);
-  assert.strictEqual(s.excludedMonthly, 450);                    // R225 x 2
+  assert.strictEqual(s.includedMonthly, 32300);
+  assert.strictEqual(s.excludedMonthly, 6000);
 });
 
 check('review report: accounts table has reconciling in-projection + excluded totals', () => {
   const trs = (reviewReport.acct.match(/<tr/g) || []).length;
-  assert.strictEqual(trs, 19, 'expected 19 <tr> (13 accounts + 4 owner subtotals + 2 total rows), got ' + trs);
+  assert.strictEqual(trs, 22, 'expected 22 <tr> (15 accounts + 5 owner subtotals + 2 total rows), got ' + trs);
   const a = stripSpace(reviewReport.acct);
-  assert.ok(/Total in projection/.test(a) && a.includes('10 335 070'), 'in-projection total missing/wrong');
-  assert.ok(/Excluded from projection/.test(a) && a.includes('407 938'), 'excluded total missing/wrong');
+  assert.ok(/Total in projection/.test(a) && a.includes('4 234 000'), 'in-projection total missing/wrong');
+  assert.ok(/Excluded from projection/.test(a) && a.includes('201 000'), 'excluded total missing/wrong');
   assert.ok(!/Household total/.test(a), 'old ambiguous "Household total" should be replaced');
-  assert.strictEqual((reviewReport.acct.match(/>Ignore</g) || []).length, 2,
-    'exactly the two child accounts should be labelled Ignore');
+  assert.strictEqual((reviewReport.acct.match(/>Ignore</g) || []).length, 6,
+    'the six child-owned accounts should be labelled Ignore');
 });
 
 check('review report: accounts sorted retirement > tax-free > discretionary; preservation before RA', () => {
@@ -1264,10 +1279,10 @@ check('review report: accounts sorted retirement > tax-free > discretionary; pre
       assert.ok(keys[i] >= keys[i - 1],
         'group not sorted: ' + g.accounts.map(a => a.type + '/' + a.accountName).join(', '));
   });
-  // Dean's block starts with his preservation fund, then his retirement annuities.
-  const dean = reviewReport.groups.find(g => g.accounts.length > 1);
-  assert.strictEqual(dean.accounts[0].type, 'Retirement', 'first Dean row should be Retirement');
-  assert.ok(/preservation/i.test(dean.accounts[0].accountName), 'first retirement row should be the preservation fund');
+  // The primary's block starts with a preservation fund, then retirement annuities.
+  const primaryGroup = reviewReport.groups.find(g => g.accounts.length > 1);
+  assert.strictEqual(primaryGroup.accounts[0].type, 'Retirement', 'first row should be Retirement');
+  assert.ok(/preservation/i.test(primaryGroup.accounts[0].accountName), 'first retirement row should be the preservation fund');
 });
 
 check('review report: projection page — leverage tile, planner-comments box, planned-retirement callout', () => {
@@ -1294,9 +1309,9 @@ check('review report: net worth on its own page (table + cards), reconciles to t
   // household-total row) and four summary cards, not the old wrapped strip.
   const nw = stripSpace(reviewReport.nw);
   assert.ok(/Investment portfolio/.test(nw), 'investment portfolio row missing');
-  assert.ok(/Ocuwise Capital/.test(nw) && /Nelspruit house bond/.test(nw), 'held-away items missing');
-  assert.ok(/Household net worth/.test(nw) && nw.includes('26 293 008'), 'net worth total row missing/wrong');
-  assert.ok(stripSpace(reviewReport.nwCards).includes('26 293 008'), 'net-worth summary card missing');
+  assert.ok(/Business interest/.test(nw) && /Primary residence/.test(nw), 'held-away items missing');
+  assert.ok(/Household net worth/.test(nw) && nw.includes('10 202 000'), 'net worth total row missing/wrong');
+  assert.ok(stripSpace(reviewReport.nwCards).includes('10 202 000'), 'net-worth summary card missing');
   // Balance-sheet items live on their own page, not below the accounts table.
   assert.ok(/id="rr-nw-cards"/.test(html) && /id="rr-nw-body"/.test(html), 'net-worth page containers missing');
   assert.ok(!/id="rr-networth"/.test(html), 'old net-worth strip should be gone from the accounts page');
@@ -1309,7 +1324,7 @@ check('review report: estate rebuilt to schema 1.3.0 (no old willOnFile / per-ro
   const willBodyRows = (reviewReport.wills.match(/<td class="rr-name"/g) || []).length;
   assert.strictEqual(willBodyRows, 2, 'two will rows');
   assert.strictEqual((reviewReport.poa.match(/<td class="rr-name"/g) || []).length, 2, 'two POA rows in their own table');
-  assert.ok(/VDW Family Trust/.test(reviewReport.trusts), 'trusts table should list the VDW Family Trust');
+  assert.ok(/Sample Family Trust/.test(reviewReport.trusts), 'trusts table should list the Sample Family Trust');
   // The render source must not reference the superseded shape.
   ['renderReviewWillsRowsHtml', 'renderReviewPoaHtml', 'renderReviewTrustsHtml'].forEach(fn => {
     assert.ok(!/willOnFile/.test(extractFn(inline, fn)), fn + ' still references old willOnFile shape');

@@ -21,11 +21,25 @@ from pathlib import Path
 
 import pytest
 
-REAL_FILE = (
-    Path(__file__).resolve().parents[2]
-    / "Meeting Report"
-    / "dean-andre-and-justine-lesley-review-data-2026-07-02.json"
-)
+
+def _find(name):
+    """Locate a data file by name regardless of folder layout, so this suite works
+    both here (under a "Meeting Report/" folder) and after the tool is moved into
+    the CRM repo, where the fixture may sit flat. Walk up from this test and check
+    each ancestor plus a few common data-folder names."""
+    here = Path(__file__).resolve()
+    subs = [".", "Meeting Report", "fixtures", "test-data", "data", "tests"]
+    for anc in list(here.parents)[:5]:
+        for s in subs:
+            candidate = anc / s / name
+            if candidate.exists():
+                return candidate
+    raise FileNotFoundError(
+        f"could not locate {name} anywhere near {here}"
+    )
+
+
+REAL_FILE = _find("sample-household-review-data.json")
 
 
 # --- Python port of the tool's pure aggregation helpers --------------------
@@ -112,53 +126,55 @@ def real_default(real):
 
 def test_slots(real_default):
     _, slots, _, _ = real_default
-    assert slots["A"]["firstName"] == "Dean Andre" and slots["A"]["role"] == "primary"
-    assert slots["B"]["firstName"] == "Justine Lesley" and slots["B"]["role"] == "spouse"
+    assert slots["A"]["firstName"] == "Alexander" and slots["A"]["role"] == "primary"
+    assert slots["B"]["firstName"] == "Robin" and slots["B"]["role"] == "spouse"
 
 
 def test_children_are_other_slot(real_default):
     _, slots, _, _ = real_default
     kids = [pid for pid, s in slots["slotById"].items() if s == "other"]
-    assert len(kids) == 2  # Lucy Mae + Logan Ash
+    assert len(kids) == 3  # Ella + Max + Noah
 
 
 def test_children_default_excluded(real_default):
     real, slots, dec, _ = real_default
     child_accts = [a for a in real["accounts"]
                    if owner_slot(a, slots) == "other"]
-    assert len(child_accts) == 2
+    assert len(child_accts) == 6  # 3 children, 2 tax-free/discretionary accounts each
     for a in child_accts:
         assert dec[a["accountId"]]["bucket"] == "excluded"
 
 
 def test_real_golden_numbers(real_default):
     _, _, _, t = real_default
-    assert round(t["A"]["ret"], 2) == 4630416.00
-    assert round(t["A"]["retC"], 2) == 1458.35
-    assert round(t["A"]["disc"], 2) == 1676196.08
-    assert round(t["A"]["discC"], 2) == 2628.71
-    assert round(t["B"]["ret"], 2) == 3189960.68
-    assert round(t["B"]["retC"], 2) == 765.77
-    assert round(t["B"]["disc"], 2) == 838496.65
-    assert round(t["B"]["discC"], 2) == 2428.71
+    assert round(t["A"]["ret"], 2) == 2840000.00
+    assert round(t["A"]["retC"], 2) == 10500.00
+    assert round(t["A"]["disc"], 2) == 209000.00
+    assert round(t["A"]["discC"], 2) == 3000.00
+    assert round(t["B"]["ret"], 2) == 925000.00
+    assert round(t["B"]["retC"], 2) == 15800.00
+    assert round(t["B"]["disc"], 2) == 260000.00
+    assert round(t["B"]["discC"], 2) == 3000.00
 
 
 def test_child_assets_excluded_total(real_default):
     _, _, _, t = real_default
-    # Lucy + Logan tax-free investments, each 203968.84.
-    assert round(t["excludedTotal"], 2) == 407937.68
+    # The three children's excluded tax-free/discretionary accounts.
+    assert round(t["excludedTotal"], 2) == 201000.00
 
 
 def test_included_plus_excluded_equals_all_account_value(real_default):
     real, _, _, t = real_default
     total = sum(a["value"] or 0 for a in real["accounts"])
     assert round(t["includedTotal"] + t["excludedTotal"], 2) == round(total, 2)
-    assert round(total, 2) == 10743007.09
+    assert round(total, 2) == 4435000.00
 
 
 def test_suggested_buckets_follow_type_rule(real):
-    # Retirement -> retirementAssets; Tax-Free / Discretionary -> discretionaryAssets.
+    # Retirement (incl. held-away) -> retirementAssets; Tax-Free / Discretionary
+    # -> discretionaryAssets.
     rule = {"Retirement": "retirementAssets",
+            "Retirement (held-away)": "retirementAssets",
             "Tax-Free": "discretionaryAssets",
             "Discretionary": "discretionaryAssets"}
     for a in real["accounts"]:

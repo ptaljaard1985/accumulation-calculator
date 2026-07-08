@@ -1,12 +1,20 @@
 # CLAUDE.md
 
+> **Scope — read first.** This file governs ONLY the tool in this folder: a
+> **build-free single HTML file**. It is vendored into the CRM repo at
+> `tools/accumulation/` but is NOT part of the CRM's Next.js app — no build step,
+> no npm / TypeScript / React / Tailwind, and it is never bundled, imported, or
+> served. The **repo-root `CLAUDE.md`** (Next.js, Vitest, database, deploy)
+> **does NOT apply here.** The tool opens by double-click via `file://` and prints
+> to PDF. Everything below is the tool's own rules.
+
 This file is read first by Claude Code on every session. It tells you what this project is, how it's built, and the conventions that matter.
 
 ## What this is
 
 A standalone HTML retirement accumulation calculator for Simple Wealth (Pty) Ltd, a South African authorised financial services provider (FSP 50637). A single HTML file opens by double-click, prints to PDF cleanly, and is used by the adviser (Pierre) with pre-retiree clients in real meetings.
 
-**Primary file (since Session 18): `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky full-bleed top bar). Since Session 25 it lives in the `Meeting Report/` folder (`Meeting Report/retirement_accumulation_v2.html`) alongside the CRM-integration docs and the review-data files; the test harness reads it there. It shares the original's projection engine but is the file all active work now targets. The original `retirement_accumulation.html` is retained as a secondary reference. Below, "the file" / "the calculator" means the v2 file unless a section is explicitly about the original. The same non-negotiable constraints apply to both.
+**Primary file (since Session 18): `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky full-bleed top bar). It sits at this folder's root (`tools/accumulation/retirement_accumulation_v2.html`), with `assets/` (logos), `fixtures/` (the pinned `sw-review-data` test fixture + go-forward scripts), and `tests/` beside it. The test harness locates the HTML and the fixture **by name** (a small resolver in `tests/js/run.js` and `tests/python/test_review_aggregation.py`), so their exact folders are flexible. It shares the original's projection engine but is the file all active work now targets. The original `retirement_accumulation.html` is retained as a secondary reference. Below, "the file" / "the calculator" means the v2 file unless a section is explicitly about the original. The same non-negotiable constraints apply to both.
 
 The calculator projects household capital from today to a configurable retirement age, for a two-spouse household with both retirement-fund and discretionary portfolios. Primary output is projected monthly income in today's money, computed by applying an age-based safe withdrawal rate (a schedule that rises with the retirement age, e.g. 4.8% at 65) to the combined capital at retirement, divided by twelve, before tax. Secondary outputs: capital at retirement (real and nominal), cumulative contributions, year-by-year trajectory, "lock as baseline" comparison, and an optional capital-events mechanism for one-off inflows and outflows.
 
@@ -99,12 +107,12 @@ Run through this checklist:
 cd tests/python
 pytest -v
 
-# JS tests (actual shipped JS) — 92 tests
+# JS tests (actual shipped JS) — 93 tests
 cd tests/js
 node run.js
 ```
 
-Both must pass before any change ships. See `tests/README.md`. The JS harness reads `Meeting Report/retirement_accumulation_v2.html` (the current primary file — see below; it moved into the `Meeting Report/` folder in Session 25).
+Both must pass before any change ships. See `tests/README.md`. The JS harness (`tests/js/run.js`) and the Python aggregation test (`tests/python/test_review_aggregation.py`) locate the shipped HTML and the `sw-review-data` fixture **by name** (a small resolver that walks up the folders), so they run wherever this tool subtree sits — no hardcoded paths to update if it moves again.
 
 ## File inventory
 
@@ -116,7 +124,9 @@ Both must pass before any change ships. See `tests/README.md`. The JS harness re
 - `docs/CALCULATIONS.md` — the maths and conventions.
 - `docs/DESIGN.md` — visual system and interaction patterns.
 - `tests/python/` — math audits in Python (60 tests).
-- `tests/js/` — JS tests in Node against the shipped HTML at `Meeting Report/retirement_accumulation_v2.html` (92 tests).
+- `tests/js/` — JS tests in Node against the shipped HTML `retirement_accumulation_v2.html` (93 tests).
+- `assets/` — the logo PNGs the report headers reference (relative paths; keep beside the HTML).
+- `fixtures/` — the pinned, anonymised `sw-review-data` test fixture (`sample-household-review-data.json`, schema 1.5.0) plus the go-forward tooling (`anonymize.mjs`, `goldens.mjs`). See the migration notes for how/when to regenerate it.
 
 ## What not to do
 

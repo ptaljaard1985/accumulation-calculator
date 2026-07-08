@@ -32,3 +32,8 @@ Meeting Report/review-report-preview.html
 
 # Generated / client-facing PDFs — never version (binary bloat + client data)
 *.pdf
+
+# Raw client review-data exports must never land here. The only committed
+# sw-review-data file is the anonymised test fixture in fixtures/. This blocks
+# a real export accidentally dropped at the repo root.
+/*review-data*.json
