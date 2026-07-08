@@ -2,7 +2,7 @@
 
 An interactive retirement projection tool for two-spouse pre-retiree South African households, built for use in client advisory meetings by Simple Wealth (Pty) Ltd, FSP 50637.
 
-> **Primary file: `Meeting Report/retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). It shares the original's projection engine and is the file all active work targets. The original `retirement_accumulation.html` is retained as a secondary reference. Some feature descriptions below predate the v2 redesign and reflect the original layout.
+> **Primary file: `retirement_accumulation_v2.html`** — the "Private Client Planning Cockpit" redesign (Inter font, cockpit brand-blue palette, sticky top bar). It shares the original's projection engine and is the file all active work targets. The original `retirement_accumulation.html` is retained as a secondary reference. Some feature descriptions below predate the v2 redesign and reflect the original layout.
 
 ## What it does
 
@@ -18,7 +18,7 @@ The tool can also **import a CRM `sw-review-data` export**: opening one routes t
 
 ## Running it
 
-Open `Meeting Report/retirement_accumulation_v2.html` (the primary file) in a browser. That's it — no build, no server, no install.
+Open `retirement_accumulation_v2.html` (the primary file) in a browser. That's it — no build, no server, no install.
 
 External runtime deps (loaded via `<link>` / `<script>` tags): Chart.js from `cdnjs.cloudflare.com`, and the Fraunces / Inter Tight / JetBrains Mono webfont families from `fonts.googleapis.com`. Everything else — tokens, styles, logic — is inline. The file opens and computes offline; webfonts and the chart library fall back gracefully if the network is unavailable.
 
@@ -27,20 +27,22 @@ Tested on recent Safari and Chrome.
 ## Project structure
 
 ```
-Meeting Report/
-  retirement_accumulation_v2.html the primary deliverable (single file, cockpit redesign)
-retirement_accumulation.html    the original warm-paper deliverable (secondary)
-
-CLAUDE.md                       read first by Claude Code
-README.md                       this file
+retirement_accumulation_v2.html   the primary deliverable (single file, cockpit redesign)
+retirement_accumulation.html      the original warm-paper deliverable (secondary)
+assets/                           logo PNGs the report headers reference
+fixtures/
+  sample-household-review-data.json  pinned anonymised sw-review-data fixture (schema 1.5.0)
+  anonymize.mjs, goldens.mjs         go-forward fixture tooling
+CLAUDE.md                         read first by Claude Code
+README.md                         this file
 docs/
-  ARCHITECTURE.md               code structure
-  CALCULATIONS.md               maths and conventions
-  DESIGN.md                     visual system
+  ARCHITECTURE.md                 code structure
+  CALCULATIONS.md                 maths and conventions
+  DESIGN.md                       visual system
 tests/
-  README.md                     how to run tests
-  python/                       math audits (pytest, 60 tests)
-  js/                           JS tests against the shipped v2 HTML (node, 92 tests)
+  README.md                       how to run tests
+  python/                         math audits (pytest, 60 tests)
+  js/                             JS tests against the shipped v2 HTML (node, 93 tests)
 ```
 
 ## Running the tests

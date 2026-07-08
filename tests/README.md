@@ -32,9 +32,9 @@ Expected output: `60 passed`.
 
 ## JS tests — actual shipped code
 
-Location: `tests/js/`. 92 tests.
+Location: `tests/js/`. 93 tests.
 
-These exercise the actual JS inside `Meeting Report/retirement_accumulation_v2.html` (the primary file — see CLAUDE.md) by extracting pure functions (`project()`, `swrForAge()`, `incomeCurveData()`, `solveGapRoutes()`, `baselineRestoreFields()`, etc.) via brace-matching and running them under Node, plus regex assertions against the raw HTML/inline-script string for markup + wiring. No Jest dependency — just `node run.js` and the built-in `assert` module. The harness has no DOM, so only DOM-free logic is directly callable; DOM-bound render functions are checked structurally (markup ids present, function defined, called in `refresh()`).
+These exercise the actual JS inside `retirement_accumulation_v2.html` (the primary file — see CLAUDE.md; the harness locates it by name, so its folder is flexible) by extracting pure functions (`project()`, `swrForAge()`, `incomeCurveData()`, `solveGapRoutes()`, `baselineRestoreFields()`, etc.) via brace-matching and running them under Node, plus regex assertions against the raw HTML/inline-script string for markup + wiring. No Jest dependency — just `node run.js` and the built-in `assert` module. The harness has no DOM, so only DOM-free logic is directly callable; DOM-bound render functions are checked structurally (markup ids present, function defined, called in `refresh()`).
 
 Recent additions: `baselineRestoreFields` (Clear-baseline true-revert map + ordering), the "Current plan" recap card wiring, the reconciliation-flow year table columns, the CRM `sw-review-data` import (per-account mapping screen + per-(spouse, bucket) aggregation), and the 9-page `.review-report` deck.
 

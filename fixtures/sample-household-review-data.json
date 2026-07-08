@@ -1,0 +1,397 @@
+{
+  "firm": {
+    "name": "Simple Wealth (Pty) Ltd",
+    "fspNumber": "50637"
+  },
+  "kind": "sw-review-data",
+  "risk": {
+    "comments": "Current life cover is sufficient to eliminate debt and to provide for the loss of income.\n\nIn the event of Robin's death, her life cover benefit is expected to provide Alex and the children with approximately R70 000 to R80 000 in after-tax income per month. Alex and Robin to confirm if this is sufficient.\n\nCurrent income protection may be less than after-tax income. Alex and Robin to confirm if sufficient.\n\nRobin is in the process of applying for critical illness cover. Alex does not have this benefit at present.\n\nWhile some gaps may remain, significant progress has been made in the last few years.",
+    "policyBenefitRows": [
+      {
+        "status": "active",
+        "insurer": "Hollard",
+        "personId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+        "lifeCover": 5513000,
+        "impairment": 0,
+        "personName": "Alexander Sample",
+        "beneficiary": "Robin",
+        "policyNumber": null,
+        "criticalIllness": 0,
+        "capitalDisability": 0,
+        "incomeDisabilityMonthly": 55000
+      },
+      {
+        "status": "active",
+        "insurer": "Hollard",
+        "personId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+        "lifeCover": 21080000,
+        "impairment": 0,
+        "personName": "Robin Sample",
+        "beneficiary": "Alex",
+        "policyNumber": null,
+        "criticalIllness": 0,
+        "capitalDisability": 0,
+        "incomeDisabilityMonthly": 96000
+      }
+    ]
+  },
+  "estate": {
+    "trusts": [
+      {
+        "name": "Sample Family Trust",
+        "ownerName": "Household",
+        "trustType": "Inter vivos (living)",
+        "trustees": null
+      }
+    ],
+    "comments": null,
+    "willRows": [
+      {
+        "name": "Alexander Sample",
+        "executor": "Robin",
+        "personId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+        "willDate": null,
+        "guardians": "Nominated guardians",
+        "willStatus": "On file — unsigned",
+        "maritalRegime": "ANC with accrual",
+        "beneficiaryHeirs": "Robin, failing children",
+        "testamentaryTrustForMinors": true
+      },
+      {
+        "name": "Robin Sample",
+        "executor": "Alex",
+        "personId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+        "willDate": null,
+        "guardians": "Nominated guardians",
+        "willStatus": "Not discussed",
+        "maritalRegime": "ANC with accrual",
+        "beneficiaryHeirs": "Alex, failing children",
+        "testamentaryTrustForMinors": true
+      }
+    ],
+    "powersOfAttorney": [
+      {
+        "personId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+        "name": "Alexander Sample",
+        "poaType": "General",
+        "agent": "Robin",
+        "status": "On file — unsigned"
+      },
+      {
+        "personId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+        "name": "Robin Sample",
+        "poaType": "General",
+        "agent": "Alex",
+        "status": "Not discussed"
+      }
+    ],
+    "estateLiquidityComment": "Any death expenses can be covered by life cover benefits. As everything is left to the survivor, no capital gains tax or estate duty will be payable on the first dying."
+  },
+  "accounts": [
+    {
+      "type": "Tax-Free",
+      "value": 33000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "cf0a11ca-56fc-4685-8764-b7ddeb2f1486",
+      "ownerName": "Max Sample",
+      "accountName": "Tax-Free Investment",
+      "ownerPersonId": "09fd0ffd-dcfd-4d5d-bf51-f6db7d28148d",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9815,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.3012
+    },
+    {
+      "type": "Tax-Free",
+      "value": 209000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "524bebc1-6d4d-4e7f-a7e4-0f434ce7444a",
+      "ownerName": "Robin Sample",
+      "accountName": "Tax-Free Investment",
+      "ownerPersonId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9815,
+      "monthlyContribution": 3000,
+      "offshoreAssetsPercent": 0.3001
+    },
+    {
+      "type": "Discretionary",
+      "value": 34000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "bbfc0ecb-9ffc-4f2d-8023-3e9d1a2ac092",
+      "ownerName": "Noah Sample",
+      "accountName": "Investment Platform Unit Trust",
+      "ownerPersonId": "bc5e1822-ed6f-4130-8600-409bd87f94da",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9915,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.9945
+    },
+    {
+      "type": "Retirement",
+      "value": 338000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "1a66b0c8-b673-4b62-af75-7ac41799de54",
+      "ownerName": "Alexander Sample",
+      "accountName": "Retirement Annuity Fund",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": 0.7972,
+      "monthlyContribution": 0,
+      "offshoreAssetsPercent": 0.4455
+    },
+    {
+      "type": "Tax-Free",
+      "value": 33000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "3badb484-b521-43cb-b94c-e3774ba72967",
+      "ownerName": "Ella Sample",
+      "accountName": "Tax-Free Investment",
+      "ownerPersonId": "3a70d370-7446-408d-8f3f-f0d95a6ea18d",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9815,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.3012
+    },
+    {
+      "type": "Discretionary",
+      "value": 34000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "656cc1a7-8bcf-46e3-90c8-2dc106549cee",
+      "ownerName": "Ella Sample",
+      "accountName": "Investment Platform Unit Trust",
+      "ownerPersonId": "3a70d370-7446-408d-8f3f-f0d95a6ea18d",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9915,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.9945
+    },
+    {
+      "type": "Retirement",
+      "value": 925000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "9efa4a67-8cc4-4707-bcc4-9362b1d4dfde",
+      "ownerName": "Robin Sample",
+      "accountName": "Retirement Annuity Fund",
+      "ownerPersonId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": 0.7971,
+      "monthlyContribution": 15800,
+      "offshoreAssetsPercent": 0.4451
+    },
+    {
+      "type": "Discretionary",
+      "value": 34000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "4ffd7ae1-8c57-46ed-9961-c7490e7950f4",
+      "ownerName": "Max Sample",
+      "accountName": "Investment Platform Unit Trust",
+      "ownerPersonId": "09fd0ffd-dcfd-4d5d-bf51-f6db7d28148d",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9915,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.9945
+    },
+    {
+      "type": "Retirement",
+      "value": 738000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "5162acbf-8068-4ce1-99e7-7eac6b2b6923",
+      "ownerName": "Alexander Sample",
+      "accountName": "Retirement Annuity Fund",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": 0.7971,
+      "monthlyContribution": 10500,
+      "offshoreAssetsPercent": 0.4451
+    },
+    {
+      "type": "Retirement",
+      "value": 693000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "593bd870-9db7-4249-85e8-7dd8cb283b36",
+      "ownerName": "Alexander Sample",
+      "accountName": "Pension Preservation Fund",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": 0.7972,
+      "monthlyContribution": 0,
+      "offshoreAssetsPercent": 0.4455
+    },
+    {
+      "type": "Retirement",
+      "value": 831000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "1834464a-37f4-41ca-9c52-c39addffb2d5",
+      "ownerName": "Alexander Sample",
+      "accountName": "Provident Preservation Fund",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": 0.7972,
+      "monthlyContribution": 0,
+      "offshoreAssetsPercent": 0.4455
+    },
+    {
+      "type": "Tax-Free",
+      "value": 209000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "ff76c9b6-d164-40f2-8552-afa7c51d05ab",
+      "ownerName": "Alexander Sample",
+      "accountName": "Tax-Free Investment",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9815,
+      "monthlyContribution": 3000,
+      "offshoreAssetsPercent": 0.3001
+    },
+    {
+      "type": "Tax-Free",
+      "value": 33000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "9e384f5c-024b-4536-ae9c-abafc72d9da5",
+      "ownerName": "Noah Sample",
+      "accountName": "Tax-Free Investment",
+      "ownerPersonId": "bc5e1822-ed6f-4130-8600-409bd87f94da",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.9815,
+      "monthlyContribution": 1000,
+      "offshoreAssetsPercent": 0.3012
+    },
+    {
+      "type": "Discretionary",
+      "value": 51000,
+      "source": "managed",
+      "provider": "Allan Gray",
+      "accountId": "450f8dd7-f858-4dfb-beef-f8341fa1ae31",
+      "ownerName": "Robin Sample",
+      "accountName": "Offshore",
+      "ownerPersonId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+      "suggestedBucket": "discretionaryAssets",
+      "growthAssetsPercent": 0.993,
+      "monthlyContribution": 0,
+      "offshoreAssetsPercent": 0.9902
+    },
+    {
+      "type": "Retirement (held-away)",
+      "value": 240000,
+      "source": "held_away",
+      "provider": "Nest & Aviva",
+      "accountId": "e4fcbcbb-29ae-4815-af00-b2f0855c3804",
+      "ownerName": "Alexander Sample",
+      "accountName": "UK Pension (combined)",
+      "ownerPersonId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+      "suggestedBucket": "retirementAssets",
+      "growthAssetsPercent": null,
+      "monthlyContribution": 0,
+      "offshoreAssetsPercent": null
+    }
+  ],
+  "exportedAt": "2026-07-07T13:29:09.533Z",
+  "exportedBy": "Advisor",
+  "projection": {
+    "comments": "Alex and Robin are expecting to receive the UK old age pension of about R20,000 per month each. This is not factored into the projections above."
+  },
+  "clientFamily": {
+    "groupId": "b7642eff-4f33-4f69-aa0c-a7aba5fa4df3",
+    "members": [
+      {
+        "age": 47,
+        "role": "primary",
+        "lastName": "Sample",
+        "personId": "03a3fca6-3f1b-4212-aae0-b541a36c19ce",
+        "firstName": "Alexander",
+        "dateOfBirth": null,
+        "preferredName": "Alex"
+      },
+      {
+        "age": 38,
+        "role": "spouse",
+        "lastName": "Sample",
+        "personId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f",
+        "firstName": "Robin",
+        "dateOfBirth": null,
+        "preferredName": "Robin"
+      },
+      {
+        "age": 6,
+        "role": "child",
+        "lastName": "Sample",
+        "personId": "3a70d370-7446-408d-8f3f-f0d95a6ea18d",
+        "firstName": "Ella",
+        "dateOfBirth": null,
+        "preferredName": "Ella"
+      },
+      {
+        "age": 12,
+        "role": "child",
+        "lastName": "Sample",
+        "personId": "09fd0ffd-dcfd-4d5d-bf51-f6db7d28148d",
+        "firstName": "Max",
+        "dateOfBirth": null,
+        "preferredName": "Max"
+      },
+      {
+        "age": 9,
+        "role": "child",
+        "lastName": "Sample",
+        "personId": "bc5e1822-ed6f-4130-8600-409bd87f94da",
+        "firstName": "Noah",
+        "dateOfBirth": null,
+        "preferredName": "Noah"
+      }
+    ],
+    "displayName": "Alex and Robin"
+  },
+  "netWorthItems": [
+    {
+      "kind": "asset",
+      "value": 180000,
+      "itemId": "a5e57a54-55be-4598-b031-0d5f35ef0b35",
+      "category": "business_interest",
+      "ownerName": "Robin Sample",
+      "description": "Business interest",
+      "institution": null,
+      "ownerPersonId": "6aaf4984-1926-41e7-8c6a-758ed4c4803f"
+    },
+    {
+      "kind": "liability",
+      "value": 1213000,
+      "itemId": "b7f6aad7-7486-4545-88c1-6ec7c2a538c8",
+      "category": "debt",
+      "ownerName": "Joint / household",
+      "description": "Home loan",
+      "institution": null,
+      "ownerPersonId": null
+    },
+    {
+      "kind": "asset",
+      "value": 6800000,
+      "itemId": "3dba4b53-9d48-46c7-a841-f1a4b4123721",
+      "category": "primary_residence",
+      "ownerName": "Joint / household",
+      "description": "Primary residence",
+      "institution": null,
+      "ownerPersonId": null
+    }
+  ],
+  "schemaVersion": "1.5.0",
+  "assumptionSeeds": {
+    "expectedReturn": null,
+    "lifeExpectancy": null,
+    "expectedInflation": null,
+    "incomeGoalMonthly": null
+  }
+}
